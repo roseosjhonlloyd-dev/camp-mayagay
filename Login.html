@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login | Camp Mayagay</title>
+
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+        <img src="assets/images/Background.png" alt="" class="bg-image">
+       <div class="bg-overlay"></div>
+
+  </header>
+  <main class="auth-main">
+    <div class="auth-card">
+      <div class="auth-logo-circle">
+        <img src="assets/images/Camp Mayagay logo.png" alt="Camp Mayagay logo">
+      </div>
+      <h1>Login</h1>
+      <p class="subtitle">Welcome back to Camp Mayagay</p>
+
+      <div class="form-alert" id="loginAlert" role="alert"></div>
+
+      <form id="loginForm" novalidate>
+        <div class="form-group" id="identifierGroup">
+          <label for="identifier">Username or Email</label>
+          <input type="text" id="identifier" name="identifier" placeholder="Enter username or email" autocomplete="username">
+          <span class="field-error" id="identifierError"></span>
+        </div>
+
+        <div class="form-group" id="passwordGroup">
+          <label for="password">Password</label>
+          <div class="password-wrapper">
+            <input type="password" id="password" name="password" placeholder="Enter your password" autocomplete="current-password">
+            <button type="button" class="toggle-password" data-target="password" aria-label="Show password">Show</button>
+          </div>
+          <span class="field-error" id="passwordError"></span>
+        </div>
+
+        <div class="form-group" id="twoFaGroup" style="display:none;">
+          <label for="twoFaCode">Verification Code</label>
+          <input type="text" id="twoFaCode" name="twoFaCode" placeholder="6-digit code from your email" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+          <span class="field-error" id="twoFaCodeError"></span>
+          <p class="resend-code-row">
+            <button type="button" class="resend-code-btn" id="resendCodeBtn" disabled>Resend code in <span id="resendCodeTimer">60</span>s</button>
+          </p>
+        </div>
+
+        <div class="form-row-between" id="forgotPasswordRow">
+          <a href="forgot-password.html">Forgot Password?</a>
+        </div>
+
+        <button type="submit" class="btn-primary" id="loginSubmitBtn">Login</button>
+      </form>
+
+      <p class="auth-switch">Don't have an account yet? <a href="register.html">Sign up</a></p>
+    </div>
+  </main>
+
+<script src="assets/js/script.js?v=5"></script>
+</body>
+</html>

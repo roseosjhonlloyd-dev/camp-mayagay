@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Verification | Camp Mayagay</title>
+
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/forgot-password.css">
+</head>
+<body>
+    
+    <img src="assets/images/Background.png" alt="" class="bg-image">
+    <div class="bg-overlay"></div>
+    <main class="fp-main">
+    <div class="fp-outer-card">
+      <h1 class="fp-page-title">Forgot Password</h1>
+      <div class="fp-inner-card">
+        <div class="fp-icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+        </div>
+        <p class="fp-card-title">Email Verification</p>
+        <p class="fp-card-subtitle" id="verifySubtitle">Enter the 6-digit verification code sent to your email.</p>
+
+        
+        <form id="verifyForm" novalidate>
+          <div class="fp-otp-row" id="otpRow">
+            <input type="text" inputmode="numeric" maxlength="1" class="fp-otp-box" autocomplete="off">
+            <input type="text" inputmode="numeric" maxlength="1" class="fp-otp-box" autocomplete="off">
+            <input type="text" inputmode="numeric" maxlength="1" class="fp-otp-box" autocomplete="off">
+            <input type="text" inputmode="numeric" maxlength="1" class="fp-otp-box" autocomplete="off">
+            <input type="text" inputmode="numeric" maxlength="1" class="fp-otp-box" autocomplete="off">
+            <input type="text" inputmode="numeric" maxlength="1" class="fp-otp-box" autocomplete="off">
+          </div>
+          <span class="fp-field-error" id="verifyCodeError"></span>
+
+          <p class="fp-resend-row">
+            Didn't receive the code?
+            <button type="button" id="resendBtn">Resend Code <span id="resendTimer">(30s)</span></button>
+          </p>
+
+          <button type="submit" class="fp-btn-primary">Verify Code</button>
+        </form>
+
+        <div class="fp-divider">OR</div>
+        <a href="Login.html" class="fp-back-link">Back to Login</a>
+
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const boxes = Array.from(document.querySelectorAll('.fp-otp-box'));
+    const codeError = document.getElementById('verifyCodeError');
+
+    boxes.forEach((box, i) => {
+      box.addEventListener('input', () => {
+        box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
+        if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
+      });
+      box.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !box.value && i > 0) {
+          boxes[i - 1].focus();
+        }
+      });
+    });
+    if (boxes[0]) boxes[0].focus();
+
+    // Show which email the code was sent to, remembered from
+    // forgot-password.html. Falls back to generic text if not present
+    // (e.g. the guest refreshed straight to this page).
+    const rememberedEmail = sessionStorage.getItem('resetEmail');
+    if (rememberedEmail) {
+      document.getElementById('verifySubtitle').textContent =
+        'Enter the 6-digit code sent to ' + rememberedEmail + '.';
+    }
+
+    function startResendTimer() {
+      let seconds = 30;
+      const resendBtn = document.getElementById('resendBtn');
+      const resendTimer = document.getElementById('resendTimer');
+      resendBtn.disabled = true;
+      resendTimer.textContent = '(' + seconds + 's)';
+      const countdown = setInterval(() => {
+        seconds--;
+        if (seconds <= 0) {
+          clearInterval(countdown);
+          resendBtn.disabled = false;
+          resendTimer.textContent = '';
+        } else {
+          resendTimer.textContent = '(' + seconds + 's)';
+        }
+      }, 1000);
+    }
+    startResendTimer();
+
+    document.getElementById('resendBtn').addEventListener('click', function () {
+      var resendBtn = this;
+      resendBtn.disabled = true;
+      fetch('php/forgot-password.php?action=resend_code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({})
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (result) {
+          if (result.success) {
+            codeError.textContent = '';
+            boxes.forEach(function (b) { b.value = ''; });
+            if (boxes[0]) boxes[0].focus();
+            startResendTimer();
+          } else {
+            codeError.textContent = result.message || 'Could not resend the code.';
+            resendBtn.disabled = false;
+          }
+        })
+        .catch(function () {
+          codeError.textContent = 'Unable to reach the server. Please try again.';
+          resendBtn.disabled = false;
+        });
+    });
+
+    document.getElementById('verifyForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      codeError.textContent = '';
+
+      const code = boxes.map(function (b) { return b.value; }).join('');
+      if (code.length < 6) {
+        codeError.textContent = 'Enter all 6 digits.';
+        return;
+      }
+
+      const submitBtn = this.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+
+      fetch('php/forgot-password.php?action=verify_code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ code: code })
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (result) {
+          if (result.success) {
+            window.location.href = 'reset_password.html';
+          } else {
+            codeError.textContent = result.message || 'Incorrect code. Please try again.';
+            boxes.forEach(function (b) { b.value = ''; });
+            if (boxes[0]) boxes[0].focus();
+            submitBtn.disabled = false;
+          }
+        })
+        .catch(function () {
+          codeError.textContent = 'Unable to reach the server. Please try again.';
+          submitBtn.disabled = false;
+        });
+    });
+  </script>
+
+</body>
+</html>

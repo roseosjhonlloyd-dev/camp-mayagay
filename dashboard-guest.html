@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guest Dashboard | Camp Mayagay</title>
+
+<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=17">
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar">
+<div class="brand">
+    <img class="brand-mark" src="assets/images/Camp Mayagay logo.png" alt="Camp Mayagay logo">
+    <span class="brand-name">CAMP MAYAGAY</span>
+  </div>
+  
+  
+    <nav class="primary-nav" id="primaryNav">
+    <button class="nav-item active" data-view="home">
+      <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 11L12 4L20 11V20H4V11Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+      Home
+    </button>
+    <button class="nav-item" data-view="accommodation">
+      <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="9" width="16" height="11" stroke="currentColor" stroke-width="1.6"/><path d="M4 9L12 4L20 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+      Accommodation
+    </button>
+    <button class="nav-item" data-view="history">
+      <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.6"/><path d="M12 8V12L15 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+      Reservation History
+    </button>
+    <button class="nav-item" data-view="feedback">
+      <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 5H20V16H9L4 20V5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+      Feedback/ Concern
+    </button>
+  </nav>
+
+  <div class="nav-divider"></div>
+  <button class="nav-item settings-item" data-view="settings">
+    <div class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings-icon lucide-settings"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg></div>
+    Settings
+  </button>
+    <!-- Logout Button -->
+  <div class="sidebar-logout">
+    <button class="logout-btn" onclick="confirmLogout()">
+      <div class="icon-log-out">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M9 4H6a2 2 0 00-2 2v12a2 2 0 002 2h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M15 16l4-4-4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 12H9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      </div>
+      <span class="logout-text">
+        <strong>Logout</strong>
+        <small>Exit your account</small>
+      </span>
+      <span class="logout-arrow">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+    </button>
+  </div>
+
+  <a class="weather-widget-link" id="weatherWidgetLink"
+     href="https://www.google.com/search?q=weather+in+Barangay+Sampaloc%2C+Tanay%2C+Rizal%2C+Philippines"
+     target="_blank" rel="noopener"
+     aria-label="Check the weather in Barangay Sampaloc, Tanay on Google">
+    <div class="weather-card">
+      <svg class="weather-icon" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="10" r="4.5" fill="#d3a94a"/><path d="M8 17a4.5 4.5 0 010-9c.4 0 .8.05 1.2.14A5.5 5.5 0 0119 13.5 3.5 3.5 0 0115.5 17H8z" fill="#f4f1e6" opacity="0.9"/></svg>
+      <div>
+        <div class="weather-temp" id="weatherTemp">28°C</div>
+        <div class="weather-desc" id="weatherDesc">Partly cloudy</div>
+      </div>
+    </div>
+    <div class="weather-loc">Barangay Sampaloc, Tanay,<br>Philippines</div>
+  </a>
+</aside>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<nav class="mobile-tabbar" id="mobileTabbar">
+  <button class="nav-item tab-item active" data-view="home">
+    <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 11L12 4L20 11V20H4V11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+    <span class="tab-label">Home</span>
+  </button>
+  <button class="nav-item tab-item" data-view="accommodation">
+    <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="9" width="16" height="11" stroke="currentColor" stroke-width="1.8"/><path d="M4 9L12 4L20 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+    <span class="tab-label">Stay</span>
+  </button>
+  <button class="nav-item tab-item" data-view="history">
+    <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M12 8V12L15 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+    <span class="tab-label">Bookings</span>
+  </button>
+  <button class="nav-item tab-item" data-view="feedback">
+    <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 5H20V16H9L4 20V5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+    <span class="tab-label">Feedback</span>
+  </button>
+  <button class="nav-item tab-item" data-view="settings">
+    <div class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg></div>
+    <span class="tab-label">Settings</span>
+  </button>
+</nav>
+
+<main class="main">
+  <div class="topbar">
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu" type="button">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <label class="theme-switch">
+      <input type="checkbox" id="themeToggleInput">
+      <span class="theme-switch-track">
+        <svg class="theme-icon sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 3V5M12 19V21M3 12H5M19 12H21M5.6 5.6L7 7M17 17L18.4 18.4M18.4 5.6L17 7M7 17L5.6 18.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg class="theme-icon moon" viewBox="0 0 24 24" fill="none"><path d="M21 12.5A9 9 0 1111.5 3a7 7 0 009.5 9.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span class="theme-switch-thumb"></span>
+      </span>
+    </label>
+    <button class="icon-btn" id="notifBtn" aria-label="Notifications">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 10a6 6 0 1112 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 19a2 2 0 004 0" stroke="currentColor" stroke-width="1.5"/></svg>
+      <span class="dot" id="notifDot"></span>
+    </button>
+    <button class="avatar-btn" id="profileBtn" aria-label="Profile">MG</button>
+
+    <div class="dropdown" id="profileDropdown">
+      <div class="dropdown-title" id="profileDropdownName">Guest</div>
+      <button class="menu-item" type="button">My profile</button>
+      <button class="menu-item" type="button" data-view-link="settings">Settings</button>
+      <button class="menu-item" type="button" id="dropdownLogoutBtn">Log out</button>
+    </div>
+  </div>
+
+  <section class="view active" id="view-home">
+    <div class="hero">
+      <div class="hero-slider" id="heroSlider">
+        <div class="hero-slide active" style="background-image:url('assets/images/Outside.png')"></div>
+        <div class="hero-slide" style="background-image:url('assets/images/Mountain.png')"></div>
+        <div class="hero-slide" style="background-image:url('assets/images/House_DB.png')"></div>
+        <div class="hero-slide" style="background-image:url('assets/images/Mountain.png')"></div>
+      </div>
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <p class="hero-eyebrow">Welcome to</p>
+        <h1>CAMP MAYAGAY</h1>
+        <p>🌿 Your next camping getaway starts here at Camp Mayagay! Perfect for family, friends, or a peaceful escape. </p>
+        <button class="btn-primary" id="heroBookBtn">Book now</button>
+      </div>
+      <div class="hero-dots" id="heroDots"></div>
+    </div>
+    <div class="explore-panel">
+      <div class="explore-head">
+        <h2>Explore our accommodations</h2>
+        <button class="view-all" id="viewAllBtn">View all</button>
+      </div>
+      <div class="card-grid" id="homeCardGrid"></div>
+    </div>
+    <div class="trending-panel">
+      <div class="explore-head">
+        <h2>Trending accommodations</h2>
+      </div>
+      <div class="trending-scroll" id="trendingScroll"></div>
+    </div>
+    <div class="help-widget">
+      <input type="checkbox" id="helpWidgetToggle" class="help-widget-toggle-input">
+      <div class="help-widget-panel">
+        <p class="help-widget-title">Need Help?</p>
+        <p class="help-widget-text">We're here to help you with any questions or concerns.</p>
+        <button class="help-widget-btn" type="button" data-view-link="settings">Contact Us</button>
+      </div>
+      <label for="helpWidgetToggle" class="help-widget-fab" aria-label="Need help?">
+        <div class="icon-message-circle-question-mark"></div>
+      </label>
+    </div>
+  </section>
+
+  <section class="view" id="view-accommodation">
+    <div class="accom-head">
+      <div class="legend">
+        <span class="avail"><i></i>Available</span>
+        <span class="booked"><i></i>Booked</span>
+      </div>
+      <div class="date-picker">
+        <label>Enter date</label>
+        <div class="pill-input" id="monthPill"><span id="monthLabel">Month</span>
+          <input type="month" id="monthInput">
+        </div>
+        <div class="pill-input" id="dayPill"><span id="dayLabel">Day</span>
+          <input type="date" id="dayInput">
+        </div>
+        <button class="pill-clear" id="clearDateBtn" type="button">Clear</button>
+      </div>
+    </div>
+    <p class="filter-note" id="filterNote">Showing this week's availability. Pick a month and day to preview that week instead.</p>
+
+    <div class="accom-grid" id="accomGrid"></div>
+
+    <div class="next-row">
+      <button class="btn-prev-page" id="prevAccomBtn" type="button" style="display:none;">Previous</button>
+      <button class="btn-next" id="nextBtn" type="button">Next</button>
+    </div>
+  </section>
+
+  <section class="view" id="view-history">
+    <div class="panel">
+      <h2>Reservation history</h2>
+      <p class="sub">Bookings you've made during this session.</p>
+      <div id="historyList"></div>
+    </div>
+  </section>
+
+  <section class="view" id="view-feedback">
+    <div class="fb-hero">
+      <div class="fb-hero-text">
+        <h2>Feedback &amp; Concern</h2>
+        <p class="sub">We'd love to hear about your stay at Camp Mayagay &mdash; the good, the bad, and everything in between.</p>
+      </div>
+    </div>
+
+    <div class="fb-cols">
+      <div class="panel fb-form-panel">
+        <h4 class="fb-panel-title">Rate your overall experience</h4>
+        <div class="star-box"><div class="star-row" id="starRow"></div><p class="star-label" id="starLabel">Tap stars to select rating</p></div>
+
+        <h4 class="fb-panel-title" style="margin-top:26px;">Which room are you rating?</h4>
+        <p class="sub" style="margin:2px 0 12px;">Pick a stay so we know which room your rating is for (optional).</p>
+        <div class="field">
+          <select id="fbAccommodation">
+            <option value="">General / overall stay (no specific room)</option>
+          </select>
+        </div>
+
+        <h4 class="fb-panel-title" style="margin-top:26px;">Tell us more</h4>
+        <p class="sub" style="margin:2px 0 12px;">Description of concern or feedback</p>
+        <form class="stack" id="feedbackForm">
+          <div class="field">
+            <textarea id="fbMessage" placeholder="Write the feedback or any concern here..." style="min-height:150px;"></textarea>
+          </div>
+          <button class="btn-submit" type="submit">
+            <svg viewBox="0 0 24 24" fill="none" width="15" height="15" style="vertical-align:-2px; margin-right:6px;"><path d="M4 12L20 4L13 20L11 13L4 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            Submit feedback
+          </button>
+        </form>
+      </div>
+
+      <div class="panel fb-history-panel">
+        <h4 class="fb-panel-title">Your feedback history</h4>
+        <p class="sub" style="margin:2px 0 14px;">Everything you've shared with us so far</p>
+        <div class="feedback-list" id="feedbackList"></div>
+      </div>
+    </div>
+
+    <div class="panel fb-history-panel" style="margin-top:18px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px;">
+        <div>
+          <h4 class="fb-panel-title">All guest reviews</h4>
+          <p class="sub" style="margin:2px 0 0;">Feedback shared by other guests about their stay</p>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <div class="field" style="min-width:190px; margin:0;">
+            <select id="allFeedbackAccommodationFilter">
+              <option value="">All accommodations</option>
+            </select>
+          </div>
+          <div class="field" style="min-width:170px; margin:0;">
+            <select id="allFeedbackRatingFilter">
+              <option value="">All ratings</option>
+              <option value="5">5 stars</option>
+              <option value="4">4 stars</option>
+              <option value="3">3 stars</option>
+              <option value="2">2 stars</option>
+              <option value="1">1 star</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="feedback-list" id="allFeedbackList" style="margin-top:14px;"></div>
+    </div>
+  </section>
+
+  <section class="view" id="view-settings">
+    <div class="panel">
+      <h2>Settings</h2>
+      <div class="settings-top">
+        <p class="sub" style="margin:0;">Account setting &amp; preferences</p>
+      </div>
+      <div class="settings-cols">
+        <div class="resv-panel">
+          <h4 style="text-transform:none; font-size:16px;">Profile information</h4>
+          <p class="ro-label" style="margin-bottom:8px;">Profile photo</p>
+          <div class="profile-photo-row">
+            <div class="avatar-circle" id="avatarCircle">MG</div>
+            <button class="btn-change" type="button">Change<input type="file" accept="image/*" id="avatarInput"></button>
+          </div>
+          <div class="field"><label>Name</label><input type="text" id="settingsName" value=""></div>
+          <div class="field" style="margin-top:12px;"><label>Email</label><input type="email" id="settingsEmail" value="" readonly></div>
+          <div class="field" style="margin-top:12px;"><label>Contact</label><input type="tel" id="settingsContact" placeholder="09XX XXX XXXX"></div>
+          <div class="field" style="margin-top:12px;">
+            <label>Location</label>
+            <div class="input-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 21S5 14.5 5 9.5a7 7 0 0114 0C19 14.5 12 21 12 21Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="9.5" r="2.4" stroke="currentColor" stroke-width="1.6"/></svg>
+              <input type="text" id="settingsLocation" placeholder="City / Province, e.g. Tanay, Rizal">
+            </div>
+          </div>
+          <div class="field" style="margin-top:18px;">
+            <p class="ro-label" style="margin-bottom:8px;">Valid ID</p>
+            <div class="valid-id-row">
+              <div class="valid-id-preview" id="validIdPreview">
+                <svg viewBox="0 0 24 24" fill="none" width="22" height="22"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="10.5" r="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M6 16c.5-1.8 1.9-2.8 3.5-2.8s3 1 3.5 2.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M14 9h5M14 12h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              </div>
+              <div class="valid-id-info">
+                <span class="valid-id-status" id="validIdStatus">Not submitted</span>
+                <button class="btn-change" type="button">Upload ID<input type="file" accept="image/jpeg,image/png" id="validIdInput"></button>
+              </div>
+            </div>
+            <p class="ro-label" style="margin-top:6px; font-weight:400; text-transform:none; letter-spacing:0;">Upload a clear photo of a government-issued ID (driver's license, UMID, passport, etc.) for identity verification.</p>
+          </div>
+        </div>
+        <div class="resv-panel">
+          <h4 style="text-transform:none; font-size:16px;">Security</h4>
+          <div class="field">
+            <label>Current password</label>
+            <div class="pw-field-wrap">
+              <input type="password" id="currentPasswordInput" placeholder="Current password">
+              <button type="button" class="pw-toggle-btn" data-target="currentPasswordInput" aria-label="Show password">
+                <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M2 12C4 7 8 4 12 4S20 7 22 12C20 17 16 20 12 20S4 17 2 12Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="field" style="margin-top:12px;">
+            <label>New password</label>
+            <div class="pw-field-wrap">
+              <input type="password" id="newPasswordInput" placeholder="New password">
+              <button type="button" class="pw-toggle-btn" data-target="newPasswordInput" aria-label="Show password">
+                <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M2 12C4 7 8 4 12 4S20 7 22 12C20 17 16 20 12 20S4 17 2 12Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="field" style="margin-top:12px;">
+            <label>Confirm new password</label>
+            <div class="pw-field-wrap">
+              <input type="password" id="confirmNewPasswordInput" placeholder="Confirm new password">
+              <button type="button" class="pw-toggle-btn" data-target="confirmNewPasswordInput" aria-label="Show password">
+                <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M2 12C4 7 8 4 12 4S20 7 22 12C20 17 16 20 12 20S4 17 2 12Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+              </button>
+            </div>
+          </div>
+          <span class="pw-error" id="passwordChangeError"></span>
+          <button class="btn-submit" style="margin-top:16px;" id="passwordOkBtn" type="button">OK</button>
+        </div>
+      </div>
+      <div class="settings-foot">
+        <button class="logout-link" type="button" id="logoutBtn">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M9 4H6a2 2 0 00-2 2v12a2 2 0 002 2h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M15 16l4-4-4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 12H9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          Logout
+        </button>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-discard" type="button" id="discardSettingsBtn">Discard changes</button>
+          <button class="btn-submit" id="saveSettingsBtn">Save changes</button>
+        </div>
+      </div>
+
+      <div class="help-support">
+        <div class="help-head">
+          <div>
+            <h3>Help &amp; Support</h3>
+            <p class="sub" style="margin:0;">Need assistance? We're here to help.</p>
+          </div>
+          <button class="btn-contact-us" type="button" id="helpContactUsBtn">
+            <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M4 13v-1a8 8 0 0116 0v1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><rect x="2.5" y="13" width="4" height="6" rx="2" stroke="currentColor" stroke-width="1.7"/><rect x="17.5" y="13" width="4" height="6" rx="2" stroke="currentColor" stroke-width="1.7"/></svg>
+            Contact Us
+          </button>
+        </div>
+
+        <div class="help-grid">
+          <div class="help-card">
+            <div class="help-card-icon">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l2 5-2 1a12 12 0 006 6l1-2 5 2v3a2 2 0 01-2 2C10.6 21 3 13.4 3 6a2 2 0 012-2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            </div>
+            <p class="help-card-title">Contact Information</p>
+            <p class="help-card-line"><strong>Phone</strong><br>+63 0908 817 7632</p>         
+            <p class="help-card-line"><strong>Email</strong><br>roblesenterprise@yahoo.com</p>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card-icon">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.5 7-11.5A7 7 0 005 9.5C5 14.5 12 21 12 21z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="9.5" r="2.4" stroke="currentColor" stroke-width="1.6"/></svg>
+            </div>
+            <p class="help-card-title">Location</p>
+            <p class="help-card-line">Camp Mayagay,<br>Barangay Sampaloc,<br>Tanay, Rizal, Philippines</p>
+            <div class="help-map">
+              <iframe title="Map showing the general area of Camp Mayagay in Barangay Sampaloc, Tanay, Rizal" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.openstreetmap.org/export/embed.html?bbox=121.3348,14.5162,121.3948,14.5762&amp;marker=14.5462,121.3648&amp;layer=mapnik"></iframe>
+              <a class="help-map-link" href="https://www.openstreetmap.org/?mlat=14.5462&amp;mlon=121.3648#map=14/14.5462/121.3648" target="_blank" rel="noopener">View larger map</a>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card-icon">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7V12L15.5 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </div>
+            <p class="help-card-title">Operating Hours</p>
+            <p class="help-card-line">Monday &ndash; Sunday<br>8:00 AM &ndash; 5:00 PM</p>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card-icon">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="16" cy="9" r="2.4" stroke="currentColor" stroke-width="1.6"/><path d="M2 19c0-3 2.7-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14 14c2.3 0.3 3.7 2 3.7 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </div>
+            <p class="help-card-title">Connect With Us</p>
+            <p class="help-card-line">Follow us for updates and promotions!</p>
+
+            
+            <div class="help-social-row">
+  <a class="help-social-btn" href="https://www.facebook.com/CampMayagay" target="_blank" rel="noopener" aria-label="Facebook">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 21v-7.5H16l.4-3H13.5V8.4c0-.9.25-1.5 1.55-1.5H16.5V4.3C16.2 4.25 15.2 4.16 14 4.16c-2.4 0-4 1.46-4 4.15V10.5H7.5v3H10V21h3.5z"/></svg>
+    </a>
+      <a class="help-social-btn" href="https://www.instagram.com/campmayagay/" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="5" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.7"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor"/></svg>
+          </a>
+            <a class="help-social-btn" href="https://www.tiktok.com/@camp_mayagay_official" target="_blank" rel="noopener" aria-label="TikTok">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 3c.4 2 1.9 3.6 4 3.9v3.1c-1.5-.05-2.9-.5-4-1.3v6.4A6.1 6.1 0 118.2 9.1c.5 0 1 .05 1.5.15v3.2a2.9 2.9 0 102.1 2.8V3H15z"/></svg>
+            </a>
+          </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="view-notifications">
+    <h2 class="page-title">Notification &amp; Update</h2>
+    <div class="panel notif-panel">
+      <div class="notif-panel-head">
+        <h3>Notifications</h3>
+        <div class="notif-panel-actions">
+          <label class="notif-select-all"><input type="checkbox" id="notifSelectAll"> Select All</label>
+          <button class="btn-mark-read" id="notifMarkReadBtn" type="button">Mark as Read</button>
+          <button class="btn-delete-notif" id="notifDeleteBtn" type="button">Delete</button>
+        </div>
+      </div>
+      <div id="notifPageList"></div>
+    </div>
+
+    <div class="panel notif-detail-view" id="notifDetailView" hidden>
+      <div class="gm-toolbar">
+        <button class="gm-icon-btn" id="notifDetailBack" type="button" aria-label="Back to notifications" title="Back to notifications">
+          <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="gm-icon-btn" id="notifDetailDelete" type="button" aria-label="Delete" title="Delete">
+          <svg viewBox="0 0 24 24" fill="none" width="19" height="19"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <h2 class="gm-subject" id="notifDetailTitle"></h2>
+      <div class="gm-message">
+        <img class="gm-avatar" src="assets/images/Camp Mayagay logo.png" alt="">
+        <div class="gm-msg-main">
+          <div class="gm-msg-head">
+            <div><strong>Camp Mayagay</strong><span class="gm-to">to me</span></div>
+            <span class="gm-time" id="notifDetailTime"></span>
+          </div>
+          <div class="gm-body" id="notifDetailBody"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="view-receipt">
+    <button class="back-link" id="receiptBackBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+     <div class="receipt-card" id="receiptCard"></div>
+  </section>
+</main>
+
+<div class="modal-overlay" id="bookingModal">
+  <div class="modal has-close">
+    <button class="close-x" id="modalCloseX" type="button" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <div class="modal-title-row">
+      <h3>Booking Form</h3>
+      <p class="msub" id="modalCabinSub">Nipa Hut 1</p>
+    </div>
+    <div class="field"><label for="guestName">Guest name</label><input type="text" id="guestName" placeholder="Juan Dela Cruz"></div>
+    <div class="field" style="margin-top:12px;"><label for="guestPhone">Contact number</label><input type="tel" id="guestPhone" placeholder="09XX XXX XXXX"></div>
+    <div class="field" style="margin-top:12px;"><label for="guestEmail">Email</label><input type="email" id="guestEmail" placeholder="you@email.com"></div>
+    <div class="field-row" style="margin-top:12px;">
+      <div class="field"><label>Check in time</label><div class="fixed-time-box">2:00 PM</div></div>
+      <div class="field"><label>Check out time</label><div class="fixed-time-box">12:00 NN</div></div>
+    </div>
+    <div class="extras-row" style="margin-top:6px;">
+      <label class="extras-check" style="font-weight:600;">Number of days/nights</label>
+      <div class="stepper" data-stepper="nights">
+        <button type="button" data-step="-1">&minus;</button><span id="qtyNights">1</span><button type="button" data-step="1">&plus;</button>
+      </div>
+    </div>
+    <div class="amenities-box" id="bookingAmenitiesBox">
+      <span class="amenities-title">Included amenities</span>
+      <div class="amenities-list" id="bookingAmenities">
+        <span class="amenity-chip">Complete beddings</span>
+        <span class="amenity-chip">Kettle</span>
+        <span class="amenity-chip">Plates</span>
+        <span class="amenity-chip">Mugs</span>
+      </div>
+    </div>
+    <div style="margin-top:6px;">
+      <div class="extras-row">
+        <label class="extras-check"><input type="checkbox" id="chkPerson" checked> Add person <span class="extras-price">₱150/person</span></label>
+        <div class="stepper" data-stepper="person">
+          <button type="button" data-step="-1">&minus;</button><span id="qtyPerson">1</span><button type="button" data-step="1">&plus;</button>
+        </div>
+      </div>
+      <div class="extras-row">
+        <label class="extras-check"><input type="checkbox" id="chkBlanket" checked> Blanket <span class="extras-price">₱50/blanket</span></label>
+        <div class="stepper" data-stepper="blanket">
+          <button type="button" data-step="-1">&minus;</button><span id="qtyBlanket">1</span><button type="button" data-step="1">&plus;</button>
+        </div>
+      </div>
+      <div class="extras-row">
+        <label class="extras-check"><input type="checkbox" id="chkPillow" checked> Pillow <span class="extras-price">₱50/pillow</span></label>
+        <div class="stepper" data-stepper="pillow">
+          <button type="button" data-step="-1">&minus;</button><span id="qtyPillow">1</span><button type="button" data-step="1">&plus;</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-confirm" id="modalConfirm" style="flex:1;">Proceed to payment</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="paymentModal">
+  <div class="modal wide">
+    <div class="modal-title-row">
+      <h3 style="text-align:left; margin-bottom:4px;">Payment method</h3>
+      <div class="pay-total-row">
+        <span>Total amount due</span>
+        <span id="paymentTotalAmount">₱0</span>
+      </div>
+    </div>
+
+    <div class="pay-block">
+      <h4>GCash: Pay with Reference Number</h4>
+      <div class="gcash-row">
+        <div class="gcash-brand">
+          <span class="pay-logo gcash">GC</span>
+          <div><span class="gname">Pay with GCash</span><div class="gcash-example">Example Number: +639544726346</div></div>
+        </div>
+        <input type="text" id="gcashRef" placeholder="GCash Reference Number">
+      </div>
+      <p class="hint">Send payment and input the Reference ID from the GCash app here.</p>
+    </div>
+
+    <div class="pay-block">
+      <h4>Bank Transfer</h4>
+      <div class="field" style="margin-bottom:12px; display:none;">
+        <label for="bankSelect">Select bank</label>
+        <select id="bankSelect">
+          <option value="bdo">BDO</option>
+        </select>
+      </div>
+      <div class="bank-row">
+        <div class="bank-logos"><span class="bdo" id="bankLogo">BDO</span></div>
+        <div class="bank-details">
+          <strong>Account Name: JESUSA G MONTAGUE</strong>
+          Account Number: <span id="bankAccNum">007170244001</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pay-block">
+      <h4>Upload Payment Receipt</h4>
+      <div class="upload-section">
+        <div class="upload-drop" id="uploadDrop">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4M12 4L7 9M12 4L17 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16V18C4 19.1 4.9 20 6 20H18C19.1 20 20 19.1 20 18V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span class="u-main">Drag &amp; drop your receipt here</span>
+          <span class="u-sub">or click to upload</span>
+          <span class="u-sub">Accepted files: jpeg/png (Max size: 5MB)</span>
+          <span class="u-file" id="uploadFileName"></span>
+          <img id="receiptPreview" class="receipt-preview" alt="Receipt preview" style="display:none;">
+        </div>
+        <input type="file" id="receiptInput" accept="image/jpeg,image/png" style="display:none;">
+        <div class="qr-box">
+          <div class="qr-img"><img class="qr-real" src="assets/images/instapay-qr.png" alt="InstaPay QR code">
+            <svg viewBox="0 0 76 76" width="100%" height="100%"><rect width="76" height="76" fill="#fff"/><g fill="#111">
+              <rect x="4" y="4" width="18" height="18"/><rect x="8" y="8" width="10" height="10" fill="#fff"/><rect x="11" y="11" width="4" height="4"/>
+              <rect x="54" y="4" width="18" height="18"/><rect x="58" y="8" width="10" height="10" fill="#fff"/><rect x="61" y="11" width="4" height="4"/>
+              <rect x="4" y="54" width="18" height="18"/><rect x="8" y="58" width="10" height="10" fill="#fff"/><rect x="11" y="61" width="4" height="4"/>
+              <rect x="26" y="4" width="4" height="4"/><rect x="34" y="4" width="4" height="4"/><rect x="42" y="8" width="4" height="4"/>
+              <rect x="26" y="12" width="4" height="4"/><rect x="34" y="16" width="4" height="4"/><rect x="26" y="26" width="6" height="6"/>
+              <rect x="36" y="26" width="4" height="4"/><rect x="44" y="30" width="4" height="4"/><rect x="26" y="36" width="4" height="4"/>
+              <rect x="34" y="38" width="6" height="6"/><rect x="44" y="42" width="4" height="4"/><rect x="54" y="26" width="4" height="4"/>
+              <rect x="62" y="30" width="6" height="6"/><rect x="54" y="40" width="4" height="4"/><rect x="4" y="30" width="4" height="4"/>
+              <rect x="12" y="36" width="4" height="4"/><rect x="4" y="44" width="6" height="6"/><rect x="26" y="54" width="4" height="4"/>
+              <rect x="34" y="58" width="6" height="6"/><rect x="44" y="54" width="4" height="4"/><rect x="54" y="58" width="4" height="4"/>
+              <rect x="62" y="62" width="8" height="8"/><rect x="44" y="66" width="4" height="4"/>
+            </g></svg>
+          </div>
+          <div class="qr-label">InstaPay<br>scan with GCash App</div>
+        </div>
+      </div>
+      <p class="hint">Your reservation will be confirmed once the receipt is verified.</p>
+    </div>
+
+    <div class="pay-block" id="tncBlock">
+      <h4>Terms and Conditions of Payment</h4>
+      <ol class="tnc-list">
+        <li>To confirm and secure your reservation at Camp Mayagay, a 50% down payment of the total booking amount is required. The reservation will remain pending until the 50% payment has been successfully received and verified by the management.</li>
+        <li>After making the payment, you must upload a clear screenshot or receipt of the payment transaction through the booking system. The uploaded proof of payment should clearly show the payment amount, transaction/reference number, date, and other relevant payment details needed for verification.</li>
+        <li>The Camp Mayagay management will review and verify the submitted payment receipt. Only verified payments will result in a confirmed reservation. If the payment receipt is unclear, incomplete, or cannot be verified, the guest may be contacted to provide a valid proof of payment.</li>
+        <li>The remaining 50% balance must be paid according to the payment schedule provided by Camp Mayagay or before/at the agreed check-in date.</li>
+        <li>By submitting the reservation, payment, and proof of payment, the guest acknowledges and agrees to these payment terms and understands that the 50% down payment and valid payment receipt are required to confirm the booking.</li>
+      </ol>
+      <label class="extras-check">
+        <input type="checkbox" id="tncCheck">
+        I have read and agree to the Terms and Conditions of Payment above.
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="paymentBack" type="button">Back</button>
+      <button class="btn-confirm" id="paymentConfirm" type="button" disabled>Reserved</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="accReviewsModal">
+  <div class="modal wide has-close">
+    <button class="close-x" id="accReviewsCloseX" type="button" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <div class="modal-title-row">
+      <h3 id="accReviewsTitle">Reviews</h3>
+    </div>
+    <div class="acc-rev-summary" id="accReviewsSummary"></div>
+    <div class="acc-rev-list" id="accReviewsList"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="cancelReasonModal">
+  <div class="modal has-close">
+    <button class="close-x" id="cancelReasonCloseX" type="button" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <div class="modal-title-row">
+      <h3>Cancel this booking?</h3>
+      <p class="msub">Select a reason so our team can review your cancellation.</p>
+    </div>
+    <div class="stack" id="cancelReasonList">
+      <label class="extras-check"><input type="radio" name="cancelReasonChoice" value="Change of plans or schedule conflict">Change of plans or schedule conflict</label>
+      <label class="extras-check"><input type="radio" name="cancelReasonChoice" value="Booked the wrong dates or accommodation">Booked the wrong dates or accommodation</label>
+      <label class="extras-check"><input type="radio" name="cancelReasonChoice" value="Found a better rate elsewhere">Found a better rate elsewhere</label>
+      <label class="extras-check"><input type="radio" name="cancelReasonChoice" value="Weather or trip safety concerns">Weather or trip safety concerns</label>
+      <label class="extras-check"><input type="radio" name="cancelReasonChoice" value="Issue with my payment">Issue with my payment</label>
+      <label class="extras-check"><input type="radio" name="cancelReasonChoice" value="No longer able to travel">No longer able to travel</label>
+      <label class="extras-check"><input type="radio" name="cancelReasonChoice" value="Other">Other (please specify)</label>
+    </div>
+    <div class="field" id="cancelReasonOtherWrap" style="display:none; margin-top:10px;">
+      <textarea id="cancelReasonOtherInput" placeholder="Tell us more..." style="min-height:80px;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="cancelReasonBack" type="button">Keep booking</button>
+      <button class="btn-confirm" id="cancelReasonConfirm" type="button" disabled>Confirm cancellation</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="thankyouModal">
+  <div class="modal">
+    <div class="thankyou">
+      <div class="thankyou-icon-wrap">
+        <svg class="thankyou-icon" viewBox="0 0 24 24" fill="none"><path d="M3 7L11.2 13.1C11.7 13.5 12.3 13.5 12.8 13.1L21 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.7"/></svg>
+      </div>
+      <h3>Thank you for booking with<br>Camp Mayagay.</h3>
+      <p id="thankyouSummary" style="display:none;"></p>
+      <p class="note">Check your inbox: We have sent your official payment receipt and booking confirmation voucher to your registered email address.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-confirm" id="thankyouDone" type="button" style="flex:1;">Home</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span id="toastText">Done</span>
+  <a class="auth-switch" href="php/logout.php">Log out</a>
+</div>
+
+<script src="assets/js/dashboard-guest.js?v=19"></script>
+<script>
+  (function () {
+    var okBtn = document.getElementById('passwordOkBtn');
+    if (!okBtn) return;
+
+    okBtn.addEventListener('click', function () {
+      var currentInput = document.getElementById('currentPasswordInput');
+      var newInput = document.getElementById('newPasswordInput');
+      var confirmInput = document.getElementById('confirmNewPasswordInput');
+      var errorEl = document.getElementById('passwordChangeError');
+
+      var current = currentInput.value.trim();
+      var newPass = newInput.value.trim();
+      var confirmPass = confirmInput.value.trim();
+
+      errorEl.textContent = '';
+
+      if (!current || !newPass || !confirmPass) {
+        errorEl.textContent = 'Please fill in all three password fields.';
+        return;
+      }
+      if (newPass.length < 8) {
+        errorEl.textContent = 'New password must be at least 8 characters.';
+        return;
+      }
+      if (newPass !== confirmPass) {
+        errorEl.textContent = 'New password and confirm password do not match.';
+        return;
+      }
+      if (newPass === current) {
+        errorEl.textContent = 'New password must be different from current password.';
+        return;
+      }
+      currentInput.value = '';
+      newInput.value = '';
+      confirmInput.value = '';
+      errorEl.textContent = '';
+
+      var toast = document.getElementById('toast');
+      var toastText = document.getElementById('toastText');
+      if (toast && toastText) {
+        toastText.textContent = 'Password updated';
+        toast.classList.add('show');
+        setTimeout(function () { toast.classList.remove('show'); }, 2600);
+      } else {
+        alert('Password updated');
+      }
+    });
+  })();
+</script>
+</body>
+</html>

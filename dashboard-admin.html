@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard | Camp Mayagay</title>
+<link rel="stylesheet" href="assets/css/dashboard-admin.css?v=4">
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <img class="brand-mark" src="assets/images/Camp Mayagay logo.png" alt="Camp Mayagay logo">
+    <span class="brand-name">CAMP MAYAGAY</span>
+  </div>
+
+  <nav class="primary-nav" id="primaryNav">
+    <button class="nav-item active" data-view="dashboard" type="button">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 11L12 4L20 11V20H4V11Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-item" data-view="security" type="button">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      Security Management
+    </button>
+    <button class="nav-item" data-view="reservation" type="button">
+      <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M4 9H20" stroke="currentColor" stroke-width="1.6"/></svg>
+      Reservation
+    </button>
+    <button class="nav-item" data-view="accommodations" type="button">
+      <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="9" width="16" height="11" stroke="currentColor" stroke-width="1.6"/><path d="M4 9L12 4L20 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Accommodations
+    </button>
+    <button class="nav-item" data-view="guest-record" type="button">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.6"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Guest Record
+    </button>
+    <button class="nav-item" data-view="notifications" type="button">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 10a6 6 0 1112 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 19a2 2 0 004 0" stroke="currentColor" stroke-width="1.6"/></svg>
+      Notifications
+    </button>
+    <button class="nav-item" data-view="feedback" type="button">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 5H20V16H9L4 20V5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      Feedback and Concern
+    </button>
+    <button class="nav-item" data-view="reports" type="button">
+      <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 8H16M8 12H16M8 16H12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Reports
+    </button>
+    <button class="nav-item" data-view="settings" type="button">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 00-2-1.2L14.2 3H9.8l-.4 2.6a7 7 0 00-2 1.2l-2.3-.9-2 3.4 2 1.5A7 7 0 005 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-.9c.6.5 1.3.9 2 1.2l.4 2.6h4.4l.4-2.6a7 7 0 002-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+      Settings
+    </button>
+  </nav>
+
+  <a class="logout-nav-item" href="php/logout.php">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M9 4H6a2 2 0 00-2 2v12a2 2 0 002 2h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M15 16l4-4-4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 12H9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+    Logout
+  </a>
+</aside>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<main class="main">
+
+  <section class="view active" id="view-dashboard">
+    <div class="content-shell">
+
+      <div class="topbar">
+        <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu" type="button">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <p class="summary-label">Total Reservations</p>
+          <div class="summary-row">
+            <span class="summary-icon green">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="16" cy="9" r="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14 14c2.5 0.3 4 2 4 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </span>
+            <span class="summary-number" id="statTotalReservations">28</span>
+          </div>
+        </div>
+        <div class="summary-card">
+          <p class="summary-label">Check-ins Today</p>
+          <div class="summary-row">
+            <span class="summary-icon blue">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M3 12H21V18H3V12Z" stroke="currentColor" stroke-width="1.6"/><path d="M4 12V8C4 6.9 4.9 6 6 6H14C15.1 6 16 6.9 16 8V12" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="9.5" r="1.2" fill="currentColor"/><path d="M3 18V20M21 18V20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </span>
+            <span class="summary-number" id="statCheckinsToday">10</span>
+          </div>
+        </div>
+        <div class="summary-card">
+          <p class="summary-label">Check-out Today</p>
+          <div class="summary-row">
+            <span class="summary-icon red">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M9 12H16M16 12L13 9M16 12L13 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="summary-number" id="statCheckoutToday">16</span>
+          </div>
+        </div>
+        <div class="summary-card">
+          <p class="summary-label">Total Guests</p>
+          <div class="summary-row">
+            <span class="summary-icon green">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.6"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </span>
+            <span class="summary-number" id="statTotalGuests">28</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-head"><h3>Reservations Overview</h3></div>
+          <div class="chart-wrap">
+            <svg class="chart-svg" id="trendChart" viewBox="0 0 700 220" preserveAspectRatio="xMidYMid meet"></svg>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Recent Reservations</h3>
+            <a class="view-all-link" data-view-link="reservation">View All</a>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr><th>Guest Name</th><th>Check-in</th><th>Check-out</th><th>Status</th></tr>
+            </thead>
+            <tbody id="recentReservationsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-head"><h3>Accommodation Availability</h3></div>
+          <div class="avail-grid" id="availabilityGrid"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h3>System Notifications</h3>
+            <a class="view-all-link" data-view-link="notifications">View All</a>
+          </div>
+          <div id="systemNotifList"></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="view" id="view-security">
+    <h2 class="page-title">Security Management</h2>
+
+    <div class="summary-grid" id="securitySummaryGrid" data-mode="users">
+      <div class="summary-card" id="summaryCard1">
+        <div class="summary-icon green">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="16" cy="9" r="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14 14c2.5 0.3 4 2 4 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <p class="summary-label" id="summaryLabel1">Total Users</p>
+          <p class="summary-number" id="statTotalUsers">24</p>
+          <p class="summary-sub" id="summarySub1">Active Account</p>
+        </div>
+      </div>
+      <div class="summary-card" id="summaryCard2">
+        <div class="summary-icon green">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <p class="summary-label" id="summaryLabel2">Admin Accounts</p>
+          <p class="summary-number" id="statAdminAccounts">5</p>
+          <p class="summary-sub" id="summarySub2">Full Access</p>
+        </div>
+      </div>
+      <div class="summary-card" id="summaryCard3">
+        <div class="summary-icon green">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.6"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <p class="summary-label" id="summaryLabel3">Staff Accounts</p>
+          <p class="summary-number" id="statStaffAccounts">5</p>
+          <p class="summary-sub" id="summarySub3">Limited Access</p>
+        </div>
+      </div>
+      <div class="summary-card" id="summaryCard4">
+        <div class="summary-icon green">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 10V7a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.6"/></svg>
+        </div>
+        <div>
+          <p class="summary-label" id="summaryLabel4">Guest Accounts</p>
+          <p class="summary-number" id="statGuestAccounts">7</p>
+          <p class="summary-sub" id="summarySub4">Guest Access</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-row" id="securityTabs">
+      <button class="tab-btn active" data-tab="users" type="button">User Management</button>
+      <button class="tab-btn" data-tab="roles" type="button">Roles &amp; Permissions</button>
+      <button class="tab-btn" data-tab="login-activity" type="button">Login Activity</button>
+      <button class="tab-btn" data-tab="security-setting" type="button">Account Security</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-users">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3 style="margin-bottom:2px;">User Accounts</h3>
+            <p style="font-size:12.5px; color:#ffffff; margin:0;">View and manage all user accounts in the system</p>
+          </div>
+          <button class="btn-primary" type="button" id="addUserBtn">+ Add New User</button>
+        </div>
+        <div class="filter-row">
+          <input type="text" id="userSearchInput" placeholder="Search by name, username, or email...">
+          <select id="userRoleFilter">
+            <option value="">All Roles</option>
+            <option value="admin">Admin</option>
+            <option value="staff">Staff</option>
+            <option value="guest">Guest</option>
+          </select>
+          <select id="userStatusFilter">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="disabled">Disabled</option>
+          </select>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>User ID</th><th>Full Name</th><th>Email</th><th>Role</th><th>Status</th><th>Valid ID</th><th>Date Created</th><th>Action</th></tr>
+          </thead>
+          <tbody id="userTableBody">
+            <tr><td colspan="8" class="empty-admin-note">Loading users...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-roles">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3 style="margin-bottom:2px;">Roles &amp; Permission</h3>
+            <p style="font-size:12.5px; color:#ffffff; margin:0;">Roles are assigned per user in User Management. This overview reflects the roles currently in use.</p>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>Role Name</th><th>Descriptions</th><th>Users</th><th>Permission</th></tr>
+          </thead>
+          <tbody id="roleTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3 style="margin-bottom:2px;">Role &amp; Permission</h3>
+            <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Manage all user roles and their system access control. Click a checkmark or X to toggle access.</p>
+          </div>
+        </div>
+        <table class="data-table" id="permissionTable">
+          <thead>
+            <tr><th>Access Module</th><th>Admin</th><th>Staff</th><th>Guest</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination-row" id="accessModulePagination"></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-login-activity">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3 style="margin-bottom:2px;">Login Activity</h3>
+            <p style="font-size:12.5px; color:#ffffff; margin:0;">Monitor and review user logins and account access.</p>
+          </div>
+        </div>
+        <div class="filter-row">
+          <input type="text" id="loginSearchInput" placeholder="Search by user, email address...">
+          <select id="loginRoleFilter">
+            <option value="">All Users</option>
+            <option value="Admin">Admin</option>
+            <option value="Staff">Staff</option>
+            <option value="Guest">Guest</option>
+          </select>
+          <input type="date" id="loginDateFromFilter" title="From Date">
+          <input type="date" id="loginDateToFilter" title="To Date">
+          <select id="loginStatusFilter">
+            <option value="">All Status</option>
+            <option value="success">Success</option>
+            <option value="failed">Failed</option>
+          </select>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>Login ID</th><th>User</th><th>Role</th><th>Status</th><th>Device/Browser</th><th>Location</th><th>Login Time</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="loginActivityBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-security-setting">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3 style="margin-bottom:2px;">Account Security</h3>
+            <p style="font-size:12.5px; color:#ffffff; margin:0;">Manage security settings and protect user accounts.</p>
+          </div>
+        </div>
+
+        <div class="account-security-grid">
+          <div class="account-security-main">
+            <div class="setting-row-split">
+              <div class="setting-row setting-row-half">
+                <div class="setting-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                <div class="setting-text">
+                  <p class="setting-title">Two-Factor Authentication (2FA)</p>
+                  <p class="setting-desc">Require 2FA for admin and staff accounts.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="toggle2fa" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-row setting-row-half">
+                <div class="setting-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 8H16M8 12H16M8 16H12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+                <div class="setting-text">
+                  <p class="setting-title">Activity Logging</p>
+                  <p class="setting-desc">Records user activities and system access.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="toggleActivityLog" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 10V7a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.6"/></svg></div>
+              <div class="setting-text">
+                <p class="setting-title">Password Policy</p>
+                <p class="setting-desc">Enforce strong password requirements.</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="togglePasswordPolicy" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.6"/><path d="M12 8V12L15 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+              <div class="setting-text">
+                <p class="setting-title">Session Timeout</p>
+                <p class="setting-desc">Automatically log out inactive users.</p>
+              </div>
+              <select class="setting-select" id="sessionTimeoutSelect">
+                <option>15 Minutes</option>
+                <option selected>30 Minutes</option>
+                <option>60 Minutes</option>
+              </select>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 10V7a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.6"/></svg></div>
+              <div class="setting-text">
+                <p class="setting-title">Login Attempt</p>
+                <p class="setting-desc">Lock account after multiple failed attempts.</p>
+              </div>
+              <select class="setting-select" id="loginAttemptSelect">
+                <option>3 attempts</option>
+                <option selected>5 attempts</option>
+                <option>10 attempts</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="panel alert-box account-security-alerts">
+            <div class="alert-box-head">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L21 19H3L12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 10V14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="16.5" r="0.9" fill="currentColor"/></svg>
+              Security Alerts
+            </div>
+            <div id="settingsAlertList"></div>
+            <a class="view-all-link" id="viewAllAlertsLink" href="#" style="display:inline-block; margin-top:8px; cursor:pointer;">View All Alerts &raquo;</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="view-reservation">
+    <h2 class="page-title">Reservation</h2>
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="16" cy="9" r="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14 14c2.5 0.3 4 2 4 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+        <div><p class="summary-label">Total Reservations</p><p class="summary-number" id="resStatTotalReservations">0</p><p class="summary-sub">All Time</p></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M7 12L10.5 15.5L17 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/></svg></div>
+        <div><p class="summary-label">Confirmed</p><p class="summary-number" id="statConfirmedReservations">0</p><p class="summary-sub">This month</p></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7V12L15.5 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+        <div><p class="summary-label">Pending</p><p class="summary-number" id="statPendingReservations">0</p><p class="summary-sub">This month</p></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M9 9L15 15M15 9L9 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+        <div><p class="summary-label">Cancelled</p><p class="summary-number" id="statCancelledReservations">0</p><p class="summary-sub">This month</p></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7V17M9 9.5C9 8 10.3 7 12 7C13.7 7 15 8 15 9.5C15 11.5 12 11.5 12 11.5C12 11.5 9 11.5 9 14.5C9 16 10.3 17 12 17C13.7 17 15 16 15 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+         <div><p class="summary-label">Total Revenue</p><p class="summary-number" id="statReservationRevenue" style="font-size:22px;">&#8369;0.00</p><p class="summary-sub">This month</p></div>
+      </div>
+    </div>
+
+    <div class="panel calendar-panel">
+      <div class="panel-head">
+        <div>
+          <h3 style="margin-bottom:2px;">Reservation Calendar</h3>
+          <p style="font-size:12.5px; color:#ffffff; margin:0;">Only confirmed reservations appear here. Select a date to see check-in, check-out, and room availability.</p>
+        </div>
+        <button class="btn-primary" type="button" id="openWalkInModalBtn">+ Add Walk-in Reservation</button>
+      </div>
+
+      <div class="calendar-layout">
+        <div class="calendar-col">
+          <div class="calendar-nav">
+            <button type="button" id="calPrevMonthBtn" class="calendar-nav-btn" aria-label="Previous month">&lsaquo;</button>
+            <span id="calMonthLabel" class="calendar-month-label"></span>
+            <button type="button" id="calNextMonthBtn" class="calendar-nav-btn" aria-label="Next month">&rsaquo;</button>
+          </div>
+          <div class="calendar-weekdays">
+            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+          </div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+          <div class="calendar-legend">
+            <span><i class="dot dot-in"></i> Check-In</span>
+            <span><i class="dot dot-out"></i> Check-Out</span>
+          </div>
+        </div>
+
+        <div class="calendar-detail-col">
+          <div class="calendar-detail-top">
+            <h4 id="calSelectedDateLabel" class="calendar-detail-title">Today</h4>
+            <div class="calendar-mode-toggle" id="calDetailModeToggle">
+              <button type="button" class="cal-mode-btn active" data-mode="date">Selected Date</button>
+              <button type="button" class="cal-mode-btn" data-mode="all">All Pending</button>
+            </div>
+          </div>
+
+          <div class="calendar-detail-section">
+            <p class="calendar-detail-heading">Checking In</p>
+            <div id="calCheckinList" class="calendar-detail-list"></div>
+          </div>
+
+          <div class="calendar-detail-section">
+            <p class="calendar-detail-heading">Checking Out</p>
+            <div id="calCheckoutList" class="calendar-detail-list"></div>
+          </div>
+
+          <div class="calendar-detail-section">
+            <p class="calendar-detail-heading">Room Availability</p>
+            <div id="calAvailabilityGrid" class="calendar-avail-grid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3 style="margin-bottom:2px;">Reservation List</h3>
+          <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Manage all reservation transactions made by guests.</p>
+        </div>
+        <button class="btn-primary" type="button" id="refreshReservationsBtn">&#8635; Refresh</button>
+      </div>
+
+      <div class="filter-row">
+        <input type="text" id="resSearchInput" placeholder="Search by guest name, reference no...">
+        <input type="date" id="resCheckInFilter" title="Check-in">
+        <input type="date" id="resCheckOutFilter" title="Check-out date">
+        <select id="resStatusFilter">
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="completed">Completed</option>
+          <option value="declined">Declined</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Reference No.</th><th>Guest Name</th><th>Accommodation</th><th>Check-in</th><th>Check-out</th>
+            <th>Guests</th><th>Total Amount</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="reservationTableBody">
+          <tr><td colspan="9" class="empty-admin-note">Loading reservations...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="modal-overlay hidden" id="reservationModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="reservationModalClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title">Reservation Details</p>
+      <div class="modal-two-col">
+        <div>
+          <p class="modal-section-title">Reservation Information</p>
+          <div id="reservationModalInfo"></div>
+        </div>
+        <div>
+          <p class="modal-section-title">Proof of Payment</p>
+          <div class="modal-proof-card" id="reservationModalProof"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" id="reservationModalCloseBtn" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay hidden" id="reportDetailModal">
+    <div class="modal-box" style="max-width:860px; width:92%;">
+      <button class="modal-close-btn" id="reportDetailClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title" id="reportDetailTitle">Report</p>
+      <div style="max-height:60vh; overflow:auto;">
+        <table class="data-table">
+          <thead id="reportDetailHead"></thead>
+          <tbody id="reportDetailBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="reportDetailCloseBtn" type="button">Close</button>
+        <button class="btn-primary" id="reportDetailDownloadBtn" type="button">Download CSV</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="reportsPinModal">
+    <div class="modal-box pin-modal-box">
+      <button class="modal-close-btn" id="reportsPinClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <div class="pin-modal-icon">
+        <svg viewBox="0 0 24 24" fill="none" width="26" height="26"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 10V7a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
+      <p class="modal-title" style="text-align:center;">Enter Security PIN</p>
+      <p style="font-size:12.5px; color:var(--ink-soft); text-align:center; margin:-8px 0 18px;">Reports contain sensitive data. Enter your 4-digit PIN to continue.</p>
+      <div class="pin-digit-row">
+        <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" autocomplete="off">
+        <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" autocomplete="off">
+        <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" autocomplete="off">
+        <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" autocomplete="off">
+      </div>
+      <span class="pw-error" id="reportsPinError" style="display:block; text-align:center; margin-top:10px;"></span>
+      <div class="modal-footer" style="justify-content:center;">
+        <button class="btn-secondary" id="reportsPinCancelBtn" type="button">Cancel</button>
+        <button class="btn-primary" id="reportsPinConfirmBtn" type="button">Unlock</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="userModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="userModalClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title" id="userModalTitle">Add New User</p>
+      <form id="userForm" class="settings-form">
+        <input type="hidden" id="userFormId">
+        <div class="setting-row-split">
+          <label>First Name<input type="text" id="userFormFirstname" required></label>
+          <label>Last Name<input type="text" id="userFormLastname" required></label>
+        </div>
+        <div class="setting-row-split">
+          <label>Username<input type="text" id="userFormUsername" required></label>
+          <label>Email<input type="email" id="userFormEmail" required></label>
+        </div>
+        <div class="setting-row-split">
+          <label>Contact Number<input type="text" id="userFormContact"></label>
+          <label>Role
+            <select id="userFormRole">
+              <option value="guest">Guest</option>
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
+        </div>
+        <div class="setting-row-split">
+          <label>Status
+            <select id="userFormStatus">
+              <option value="active">Active</option>
+              <option value="disabled">Disabled</option>
+            </select>
+          </label>
+          <label id="userFormPasswordLabel">Password<input type="password" id="userFormPassword" placeholder="Leave blank to auto-generate"></label>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="userModalCancelBtn" type="button">Cancel</button>
+          <button class="btn-primary" type="submit">Save User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="editAdminProfileModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="editAdminProfileClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title">Edit Profile</p>
+      <form id="editAdminProfileForm" class="settings-form">
+        <label>Full Name<input type="text" id="editAdminProfileName" required></label>
+        <label>Email<input type="email" id="editAdminProfileEmail" readonly></label>
+        <label>Contact Number<input type="text" id="editAdminProfileContact"></label>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="editAdminProfileCancelBtn" type="button">Cancel</button>
+          <button class="btn-primary" type="submit">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="accommodationModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="accommodationModalClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title" id="accommodationModalTitle">Add Accommodation</p>
+      <form id="accommodationForm" class="settings-form">
+        <input type="hidden" id="accFormId">
+        <input type="hidden" id="accFormExistingImage">
+        <label>Accommodation Name<input type="text" id="accFormName" required></label>
+        <label>Photo
+          <input type="file" id="accFormImage" accept="image/png,image/jpeg,image/webp">
+        </label>
+        <img id="accFormImagePreview" src="" alt="" style="display:none; max-width:160px; max-height:120px; border-radius:8px; margin:-6px 0 6px; object-fit:cover;">
+        <p id="accFormImageHint" style="font-size:11.5px; color:var(--ink-soft); margin:-8px 0 6px;">JPEG, PNG, or WEBP. Max 5MB.</p>
+        <div class="setting-row-split">
+          <label>Type
+            <select id="accFormType">
+              <option value="cabin">Cabin</option>
+              <option value="nipa">Nipa</option>
+              <option value="tent area">Tent Area</option>
+              <option value="room">Room</option>
+            </select>
+          </label>
+          <label>Capacity<input type="text" id="accFormCapacity" placeholder="e.g. 4-6 pax"></label>
+        </div>
+        <div class="setting-row-split">
+          <label>Price/Night<input type="number" id="accFormPrice" min="0" step="0.01" required></label>
+          <label>Status
+            <select id="accFormStatus">
+              <option value="available">Available</option>
+              <option value="unavailable">Unavailable</option>
+            </select>
+          </label>
+        </div>
+        <label>Description<input type="text" id="accFormDescription"></label>
+        <div class="amen-editor">
+          <span class="amen-editor-label">Included amenities</span>
+          <div class="amen-editor-list" id="accFormAmenityList"></div>
+          <div class="amen-editor-add">
+            <input type="text" id="accFormAmenityInput" maxlength="40" placeholder="e.g. Kettle, then press Enter">
+            <button type="button" class="btn-secondary" id="accFormAmenityAddBtn">Add</button>
+          </div>
+          <p class="amen-editor-hint">Shown to guests in the Booking Form. Click &times; on a chip to remove it.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="accommodationModalCancelBtn" type="button">Cancel</button>
+          <button class="btn-primary" type="submit">Save Accommodation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="walkInModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="walkInModalClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title">Add Walk-in Reservation</p>
+      <p style="font-size:12.5px; color:var(--ink-soft); margin:-10px 0 14px;">For guests who booked or arrived on-site. This is saved as <strong>Confirmed</strong> right away and will show up on the calendar.</p>
+      <form id="walkInForm" class="settings-form">
+        <label>Guest Name<input type="text" id="walkInGuestName" required></label>
+        <div class="setting-row-split">
+          <label>Contact Number<input type="text" id="walkInGuestPhone" placeholder="Optional"></label>
+          <label>Email Address<input type="email" id="walkInGuestEmail" placeholder="Optional"></label>
+        </div>
+        <label>Accommodation
+          <select id="walkInCabin" required>
+            <option value="">Select accommodation...</option>
+          </select>
+        </label>
+        <div class="setting-row-split">
+          <label>Check-in<input type="date" id="walkInCheckIn" required></label>
+          <label>Check-out<input type="date" id="walkInCheckOut" required></label>
+        </div>
+        <div class="setting-row-split">
+          <label>Number of Guests<input type="number" id="walkInGuestsCount" min="1" value="1" required></label>
+          <label>Payment Method
+            <select id="walkInPaymentMethod">
+              <option value="cash">Cash</option>
+              <option value="gcash">GCash</option>
+              <option value="bank transfer">Bank Transfer</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+        </div>
+        <label>Total Amount<input type="number" id="walkInTotalAmount" min="0" step="0.01" required></label>
+        <p id="walkInFormError" style="display:none; color:#c0392b; font-size:12.5px; margin:-6px 0 6px;"></p>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="walkInModalCancelBtn" type="button">Cancel</button>
+          <button class="btn-primary" type="submit">Save Reservation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="addMessageModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="addMessageModalClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title">Add Message</p>
+      <form id="addMessageForm" class="settings-form">
+        <label>Recipient
+          <select id="addMessageRecipient">
+            <option value="">Choose a recipient...</option>
+          </select>
+        </label>
+        <label>Or send to a custom email address (optional)
+          <input type="email" id="addMessageCustomEmail" placeholder="e.g. someone@gmail.com">
+        </label>
+        <label>Title<input type="text" id="addMessageTitle" required maxlength="150"></label>
+        <label>Message<textarea id="addMessageText" rows="5" style="padding:10px 12px; border-radius:8px; border:1.5px solid #9aa89a; font-family:inherit; font-size:13.5px; background:#fff; color:#222;" required maxlength="255"></textarea></label>
+        <p style="font-size:11.5px; color:var(--ink-soft); margin:-8px 0 0;">Select an account from the list, or enter a custom email address above. This will be saved as a notification and sent via email.</p>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="addMessageCancelBtn" type="button">Cancel</button>
+          <button class="btn-primary" type="submit">Send Message</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="loginLocationModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="loginLocationModalClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title">Login Location</p>
+      <div id="loginLocationInfo" class="modal-section-title" style="text-transform:none; font-weight:400; margin-bottom:14px;"></div>
+      <div id="loginLocationMapFrame" style="width:100%; height:320px; border:1px solid var(--line,#dcdcdc); border-radius:8px; display:none; position:relative; z-index:0;"></div>
+      <p id="loginLocationMapEmpty" style="display:none; font-size:13px; color:var(--ink-soft); padding:24px; text-align:center; border:1px dashed var(--line,#dcdcdc); border-radius:8px;"></p>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="loginLocationCancelBtn" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="feedbackResponseModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="feedbackResponseModalClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title">Respond to Feedback</p>
+      <div id="feedbackResponseInfo" class="modal-section-title" style="text-transform:none; font-weight:400; margin-bottom:14px;"></div>
+      <form id="feedbackResponseForm" class="settings-form">
+        <input type="hidden" id="feedbackResponseId">
+        <label>Response<textarea id="feedbackResponseText" rows="4" style="padding:10px 12px; border-radius:8px; border:1px solid var(--line,#dcdcdc); font-family:inherit; font-size:13.5px;" required></textarea></label>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="feedbackResponseCancelBtn" type="button">Cancel</button>
+          <button class="btn-primary" type="submit">Send Response</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="idVerifyModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="idVerifyModalClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title" style="color:#000;">Valid ID Review</p>
+      <div id="idVerifyInfo" class="modal-section-title" style="text-transform:none; font-weight:400; margin-bottom:14px; color:#000;"></div>
+      <div class="id-verify-img-wrap">
+        <img id="idVerifyImage" src="" alt="Valid ID">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="idVerifyRejectBtn" type="button">Reject</button>
+        <button class="btn-primary" id="idVerifyApproveBtn" type="button">Verify</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay hidden" id="accommodationReservationsModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="accResModalClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <div class="acc-res-modal-image" id="accResModalImage"></div>
+      <p class="modal-title" id="accResModalTitle">Accommodation</p>
+      <div id="accResModalBody"></div>
+      <div class="modal-footer">
+        <button class="btn-primary" id="accResModalCloseBtn" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="guestViewModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="guestViewModalClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title">Guest Details</p>
+      <div id="guestViewBody"></div>
+      <div class="modal-footer">
+        <button class="btn-primary" id="guestViewModalCloseBtn" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="view" id="view-accommodations">
+    <h2 class="page-title">Accommodations</h2>
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="9" width="16" height="11" stroke="currentColor" stroke-width="1.6"/><path d="M4 9L12 4L20 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+        <div><p class="summary-label">Total Accommodations</p><p class="summary-number" id="statTotalAccommodations">0</p><p class="summary-sub">All Time</p></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M7 12L10.5 15.5L17 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/></svg></div>
+        <div><p class="summary-label">Confirmed Bookings</p><p class="summary-number" id="statConfirmedBookings">0</p><p class="summary-sub">This month</p></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 10V7a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.6"/></svg></div>
+        <div><p class="summary-label">Available</p><p class="summary-number" id="statAvailableAccommodations">0</p><p class="summary-sub">Status Overview</p></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7V17M9 9.5C9 8 10.3 7 12 7C13.7 7 15 8 15 9.5C15 11.5 12 11.5 12 11.5C12 11.5 9 11.5 9 14.5C9 16 10.3 17 12 17C13.7 17 15 16 15 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        <div><p class="summary-label">Average Price/Night</p><p class="summary-number" id="statAvgPrice" style="font-size:17px;">&#8369;0.00</p><p class="summary-sub">All accommodations</p></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3 style="margin-bottom:2px;">Accommodation List</h3>
+          <p style="font-size:12.5px; color:#ffffff; margin:0;">Manage accommodation information, pricing, availability, and details.</p>
+        </div>
+        <button class="btn-primary" type="button" id="addAccommodationBtn">+ Add Accommodation</button>
+      </div>
+
+      <div class="filter-row">
+        <input type="text" id="accSearchInput" placeholder="Search by accommodation name or type...">
+        <select id="accTypeFilter">
+          <option value="">All Types</option>
+          <option value="nipa">Nipa</option>
+          <option value="cabin">Cabin</option>
+          <option value="tent area">Tent Area</option>
+          <option value="room">Room</option>
+        </select>
+        <select id="accStatusFilter">
+          <option value="">All Status</option>
+          <option value="available">Available</option>
+          <option value="unavailable">Unavailable</option>
+        </select>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr><th>Accommodation Name</th><th>Type</th><th>Capacity</th><th>Price/Night</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="accommodationTableBody">
+          <tr><td colspan="6" class="empty-admin-note">Loading accommodations...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="view" id="view-guest-record">
+    <h2 class="page-title">Guest Record</h2>
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M16.5 12c1.38 0 2.49-1.12 2.49-2.5S17.88 7 16.5 7C15.12 7 14 8.12 14 9.5s1.12 2.5 2.5 2.5zM9 12c1.93 0 3.5-1.57 3.5-3.5S10.93 5 9 5 5.5 6.57 5.5 8.5 7.07 12 9 12zm7.5 2c-1.83 0-5.5.92-5.5 2.75V18h11v-1.25c0-1.83-3.67-2.75-5.5-2.75zM9 14c-2.33 0-7 1.17-7 3.5V18h7.5v-1.25c0-.99.36-2.3 1.41-3.3A14.66 14.66 0 0 0 9 14z" fill="currentColor"/></svg></div>
+        <div><p class="summary-label">Total Guest</p><p class="summary-number" id="statTotalGuests">0</p><p class="summary-sub">Active Account</p></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.6"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+        <div><p class="summary-label">Active Guest</p><p class="summary-number" id="statActiveGuests">0</p><p class="summary-sub">Full Access</p></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div><p class="summary-label">New This Month</p><p class="summary-number" id="statNewGuests">0</p><p class="summary-sub">Full Access</p></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M9 9L15 15M15 9L9 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+        <div><p class="summary-label">Inactive Guest</p><p class="summary-number" id="statInactiveGuests">0</p><p class="summary-sub">Full Access</p></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3 style="margin-bottom:2px;">Guest Records</h3>
+          <p style="font-size:12.5px; color:#ffffff; margin:0;">View and manage all guest information and their reservation history.</p>
+        </div>
+        <button class="btn-primary" type="button" id="refreshGuestsBtn">&#8635; Refresh</button>
+      </div>
+
+      <div class="filter-row">
+        <input type="text" id="guestSearchInput" placeholder="Search by name, email address...">
+        <select id="guestStatusFilter">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr><th>Guest ID</th><th>Guest Name</th><th>Email Address</th><th>Total Bookings</th><th>Last Reservation</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="guestTableBody">
+          <tr><td colspan="7" class="empty-admin-note">Loading guest records...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="view" id="view-notifications">
+    <h2 class="page-title">Notifications</h2>
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7L12 13L20 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="6" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.6"/></svg></div>
+        <div><p class="summary-label">Total Notifications</p><p class="summary-number" id="statTotalNotifications">0</p><p class="summary-sub">All Time</p></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7L12 13L20 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="6" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.6"/></svg></div>
+        <div><p class="summary-label">Unread</p><p class="summary-number" id="statUnreadNotifications">0</p><p class="summary-sub">Need Attention</p></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M7 12L10.5 15.5L17 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/></svg></div>
+        <div><p class="summary-label">Sent</p><p class="summary-number" id="statSentNotifications">0</p><p class="summary-sub">Successful</p></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3L21 19H3L12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 10V14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="16.5" r="0.9" fill="currentColor"/></svg></div>
+        <div><p class="summary-label">Failed</p><p class="summary-number" id="statFailedNotifications">0</p><p class="summary-sub">Failed to Send</p></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3 style="margin-bottom:2px;">Notifications</h3>
+          <p style="font-size:12.5px; color:#ffffff; margin:0;">Manage and send notifications to guests and staff.</p>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-primary" id="addMessageBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" width="14" height="14" style="vertical-align:-2px; margin-right:5px;"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Add Message
+          </button>
+          <button class="btn-secondary" id="markAllNotifReadBtn" type="button">Mark all as read</button>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <input type="text" id="notifSearchInput" placeholder="Search by title, message, or recipient...">
+        <select id="notifTypeFilter">
+          <option value="">All Types</option>
+          <option value="booking">Booking</option>
+          <option value="confirmation">Confirmation</option>
+          <option value="payment">Payment</option>
+          <option value="feedback">Feedback</option>
+          <option value="announcement">Announcement</option>
+        </select>
+        <select id="notifStatusFilter">
+          <option value="">All Status</option>
+          <option value="unread">Unread</option>
+          <option value="read">Read</option>
+        </select>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr><th>ID</th><th>Title</th><th>Type</th><th>Message Preview</th><th>Status</th><th>Date Sent</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="notifTableBody">
+          <tr><td colspan="7" class="empty-admin-note">Loading notifications...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="view" id="view-feedback">
+    <h2 class="page-title">Feedback and Concern</h2>
+
+    <div class="tab-row" id="feedbackTabs">
+      <button class="tab-btn active" data-fbtab="records" type="button">Feedback &amp; Concern</button>
+      <button class="tab-btn" data-fbtab="sent" type="button">Replies &amp; Messages Sent</button>
+    </div>
+
+    <div class="fbtab-panel active" id="fbtab-records">
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H8l-4 4V5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+        <div><p class="summary-label">Total Feedback</p><p class="summary-number" id="statTotalFeedback">0</p><p class="summary-sub">All Time</p></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M7 12L10.5 15.5L17 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div><p class="summary-label">Resolved</p><p class="summary-number" id="statResolvedFeedback">0</p><p class="summary-sub">This Month</p></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7V12L15 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div><p class="summary-label">Pending</p><p class="summary-number" id="statPendingFeedback">0</p><p class="summary-sub">Need Attention</p></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l2.6 5.7 6.2.6-4.7 4.1 1.4 6.1L12 16.6l-5.5 2.9 1.4-6.1L3.2 9.3l6.2-.6L12 3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></div>
+        <div><p class="summary-label">Average Rating</p><p class="summary-number" id="statAverageRating">0 / 5</p><p class="summary-sub" id="statRatingCount">Based on 0 Ratings</p></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3 style="margin-bottom:2px;">Feedback &amp; Concern Records</h3>
+          <p style="font-size:12.5px; color:#ffffff; margin:0;">View, manage, and respond to guest feedback and concern.</p>
+        </div>
+        <button class="btn-primary" id="refreshFeedbackBtn" type="button">&#8635; Refresh</button>
+      </div>
+
+      <div class="filter-row">
+        <input type="text" id="feedbackSearchInput" placeholder="Search by guest name, title, or reference no...">
+        <select id="feedbackStatusFilter">
+          <option value="">All Status</option>
+          <option value="open">Pending</option>
+          <option value="closed">Resolved</option>
+        </select>
+        <select id="feedbackTypeFilter">
+          <option value="">All Types</option>
+          <option value="feedback">Feedback</option>
+          <option value="concern">Concern</option>
+        </select>
+        <select id="feedbackAccommodationFilter">
+          <option value="">All Accommodations</option>
+        </select>
+        <select id="feedbackRatingFilter">
+          <option value="">All Rating</option>
+          <option value="5">5 Stars</option>
+          <option value="4">4 Stars</option>
+          <option value="3">3 Stars</option>
+          <option value="2">2 Stars</option>
+          <option value="1">1 Star</option>
+        </select>
+        <input type="date" id="feedbackDateFromFilter" title="From Date">
+        <input type="date" id="feedbackDateToFilter" title="To Date">
+      </div>
+
+      <table class="data-table">
+        <thead><tr><th>ID or Reference No.</th><th>Guest</th><th>Type</th><th>Title</th><th>Room</th><th>Rating</th><th>Status</th><th>Date Submitted</th><th>Actions</th></tr></thead>
+        <tbody id="feedbackTableBody">
+          <tr><td colspan="8" class="empty-admin-note">Loading feedback...</td></tr>
+        </tbody>
+      </table>
+      <div class="pagination-row" id="feedbackPagination"></div>
+    </div>
+    </div>
+
+    <div class="fbtab-panel" id="fbtab-sent">
+      <div class="panel" id="sentListPanel">
+        <div class="panel-head">
+          <div>
+            <h3 style="margin-bottom:2px;">Replies &amp; Messages Sent</h3>
+            <p style="font-size:12.5px; color:#ffffff; margin:0;">Replies you gave to guest feedback and messages you sent to guests.</p>
+          </div>
+          <button class="btn-primary" id="refreshSentBtn" type="button">&#8635; Refresh</button>
+        </div>
+
+        <div class="filter-row">
+          <input type="text" id="sentSearchInput" placeholder="Search by guest, email, subject, or message...">
+          <select id="sentKindFilter">
+            <option value="">All Types</option>
+            <option value="reply">Feedback Reply</option>
+            <option value="message">Message</option>
+          </select>
+          <input type="date" id="sentDateFromFilter" title="From Date">
+          <input type="date" id="sentDateToFilter" title="To Date">
+        </div>
+
+        <div class="gm-list-head">
+          <span class="gm-list-title">Sent</span>
+          <span class="gm-list-pager">
+            <span id="sentPageInfo">0 of 0</span>
+            <button class="gm-pg-btn" id="sentPrevBtn" type="button" aria-label="Newer" title="Newer">
+              <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="gm-pg-btn" id="sentNextBtn" type="button" aria-label="Older" title="Older">
+              <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </span>
+        </div>
+        <div class="gm-list" id="sentMessagesBody">
+          <div class="gm-empty">Open this tab to load messages...</div>
+        </div>
+      </div>
+
+      <div class="panel gm-detail" id="sentDetailView" hidden>
+        <div class="gm-d-toolbar">
+          <button class="gm-pg-btn" id="sentDetailBack" type="button" aria-label="Back to list" title="Back to list">
+            <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <h2 class="gm-d-subject"><span id="sentDetailTitle"></span> <span class="gm-chip" id="sentDetailChip"></span></h2>
+        <div class="gm-d-message">
+          <img class="gm-d-avatar" src="assets/images/Camp Mayagay logo.png" alt="">
+          <div class="gm-d-main">
+            <div class="gm-d-head">
+              <div>
+                <strong>Camp Mayagay</strong>
+                <span class="gm-d-to" id="sentDetailTo"></span>
+              </div>
+              <span class="gm-d-time" id="sentDetailTime"></span>
+            </div>
+            <div class="gm-d-body" id="sentDetailBody"></div>
+            <div class="gm-d-foot" id="sentDetailFoot"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="view-reports">
+    <h2 class="page-title">Reports</h2>
+
+    <div class="summary-grid" id="reportsSummaryGrid"></div>
+    <div id="reportsStatus" class="empty-admin-note">Loading report...</div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3 style="margin-bottom:2px;">Reports Overview</h3>
+          <p style="font-size:12.5px; color:#ffffff; margin:0;">View and analyze data summary of reservations, guests, accommodations and feedback.</p>
+        </div>
+        <button class="view-all-link" id="downloadCsvBtn" type="button" style="background:none;border:none;cursor:pointer;">Download CSV Report</button>
+      </div>
+
+      <div class="filter-row">
+        <input type="date" id="reportsDateFromFilter" title="From Date">
+        <input type="date" id="reportsDateToFilter" title="To Date">
+        <select id="reportsTypeFilter">
+          <option value="">All Reports</option>
+          <option value="reservation">Reservation</option>
+          <option value="accommodation">Accommodation</option>
+          <option value="feedback">Feedback</option>
+        </select>
+        <select id="reportsAccommodationFilter">
+          <option value="">All Accommodations</option>
+        </select>
+        <select id="reportsStatusFilter">
+          <option value="">All Status</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="pending">Pending</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+
+      <div class="reports-chart-grid">
+        <div class="reports-chart-card reports-chart-wide">
+          <p class="reports-chart-title">Reservations Trend</p>
+          <svg id="reportsTrendChart" viewBox="0 0 700 220" class="chart-svg"></svg>
+        </div>
+        <div class="reports-chart-card">
+          <p class="reports-chart-title">Top Accommodations</p>
+          <div class="donut-wrap">
+            <div class="donut-chart" id="topAccommodationsDonut"></div>
+            <ul class="donut-legend" id="topAccommodationsLegend"></ul>
+          </div>
+        </div>
+        <div class="reports-chart-card">
+          <p class="reports-chart-title">Reservation Status</p>
+          <div class="donut-wrap">
+            <div class="donut-chart" id="reservationStatusDonut"></div>
+            <ul class="donut-legend" id="reservationStatusLegend"></ul>
+          </div>
+        </div>
+        <div class="reports-chart-card">
+          <p class="reports-chart-title">Feedback Summary</p>
+          <div class="feedback-summary-box">
+            <div class="feedback-stars-list" id="feedbackStarsList"></div>
+            <div class="feedback-avg-block">
+              <p class="feedback-avg-label">Average Rating</p>
+              <p class="feedback-avg-number" id="feedbackAvgRating">0 / 5</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h4 style="margin:20px 0 10px;">Detailed Reports</h4>
+      <table class="data-table">
+        <thead><tr><th>Report Type</th><th>Total</th><th>Details</th><th>Generated By</th><th>Date Generated</th><th>Actions</th></tr></thead>
+        <tbody id="detailedReportsTableBody"></tbody>
+      </table>
+      <div class="pagination-row" id="detailedReportsPagination"></div>
+    </div>
+  </section>
+
+  <section class="view" id="view-settings">
+    <h2 class="page-title">Settings</h2>
+
+    <div class="settings-grid">
+      <div class="settings-col">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3 style="margin-bottom:2px;">Profile Settings</h3>
+              <p style="font-size:12.5px; color:#ffffff; margin:0;">Manage your account profile and personal information.</p>
+            </div>
+          </div>
+          <div class="profile-settings-row">
+            <div class="profile-avatar" id="settingsProfileAvatar">A</div>
+            <div class="profile-fields">
+              <div class="profile-field"><span>Name:</span><strong id="settingsProfileName">Admin User</strong></div>
+              <div class="profile-field"><span>Email:</span><strong id="settingsProfileEmail">admin@campmayagay.com</strong></div>
+              <div class="profile-field"><span>Role:</span><strong id="settingsProfileRole">Administrator</strong></div>
+              <button class="btn-primary" id="editProfileBtn" type="button">Edit Profile</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3 style="margin-bottom:2px;">Notifications Settings</h3>
+              <p style="font-size:12.5px; color:#ffffff; margin:0;">Configure how you receive notifications.</p>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-text"><p class="setting-title">Email Notifications</p><p class="setting-desc">Receive updates via email</p></div>
+            <label class="toggle-switch"><input type="checkbox" id="toggleEmailNotif" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div class="setting-text"><p class="setting-title">System Notifications</p><p class="setting-desc">Receive in-app notifications</p></div>
+            <label class="toggle-switch"><input type="checkbox" id="toggleSystemNotif" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div class="setting-text"><p class="setting-title">Reservation Alerts</p><p class="setting-desc">Get notified for new reservations</p></div>
+            <label class="toggle-switch"><input type="checkbox" id="toggleReservationAlerts" checked><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3 style="margin-bottom:2px;">Account Security</h3>
+              <p style="font-size:12.5px; color:#ffffff; margin:0;">Manage your account security and login sessions.</p>
+            </div>
+          </div>
+          <div class="account-security-summary">
+            <div><span>Last Login</span><strong id="settingsLastLogin">-</strong></div>
+            <div><span>Login Device</span><strong id="settingsLoginDevice">-</strong></div>
+            <div><span>IP Address</span><strong id="settingsLoginIp">-</strong></div>
+          </div>
+          <button class="btn-secondary" id="viewLoginActivityBtn" type="button">View Login Activity</button>
+          <form id="reportsPinForm" class="settings-form" style="margin-top:16px;">
+            <label>Current Reports PIN
+              <div class="password-field-wrap">
+                <input type="password" id="reportsPinCurrentInput" inputmode="numeric" maxlength="4" placeholder="4-digit PIN">
+                <button type="button" class="toggle-password-icon" data-target="reportsPinCurrentInput" aria-label="Show PIN">
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+                </button>
+              </div>
+            </label>
+            <label>New Reports PIN
+              <div class="password-field-wrap">
+                <input type="password" id="reportsPinNewInput" inputmode="numeric" maxlength="4" placeholder="4-digit PIN">
+                <button type="button" class="toggle-password-icon" data-target="reportsPinNewInput" aria-label="Show PIN">
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+                </button>
+              </div>
+            </label>
+            <label>Confirm New PIN
+              <div class="password-field-wrap">
+                <input type="password" id="reportsPinConfirmInput" inputmode="numeric" maxlength="4" placeholder="4-digit PIN">
+                <button type="button" class="toggle-password-icon" data-target="reportsPinConfirmInput" aria-label="Show PIN">
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+                </button>
+              </div>
+            </label>
+            <button class="btn-primary" type="submit">Update Reports PIN</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="settings-col">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3 style="margin-bottom:2px;">Change Password</h3>
+              <p style="font-size:12.5px; color:#ffffff; margin:0;">Update your account password.</p>
+            </div>
+          </div>
+          <form id="changePasswordForm" class="settings-form">
+            <label>Current Password
+              <div class="password-field-wrap">
+                <input type="password" id="currentPasswordInput" placeholder="••••••••">
+                <button type="button" class="toggle-password-icon" data-target="currentPasswordInput" aria-label="Show password">
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+                </button>
+              </div>
+            </label>
+            <label>New Password
+              <div class="password-field-wrap">
+                <input type="password" id="newPasswordInput" placeholder="••••••••">
+                <button type="button" class="toggle-password-icon" data-target="newPasswordInput" aria-label="Show password">
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+                </button>
+              </div>
+            </label>
+            <label>Confirm New Password
+              <div class="password-field-wrap">
+                <input type="password" id="confirmPasswordInput" placeholder="••••••••">
+                <button type="button" class="toggle-password-icon" data-target="confirmPasswordInput" aria-label="Show password">
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+                </button>
+              </div>
+            </label>
+            <button class="btn-primary" type="submit">Update Password</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3 style="margin-bottom:2px;">System Preferences</h3>
+              <p style="font-size:12.5px; color:#ffffff; margin:0;">Customize system preferences.</p>
+            </div>
+          </div>
+          <form id="systemPreferencesForm" class="settings-form">
+            <label>Date Format
+              <select id="dateFormatSelect">
+                <option value="MMM D, YYYY">May 20, 2026 (MMM D, YYYY)</option>
+                <option value="DD/MM/YYYY">20/05/2026 (DD/MM/YYYY)</option>
+                <option value="MM/DD/YYYY">05/20/2026 (MM/DD/YYYY)</option>
+              </select>
+            </label>
+            <label>Time Format
+              <select id="timeFormatSelect">
+                <option value="12">12-Hour (AM/PM)</option>
+                <option value="24">24-Hour</option>
+              </select>
+            </label>
+            <label>Currency
+              <select id="currencySelect">
+                <option value="PHP">PHP (₱) — Philippines</option>
+                <option value="USD">USD ($) — United States</option>
+                <option value="SGD">SGD (S$) — Singapore</option>
+                <option value="AED">AED (د.إ) — Dubai / UAE</option>
+                <option value="KRW">KRW (₩) — South Korea</option>
+                <option value="JPY">JPY (¥) — Japan</option>
+                <option value="EUR">EUR (€) — Europe</option>
+                <option value="GBP">GBP (£) — United Kingdom</option>
+                <option value="AUD">AUD (A$) — Australia</option>
+                <option value="CNY">CNY (¥) — China</option>
+                <option value="HKD">HKD (HK$) — Hong Kong</option>
+                <option value="THB">THB (฿) — Thailand</option>
+              </select>
+            </label>
+            <button class="btn-primary" type="submit">Save Changes</button>
+          </form>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3 style="margin-bottom:2px;">Guest Valid IDs</h3>
+              <p style="font-size:12.5px; color:#ffffff; margin:0;">Review every valid ID guests have submitted.</p>
+            </div>
+            <button class="btn-secondary" id="refreshSettingsIdsBtn" type="button">↻ Refresh</button>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Guest</th><th>Email</th><th>Valid ID</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="settingsIdTableBody">
+              <tr><td colspan="5" class="empty-admin-note">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="assets/js/dashboard-admin.js?v=14"></script>
+</body>
+</html>
