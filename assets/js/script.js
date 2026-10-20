@@ -197,7 +197,7 @@ function initLoginForm() {
     getClientPosition().then(function (pos) {
       var payload = { identifier: identifier, password: password };
       if (pos) { payload.client_lat = pos.lat; payload.client_lng = pos.lng; }
-      return fetch('php/login.php', {
+      return fetch('https://camp-mayagay-production-3f31.up.railway.app/php/login.php', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -332,7 +332,7 @@ function initRegisterForm() {
 
     readFileAsDataUrl(idFile).then(function (dataUrl) {
       values.valid_id_image = dataUrl;
-      return fetch('php/register.php', {
+      return fetch('https://camp-mayagay-production-3f31.up.railway.app/php/register.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values)
