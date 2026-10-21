@@ -16,6 +16,9 @@ $errorOut = null;
 $result = sendVerificationEmail($testEmail, '123456', $errorOut);
 
 echo '<h2>Test Result</h2>';
+echo '<p>Env check (true = nakita ng server, hindi ipinapakita ang value): ' .
+    'BREVO_API_KEY=' . (getenv('BREVO_API_KEY') ? 'true' : 'FALSE') . ', ' .
+    'MAIL_FROM=' . (getenv('MAIL_FROM') ? 'true' : 'FALSE') . '</p>';
 if ($result) {
     echo '<p style="color:green;">SUCCESS - Tumuloy ang email. I-check mo ang inbox (o Spam folder) ng ' . htmlspecialchars($testEmail) . '</p>';
 } else {
