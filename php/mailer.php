@@ -17,11 +17,74 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../PHPMailer/src/Exception.php';
+require_once __DIR__ . '/../PHPMailer/src/PHPMailer.php';
+require_once __DIR__ . '/../PHPMailer/src/SMTP.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception as PHPMailerException;
+
+// MAIL_DRIVER: "smtp" (default, Gmail SMTP) or "brevo" (HTTPS API).
+// Gmail SMTP env vars: MAIL_USERNAME, MAIL_PASSWORD (App Password),
+// MAIL_FROM (optional, defaults to MAIL_USERNAME), MAIL_PORT (default 587).
+define('MAIL_DRIVER', strtolower(getenv('MAIL_DRIVER') ?: 'smtp'));
+define('MAIL_USERNAME', getenv('MAIL_USERNAME') ?: '');
+define('MAIL_PASSWORD', getenv('MAIL_PASSWORD') ?: '');
+define('MAIL_PORT', (int)(getenv('MAIL_PORT') ?: 587));
+const MAIL_HOST = 'smtp.gmail.com';
+
 define('BREVO_API_KEY', getenv('BREVO_API_KEY') ?: '');
-define('MAIL_FROM', getenv('MAIL_FROM') ?: '');
+define('MAIL_FROM', getenv('MAIL_FROM') ?: (getenv('MAIL_USERNAME') ?: ''));
 define('MAIL_FROM_NAME', getenv('MAIL_FROM_NAME') ?: 'Camp Mayagay');
 
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
+
+/**
+ * Gmail SMTP sender (PHPMailer). NOTE: Railway blocks outbound SMTP on
+ * non-Pro plans, so this times out there unless the plan allows SMTP.
+ */
+function smtpSend(string $toEmail, string $subject, string $html, string $text, ?string &$errorOut = null): bool
+{
+    if (MAIL_USERNAME === '' || MAIL_PASSWORD === '') {
+        $errorOut = 'Email is not configured: set MAIL_USERNAME and MAIL_PASSWORD in the environment.';
+        return false;
+    }
+    $mail = new PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host       = MAIL_HOST;
+        $mail->SMTPAuth   = true;
+        $mail->Username   = MAIL_USERNAME;
+        $mail->Password   = MAIL_PASSWORD;
+        $mail->SMTPSecure = MAIL_PORT === 465 ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = MAIL_PORT;
+        $mail->Timeout    = 10;
+
+        $mail->setFrom(MAIL_FROM !== '' ? MAIL_FROM : MAIL_USERNAME, MAIL_FROM_NAME);
+        $mail->addReplyTo(MAIL_FROM !== '' ? MAIL_FROM : MAIL_USERNAME, MAIL_FROM_NAME);
+        $mail->addAddress($toEmail);
+        $mail->CharSet = 'UTF-8';
+        $mail->XMailer = ' ';
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body    = $html;
+        $mail->AltBody = $text;
+        $mail->send();
+        return true;
+    } catch (PHPMailerException $e) {
+        $errorOut = $mail->ErrorInfo;
+        return false;
+    }
+}
+
+/** Picks the transport based on MAIL_DRIVER (default: smtp). */
+function sendMailMessage(string $toEmail, string $subject, string $html, string $text, ?string &$errorOut = null): bool
+{
+    if (MAIL_DRIVER === 'brevo') {
+        return brevoSend($toEmail, $subject, $html, $text, $errorOut);
+    }
+    return smtpSend($toEmail, $subject, $html, $text, $errorOut);
+}
 
 /**
  * Low-level sender used by the two public helpers below.
@@ -123,7 +186,7 @@ function sendVerificationEmail(string $toEmail, string $code, ?string &$errorOut
         '<p>This code expires in 10 minutes. If you did not request this, you can safely ignore this email.</p>';
     $text = "Your Camp Mayagay verification code is: {$code}\nThis code expires in 10 minutes.";
 
-    return brevoSend($toEmail, 'Camp Mayagay - Password Reset Code', $html, $text, $errorOut);
+    return sendMailMessage($toEmail, 'Camp Mayagay - Password Reset Code', $html, $text, $errorOut);
 }
 
 /**
@@ -136,5 +199,5 @@ function sendNotificationEmail(string $toEmail, string $subject, string $message
         '<p>' . nl2br(htmlspecialchars($message)) . '</p>' .
         '<p style="color:#888; font-size:12px; margin-top:24px;">This message was sent by Camp Mayagay.</p>';
 
-    return brevoSend($toEmail, $subject, $html, $message, $errorOut);
+    return sendMailMessage($toEmail, $subject, $html, $message, $errorOut);
 }

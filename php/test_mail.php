@@ -17,6 +17,9 @@ $result = sendVerificationEmail($testEmail, '123456', $errorOut);
 
 echo '<h2>Test Result</h2>';
 echo '<p>Env check (true = nakita ng server, hindi ipinapakita ang value): ' .
+    'MAIL_DRIVER=' . (getenv('MAIL_DRIVER') ?: 'smtp (default)') . ', ' .
+    'MAIL_USERNAME=' . (getenv('MAIL_USERNAME') ? 'true' : 'FALSE') . ', ' .
+    'MAIL_PASSWORD=' . (getenv('MAIL_PASSWORD') ? 'true' : 'FALSE') . ', ' .
     'BREVO_API_KEY=' . (getenv('BREVO_API_KEY') ? 'true' : 'FALSE') . ', ' .
     'MAIL_FROM=' . (getenv('MAIL_FROM') ? 'true' : 'FALSE') . '</p>';
 if ($result) {
