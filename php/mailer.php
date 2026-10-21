@@ -33,9 +33,9 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
 
 // ---- Gmail SMTP settings: EDIT THESE 3 VALUES -------------------------
-const MAIL_USERNAME = 'anesjhonlloyd@gmail.com';   // <-- your Gmail address
-const MAIL_PASSWORD = 'nyholcuvuhtshlji';         // <-- 16-char Gmail App Password (no spaces)
-const MAIL_FROM      = 'anesjhonlloyd@gmail.com';   // <-- usually same as MAIL_USERNAME
+define('MAIL_USERNAME', getenv('MAIL_USERNAME') ?: '');
+define('MAIL_PASSWORD', getenv('MAIL_PASSWORD') ?: '');
+define('MAIL_FROM', getenv('MAIL_FROM') ?: (getenv('MAIL_USERNAME') ?: ''));
 // -------------------------------------------------------------------------
 
 const MAIL_HOST      = 'smtp.gmail.com';

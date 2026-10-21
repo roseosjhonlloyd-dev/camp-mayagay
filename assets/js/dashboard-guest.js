@@ -74,7 +74,7 @@
       if (res.status === 401 && !sessionExpiredNoticeShown) {
         sessionExpiredNoticeShown = true;
         showToast('Your session has expired or you are logged in elsewhere. Please log in again.');
-        setTimeout(() => { window.location.href = 'Login.html'; }, 1800);
+        setTimeout(() => { window.location.href = 'index.html'; }, 1800);
       }
       return res.json();
     });
