@@ -328,7 +328,7 @@ function initRegisterForm() {
 
     readFileAsDataUrl(idFile).then(function (dataUrl) {
       values.valid_id_image = dataUrl;
-      return fetch('https://camp-mayagay-production-473d.up.railway.app/php/register.php', {
+      return fetch('php/register.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values)
