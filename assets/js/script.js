@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', function () {
   initPasswordToggles();
   initLoginForm();
   initRegisterForm();
-  initForgotPasswordForm();
 });
 
 function initPasswordToggles() {
@@ -94,7 +93,7 @@ function initLoginForm() {
       if (resendBtn.disabled) return;
       resendBtn.disabled = true;
       resendBtn.textContent = 'Sending...';
-      fetch('php/login.php', {
+      fetch('https://camp-mayagay-production-473d.up.railway.app/php/login.php', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -146,7 +145,7 @@ function initLoginForm() {
       var vOriginalText = submitBtn.textContent;
       submitBtn.textContent = 'Verifying...';
 
-      fetch('php/login.php', {
+      fetch('https://camp-mayagay-production-473d.up.railway.app/php/login.php', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -191,13 +190,10 @@ function initLoginForm() {
     var originalText = submitBtn.textContent;
     submitBtn.textContent = 'Logging in...';
 
-    // Ask the browser for the device's position (asks the user for
-    // permission). Falls back to the server's IP-based guess if denied,
-    // unavailable, or slow.
     getClientPosition().then(function (pos) {
       var payload = { identifier: identifier, password: password };
       if (pos) { payload.client_lat = pos.lat; payload.client_lng = pos.lng; }
-      return fetch('https://camp-mayagay-production-3f31.up.railway.app/php/login.php', {
+      return fetch('https://camp-mayagay-production-473d.up.railway.app/php/login.php', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -332,7 +328,7 @@ function initRegisterForm() {
 
     readFileAsDataUrl(idFile).then(function (dataUrl) {
       values.valid_id_image = dataUrl;
-      return fetch('https://camp-mayagay-production-3f31.up.railway.app/php/register.php', {
+      return fetch('https://camp-mayagay-production-473d.up.railway.app/php/register.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values)
@@ -365,7 +361,6 @@ function initRegisterForm() {
   });
 }
 
-/* Resolves to {lat, lng} or null. Never rejects. */
 function getClientPosition() {
   return new Promise(function (resolve) {
     if (!('geolocation' in navigator)) { resolve(null); return; }
