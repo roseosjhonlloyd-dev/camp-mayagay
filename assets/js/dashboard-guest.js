@@ -508,7 +508,7 @@
 
     grid.innerHTML = pageItems.map(c => `
       <div class="accom-card">
-        <div class="accom-art" style="background:${ART_BG[c.icon]}">${artContent(c)}</div>
+        <div class="accom-art" style="background:${ART_BG[c.icon]}${c.image ? ";--art-img:url('" + encodeURI(c.image).replace(/'/g, '%27') + "')" : ''}">${artContent(c)}</div>
         <div class="accom-info">
           <div>
             <p class="accom-name">${c.name}</p>

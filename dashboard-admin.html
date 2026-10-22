@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard | Camp Mayagay</title>
-<link rel="stylesheet" href="assets/css/dashboard-admin.css?v=4">
+<link rel="stylesheet" href="assets/css/dashboard-admin.css?v=5">
 </head>
 <body>
 
@@ -60,6 +60,28 @@
 </aside>
 
 <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<nav class="mobile-tabbar" id="mobileTabbar">
+  <button class="nav-item tab-item active" data-view="dashboard" type="button">
+    <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 11L12 4L20 11V20H4V11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+    <span class="tab-label">Home</span>
+  </button>
+  <button class="nav-item tab-item" data-view="reservation" type="button">
+    <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M4 9H20" stroke="currentColor" stroke-width="1.8"/></svg></div>
+    <span class="tab-label">Bookings</span>
+  </button>
+  <button class="nav-item tab-item" data-view="accommodations" type="button">
+    <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="9" width="16" height="11" stroke="currentColor" stroke-width="1.8"/><path d="M4 9L12 4L20 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+    <span class="tab-label">Stay</span>
+  </button>
+  <button class="nav-item tab-item" data-view="notifications" type="button">
+    <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M6 10a6 6 0 1112 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 19a2 2 0 004 0" stroke="currentColor" stroke-width="1.8"/></svg></div>
+    <span class="tab-label">Alerts</span>
+  </button>
+  <button class="tab-item" id="tabMoreBtn" type="button">
+    <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7H20M4 12H20M4 17H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+    <span class="tab-label">More</span>
+  </button>
+</nav>
 
 <main class="main">
 
@@ -1404,6 +1426,6 @@
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="assets/js/dashboard-admin.js?v=14"></script>
+<script src="assets/js/dashboard-admin.js?v=15"></script>
 </body>
 </html>

@@ -2081,6 +2081,14 @@ function initMobileSidebar() {
     });
   }
   if (backdrop) backdrop.addEventListener('click', closeSidebar);
+
+  var tabMoreBtn = document.getElementById('tabMoreBtn');
+  if (tabMoreBtn) {
+    tabMoreBtn.addEventListener('click', function () {
+      if (sidebarEl && sidebarEl.classList.contains('open')) closeSidebar();
+      else openSidebar();
+    });
+  }
 }
 
 function initSecurityTabs() {
