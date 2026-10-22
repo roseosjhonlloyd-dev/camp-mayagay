@@ -1192,3 +1192,10 @@ body{
   .main{padding-bottom:96px;}
 }
 @media print{ .mobile-tabbar{display:none !important;} }
+
+/* Fit all pages on small screens (no sideways scrolling) */
+@media (max-width:900px){
+  .settings-grid{grid-template-columns:minmax(0,1fr);}
+  .settings-col{min-width:0;}
+  .profile-settings-row{flex-wrap:wrap;}
+}

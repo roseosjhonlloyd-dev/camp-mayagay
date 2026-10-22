@@ -63,7 +63,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function hideNavAndView(viewName) {
     var navBtn = document.querySelector('.nav-item[data-view="' + viewName + '"]');
-    if (navBtn) navBtn.style.display = 'none';
+        // Itinatago ang sidebar button AT ang button sa bottom tab bar (mobile)
+    document.querySelectorAll('.nav-item[data-view="' + viewName + '"]').forEach(function (navBtn) {
+      navBtn.style.display = 'none';
+    });
 
     var section = document.getElementById('view-' + viewName);
     if (section) section.style.display = 'none';
