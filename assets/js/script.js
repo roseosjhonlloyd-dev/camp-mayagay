@@ -93,7 +93,7 @@ function initLoginForm() {
       if (resendBtn.disabled) return;
       resendBtn.disabled = true;
       resendBtn.textContent = 'Sending...';
-      fetch('https://camp-mayagay-production-473d.up.railway.app/php/login.php', {
+      fetch('php/login.php', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -145,7 +145,7 @@ function initLoginForm() {
       var vOriginalText = submitBtn.textContent;
       submitBtn.textContent = 'Verifying...';
 
-      fetch('https://camp-mayagay-production-473d.up.railway.app/php/login.php', {
+      fetch('php/login.php', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -193,7 +193,7 @@ function initLoginForm() {
     getClientPosition().then(function (pos) {
       var payload = { identifier: identifier, password: password };
       if (pos) { payload.client_lat = pos.lat; payload.client_lng = pos.lng; }
-      return fetch('https://camp-mayagay-production-473d.up.railway.app/php/login.php', {
+      return fetch('php/login.php', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },

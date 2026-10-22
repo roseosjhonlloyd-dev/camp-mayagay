@@ -217,7 +217,7 @@ function adminApiCall(action, body) {
       if (!sessionExpiredNoticeShown) {
         sessionExpiredNoticeShown = true;
         showAdminToast('Your session has expired. Please log in again.', true);
-        setTimeout(function () { window.location.href = 'Login.html'; }, 1800);
+        setTimeout(function () { window.location.href = 'index.html'; }, 1800);
       }
     }
     return res.json();

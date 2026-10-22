@@ -143,7 +143,7 @@ try {
     echo json_encode([
         'success'  => true,
         'message'  => 'Registration successful. You may now log in.',
-        'redirect' => 'Login.html'
+        'redirect' => 'index.html'
     ]);
 
 } catch (PDOException $e) {

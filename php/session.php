@@ -77,7 +77,7 @@ function isLoggedIn(): bool
 function requireRole(string $role): void
 {
     if (!isLoggedIn() || $_SESSION['role'] !== $role) {
-        header('Location: ../Login.html');
+        header('Location: ../index.html');
         exit;
     }
 }
