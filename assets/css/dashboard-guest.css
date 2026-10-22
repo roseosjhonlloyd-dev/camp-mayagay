@@ -630,7 +630,8 @@
     overflow:hidden;
     border:1px solid var(--sand-dim);
   }
-  .accom-art{height:240px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;}
+  .accom-art{aspect-ratio:3/2; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;}
+  .accom-art img{object-fit:contain;}
   .accom-art svg{width:64px;height:64px;}
   .accom-info{padding:14px 16px 6px; display:flex; justify-content:space-between; align-items:flex-start;}
   .accom-name{font-weight:600; font-size:15px; margin:0;}
