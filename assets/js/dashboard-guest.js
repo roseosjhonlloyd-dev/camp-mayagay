@@ -589,27 +589,42 @@
   }
 
   let pendingBooking = null;
-  const extraQty = { person:1, blanket:1, pillow:1, nights:1 };
+  const extraQty = { person:0, blanket:0, pillow:0, nights:1 };
+  const EXTRA_MAX = 5;
 
   function resetSteppers(){
-    extraQty.person = 1; extraQty.blanket = 1; extraQty.pillow = 1; extraQty.nights = 1;
-    document.getElementById('qtyPerson').textContent = 1;
-    document.getElementById('qtyBlanket').textContent = 1;
-    document.getElementById('qtyPillow').textContent = 1;
+    extraQty.person = 0; extraQty.blanket = 0; extraQty.pillow = 0; extraQty.nights = 1;
+    document.getElementById('qtyPerson').textContent = 0;
+    document.getElementById('qtyBlanket').textContent = 0;
+    document.getElementById('qtyPillow').textContent = 0;
     document.getElementById('qtyNights').textContent = 1;
-    document.getElementById('chkPerson').checked = true;
-    document.getElementById('chkBlanket').checked = true;
-    document.getElementById('chkPillow').checked = true;
+    document.getElementById('chkPerson').checked = false;
+    document.getElementById('chkBlanket').checked = false;
+    document.getElementById('chkPillow').checked = false;
   }
   document.querySelectorAll('.stepper').forEach(st => {
     const key = st.dataset.stepper;
     st.querySelectorAll('button').forEach(btn => {
       btn.addEventListener('click', () => {
         const delta = Number(btn.dataset.step);
-        const min = (key === 'person' || key === 'nights') ? 1 : 0;
-        extraQty[key] = Math.max(min, extraQty[key] + delta);
-        document.getElementById('qty' + key.charAt(0).toUpperCase() + key.slice(1)).textContent = extraQty[key];
+        const min = (key === 'nights') ? 1 : 0;
+        const next = extraQty[key] + delta;
+        if (key !== 'nights' && next > EXTRA_MAX){ showToast('Maximum of ' + EXTRA_MAX + ' only'); return; }
+        extraQty[key] = Math.max(min, next);
+        const cap = key.charAt(0).toUpperCase() + key.slice(1);
+        document.getElementById('qty' + cap).textContent = extraQty[key];
+        const chk = document.getElementById('chk' + cap);
+        if (chk) chk.checked = extraQty[key] > 0;
       });
+    });
+  });
+  ['Person','Blanket','Pillow'].forEach(cap => {
+    const chk = document.getElementById('chk' + cap);
+    if (!chk) return;
+    chk.addEventListener('change', () => {
+      const key = cap.toLowerCase();
+      extraQty[key] = chk.checked ? 1 : 0;
+      document.getElementById('qty' + cap).textContent = extraQty[key];
     });
   });
 
