@@ -634,6 +634,7 @@ function openWalkInModal() {
     checkOutInput.value = toDateKey(nextDay);
   }
   document.getElementById('walkInGuestsCount').value = 1;
+  var apEl = document.getElementById('walkInAmountPaid'); if (apEl) apEl.value = 0;
   modal.classList.remove('hidden');
 }
 
@@ -707,6 +708,7 @@ function initWalkInModal() {
       guests_count: Number(document.getElementById('walkInGuestsCount').value) || 1,
       payment_method: document.getElementById('walkInPaymentMethod').value,
       total_amount: Number(totalInput.value) || 0,
+      amount_paid: Number((document.getElementById('walkInAmountPaid') || {}).value) || 0,
       status: 'confirmed'
     }).then(function (res) {
       if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = originalText; }

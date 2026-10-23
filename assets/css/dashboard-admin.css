@@ -1199,3 +1199,20 @@ body{
   .settings-col{min-width:0;}
   .profile-settings-row{flex-wrap:wrap;}
 }
+/* ---- Payment Transactions ---- */
+.pay-sub{margin:6px 0 0; font-size:12.5px; color:var(--ink-soft);}
+.pay-money{font-size:22px;}
+.pay-export{display:flex; gap:8px; flex-wrap:wrap;}
+.pay-tabs{display:flex; gap:8px; flex-wrap:wrap; margin:4px 0 12px;}
+.pay-tab{border:1px solid var(--sand-dim); background:transparent; color:inherit; border-radius:999px; padding:7px 14px; font:inherit; font-size:13px; cursor:pointer;}
+.pay-tab span{opacity:.7; margin-left:4px;}
+.pay-tab.active{background:var(--status-green-bg); color:var(--status-green); border-color:var(--status-green);}
+.pay-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+.pay-table-wrap .data-table{min-width:880px;}
+.pay-act{padding:6px 10px; font-size:12px; white-space:nowrap;}
+.pill.pay-st-paid{background:var(--status-green-bg); color:var(--status-green);}
+.pill.pay-st-partial{background:var(--status-yellow-bg); color:var(--status-yellow);}
+.pill.pay-st-unpaid{background:var(--status-red-bg); color:var(--status-red);}
+.pill.pay-st-refunded{background:var(--sand-dim); color:var(--ink-soft);}
+.pill.pay-src-website{background:var(--status-blue-bg); color:var(--status-blue);}
+.pill.pay-src-walk-in{background:var(--sand-dim); color:var(--ink-soft);}

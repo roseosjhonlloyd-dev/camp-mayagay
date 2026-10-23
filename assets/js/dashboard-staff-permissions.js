@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
       // sa module_key na ginagamit ng role_permissions table sa DB.
       var viewToModuleKey = {
         'reservation':    'reservation',
+        'payments':       'reservation',
         'accommodations': 'accommodation',
         'guest-record':   'guest_record',
         'notifications':  'notifications',

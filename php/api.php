@@ -130,6 +130,28 @@ function ensureAmenitiesColumn(PDO $pdo): void
     $done = true;
 }
 
+/** Adds reservations.amount_paid (how much the guest has actually paid).
+ *  Existing rows already marked 'paid' are backfilled to their full total. */
+function ensureAmountPaidColumn(PDO $pdo): void
+{
+    static $done = false;
+    if ($done) return;
+    $has = $pdo->query("SHOW COLUMNS FROM reservations LIKE 'amount_paid'")->fetch();
+    if (!$has) {
+        $pdo->exec('ALTER TABLE reservations ADD COLUMN amount_paid DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER total_amount');
+        $pdo->exec("UPDATE reservations SET amount_paid = total_amount WHERE payment_status = 'paid'");
+    }
+    $done = true;
+}
+
+/** unpaid / partial / paid from the amounts. */
+function paymentStatusFor(float $total, float $paid): string
+{
+    if ($paid <= 0) return 'unpaid';
+    if ($total > 0 && $paid + 0.004 < $total) return 'partial';
+    return 'paid';
+}
+
 function sanitizeAmenities($raw): ?string
 {
     if (!is_array($raw)) return null;
@@ -300,6 +322,7 @@ function reservationRow(array $r): array
         'guests_count'   => (int)$r['number_of_guests'],
         'payment_method' => $r['payment_method'],
         'total_amount'   => $r['total_amount'],
+        'amount_paid'    => isset($r['amount_paid']) ? $r['amount_paid'] : '0.00',
         'status'         => $r['reservation_status'],
         'cancel_requested' => (bool)($r['cancel_requested'] ?? false),
         'cancel_reason'  => $r['cancel_reason'] ?? null,
@@ -1054,6 +1077,7 @@ try {
            RESERVATIONS
         ------------------------------------------------------------ */
         case 'reservations_list':
+            ensureAmountPaidColumn($pdo);
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'reservation');
             if (isStaffOrAdmin($user)) {
@@ -1111,6 +1135,19 @@ try {
             $payment    = trim((string)($input['payment_method'] ?? ''));
             $total      = (float)($input['total_amount'] ?? 0);
             $status     = $isAdmin ? (string)($input['status'] ?? 'confirmed') : 'pending';
+            ensureAmountPaidColumn($pdo);
+            // Walk-in (admin/staff): the amount actually received is typed in.
+            // Online (guest): depends on the receipt/reference they submitted.
+            if ($isAdmin) {
+                $amountPaid = max(0.0, min($total, (float)($input['amount_paid'] ?? 0)));
+            } else {
+                $hasReceipt = is_array($input['data'] ?? null) && (
+                    trim((string)($input['data']['receiptImage'] ?? '')) !== '' ||
+                    trim((string)($input['data']['gcashRef'] ?? '')) !== ''
+                );
+                $amountPaid = $hasReceipt ? $total : 0.0;
+            }
+            $payStatus = paymentStatusFor($total, $amountPaid);
             $code       = trim((string)($input['code'] ?? ('CMY-' . date('Y') . '-' . strtoupper(substr($cabinId, 0, 3)) . '-' . random_int(10, 99))));
             $data       = $input['data'] ?? null;
 
@@ -1175,11 +1212,11 @@ try {
                 $stmt = $pdo->prepare(
                     'INSERT INTO reservations
                         (code, user_id, accommodation_id, guest_name, guest_email, guest_phone,
-                         check_in_date, check_out_date, number_of_guests, payment_method, total_amount,
+                         check_in_date, check_out_date, number_of_guests, payment_method, total_amount, amount_paid,
                          reservation_status, payment_status, created_by, data)
                      VALUES
                         (:code, :user_id, :accommodation_id, :guest_name, :guest_email, :guest_phone,
-                         :check_in_date, :check_out_date, :number_of_guests, :payment_method, :total_amount,
+                         :check_in_date, :check_out_date, :number_of_guests, :payment_method, :total_amount, :amount_paid,
                          :reservation_status, :payment_status, :created_by, :data)'
                 );
                 $stmt->execute([
@@ -1194,8 +1231,9 @@ try {
                     'number_of_guests'   => $guestsCnt,
                     'payment_method'     => $payment,
                     'total_amount'       => $total,
+                    'amount_paid'        => $amountPaid,
                     'reservation_status' => $status,
-                    'payment_status'     => $total > 0 ? 'partial' : 'unpaid',
+                    'payment_status'     => $payStatus,
                     'created_by'         => $isAdmin ? 'admin' : 'guest',
                     'data'               => $data !== null ? json_encode($data) : null,
                 ]);
@@ -1210,9 +1248,9 @@ try {
                     'reservation_id'   => $newId,
                     'payment_method'   => $payment,
                     'reference_number' => $code,
-                    'amount'           => $total,
-                    'payment_status'   => $total > 0 ? 'partial' : 'unpaid',
-                    'payment_date'     => $total > 0 ? date('Y-m-d H:i:s') : null,
+                    'amount'           => $amountPaid,
+                    'payment_status'   => $payStatus,
+                    'payment_date'     => $amountPaid > 0 ? date('Y-m-d H:i:s') : null,
                 ]);
 
                 $pdo->commit();
@@ -1251,12 +1289,9 @@ try {
             $pdo->prepare('UPDATE reservations SET reservation_status = :status WHERE reservation_id = :id')
                 ->execute(['status' => $status, 'id' => $id]);
 
-            if ($status === 'confirmed' || $status === 'completed') {
-                $pdo->prepare("UPDATE payments SET payment_status = 'paid', payment_date = NOW() WHERE reservation_id = :id")
-                    ->execute(['id' => $id]);
-                $pdo->prepare("UPDATE reservations SET payment_status = 'paid' WHERE reservation_id = :id")
-                    ->execute(['id' => $id]);
-            } elseif ($status === 'declined' || $status === 'cancelled') {
+            // Payment status is no longer flipped to 'paid' just because a booking
+            // is confirmed - it follows the amount actually paid (see payments_record).
+            if ($status === 'declined' || $status === 'cancelled') {
                 $pdo->prepare("UPDATE payments SET payment_status = 'refunded' WHERE reservation_id = :id")
                     ->execute(['id' => $id]);
                 $pdo->prepare("UPDATE reservations SET payment_status = 'refunded' WHERE reservation_id = :id")
@@ -1391,12 +1426,103 @@ try {
             requireLogin($user);
             if (!isStaffOrAdmin($user)) deny('Admins and staff only.', 403);
             requireModuleAccess($pdo, $user, 'reservation');
+            ensureAmountPaidColumn($pdo);
+            // One row per reservation: how much it costs, how much was paid,
+            // and the balance. (The heavy `data` JSON / receipt image is not sent.)
             $stmt = $pdo->query(
-                'SELECT p.*, r.code, r.guest_name FROM payments p
-                 JOIN reservations r ON r.reservation_id = p.reservation_id
-                 ORDER BY p.created_at DESC'
+                "SELECT r.reservation_id, r.code, r.guest_name, r.guest_email, r.guest_phone,
+                        a.accommodation_name, r.check_in_date, r.check_out_date,
+                        r.payment_method, r.total_amount, r.amount_paid, r.payment_status,
+                        r.reservation_status, r.created_by, r.created_at,
+                        (SELECT MAX(p.payment_date) FROM payments p WHERE p.reservation_id = r.reservation_id) AS last_payment_date
+                 FROM reservations r
+                 JOIN accommodations a ON a.accommodation_id = r.accommodation_id
+                 ORDER BY r.created_at DESC"
             );
-            echo json_encode(['success' => true, 'payments' => $stmt->fetchAll()]);
+            $rows = array_map(function ($r) {
+                $total = (float)$r['total_amount'];
+                $paid  = (float)$r['amount_paid'];
+                return [
+                    'id'               => (int)$r['reservation_id'],
+                    'code'             => $r['code'],
+                    'guest_name'       => $r['guest_name'],
+                    'guest_email'      => $r['guest_email'],
+                    'cabin_name'       => $r['accommodation_name'],
+                    'check_in'         => $r['check_in_date'],
+                    'check_out'        => $r['check_out_date'],
+                    'payment_method'   => $r['payment_method'],
+                    'total_amount'     => $total,
+                    'amount_paid'      => $paid,
+                    'balance'          => $r['payment_status'] === 'refunded' ? 0.0 : max(0.0, $total - $paid),
+                    'payment_status'   => $r['payment_status'],
+                    'reservation_status' => $r['reservation_status'],
+                    'source'           => $r['created_by'] === 'admin' ? 'walk-in' : 'website',
+                    'last_payment_date'=> $r['last_payment_date'],
+                    'created_at'       => $r['created_at'],
+                ];
+            }, $stmt->fetchAll());
+            echo json_encode(['success' => true, 'payments' => $rows]);
+            break;
+
+        /** Staff/admin records money received for a reservation.
+         *  Input: id + either `add_amount` (adds to what was paid),
+         *  `amount_paid` (sets the total paid), or `mark_paid` = true (pays the balance in full). */
+        case 'payments_record':
+            requireLogin($user);
+            if (!isStaffOrAdmin($user)) deny('Admins and staff only.', 403);
+            requireModuleAccess($pdo, $user, 'reservation');
+            ensureAmountPaidColumn($pdo);
+            $id = (int)($input['id'] ?? 0);
+            $stmt = $pdo->prepare('SELECT reservation_id, total_amount, amount_paid, payment_status, payment_method, code FROM reservations WHERE reservation_id = :id');
+            $stmt->execute(['id' => $id]);
+            $res = $stmt->fetch();
+            if (!$res) deny('Reservation not found.', 404);
+            if ($res['payment_status'] === 'refunded') deny('This reservation was refunded; payments cannot be recorded.', 422);
+            $total = (float)$res['total_amount'];
+            $paid  = (float)$res['amount_paid'];
+            if (!empty($input['mark_paid'])) {
+                $newPaid = $total;
+            } elseif (isset($input['add_amount'])) {
+                $add = (float)$input['add_amount'];
+                if ($add <= 0) deny('Enter an amount greater than 0.', 422);
+                $newPaid = $paid + $add;
+            } elseif (isset($input['amount_paid'])) {
+                $newPaid = (float)$input['amount_paid'];
+            } else {
+                deny('Nothing to record.', 422);
+            }
+            if ($newPaid < 0) deny('Amount cannot be negative.', 422);
+            if ($newPaid > $total + 0.004) deny('Amount exceeds the total of ' . number_format($total, 2) . '.', 422);
+            $newPaid = min($newPaid, $total);
+            $newStatus = paymentStatusFor($total, $newPaid);
+
+            $pdo->beginTransaction();
+            try {
+                $pdo->prepare('UPDATE reservations SET amount_paid = :p, payment_status = :s WHERE reservation_id = :id')
+                    ->execute(['p' => $newPaid, 's' => $newStatus, 'id' => $id]);
+                $upd = $pdo->prepare('UPDATE payments SET amount = :p, payment_status = :s, payment_date = IF(:p2 > 0, NOW(), NULL) WHERE reservation_id = :id');
+                $upd->execute(['p' => $newPaid, 's' => $newStatus, 'p2' => $newPaid, 'id' => $id]);
+                if ($upd->rowCount() === 0) {
+                    $chk = $pdo->prepare('SELECT COUNT(*) FROM payments WHERE reservation_id = :id');
+                    $chk->execute(['id' => $id]);
+                    if ((int)$chk->fetchColumn() === 0) {
+                        $pdo->prepare('INSERT INTO payments (reservation_id, payment_method, reference_number, amount, payment_status, payment_date)
+                                       VALUES (:id, :m, :c, :p, :s, IF(:p2 > 0, NOW(), NULL))')
+                            ->execute(['id' => $id, 'm' => $res['payment_method'], 'c' => $res['code'], 'p' => $newPaid, 's' => $newStatus, 'p2' => $newPaid]);
+                    }
+                }
+                $pdo->commit();
+            } catch (PDOException $e) {
+                $pdo->rollBack();
+                deny('Could not record the payment.', 500);
+            }
+            echo json_encode([
+                'success' => true,
+                'id' => $id,
+                'amount_paid' => $newPaid,
+                'balance' => max(0.0, $total - $newPaid),
+                'payment_status' => $newStatus,
+            ]);
             break;
 
         /* ------------------------------------------------------------
