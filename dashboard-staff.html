@@ -60,7 +60,6 @@
 </aside>
 
 <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
-
 <nav class="mobile-tabbar" id="mobileTabbar">
   <button class="nav-item tab-item active" data-view="dashboard" type="button">
     <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 11L12 4L20 11V20H4V11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
@@ -93,13 +92,7 @@
         <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu" type="button">
           <svg viewBox="0 0 24 24" fill="none"><path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </button>
-        <button class="icon-btn" id="notifBtn" aria-label="Notifications" type="button">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M6 10a6 6 0 1112 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 19a2 2 0 004 0" stroke="currentColor" stroke-width="1.5"/></svg>
-          <span class="dot"></span>
-        </button>
-        <button class="avatar-btn" id="profileBtn" aria-label="Profile" type="button">S</button>
       </div>
-
       <div class="summary-grid">
         <div class="summary-card">
           <p class="summary-label">Total Reservations</p>
@@ -137,15 +130,6 @@
             <span class="summary-number" id="statTotalGuests">28</span>
           </div>
         </div>
-        <div class="summary-card">
-          <p class="summary-label">Total Revenue</p>
-          <div class="summary-row">
-            <span class="summary-icon green">
-              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7V17M9.5 9.5C9.5 8.4 10.6 7.5 12 7.5C13.4 7.5 14.5 8.4 14.5 9.5C14.5 10.9 13 11.2 12 11.5C10.8 11.9 9.5 12.3 9.5 13.7C9.5 14.9 10.6 15.7 12 15.7C13.4 15.7 14.5 14.9 14.5 13.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            </span>
-            <span class="summary-number" id="statTotalRevenue">&#8369;4,039.00</span>
-          </div>
-        </div>
       </div>
 
       <div class="two-col">
@@ -175,9 +159,11 @@
           <div class="panel-head"><h3>Accommodation Availability</h3></div>
           <div class="avail-grid" id="availabilityGrid"></div>
         </div>
-
         <div class="panel">
-          <div class="panel-head"><h3>System Notifications</h3></div>
+          <div class="panel-head">
+            <h3>System Notifications</h3>
+            <a class="view-all-link" data-view-link="notifications">View All</a>
+          </div>
           <div id="systemNotifList"></div>
         </div>
       </div>
@@ -243,7 +229,7 @@
         <div class="panel-head">
           <div>
             <h3 style="margin-bottom:2px;">User Accounts</h3>
-            <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">View and manage all user accounts in the system</p>
+            <p style="font-size:12.5px; color:#ffffff; margin:0;">View and manage all user accounts in the system</p>
           </div>
           <button class="btn-primary" type="button" id="addUserBtn">+ Add New User</button>
         </div>
@@ -263,10 +249,10 @@
         </div>
         <table class="data-table">
           <thead>
-            <tr><th>User ID</th><th>Full Name</th><th>Email</th><th>Role</th><th>Status</th><th>Date Created</th><th>Action</th></tr>
+            <tr><th>User ID</th><th>Full Name</th><th>Email</th><th>Role</th><th>Status</th><th>Valid ID</th><th>Date Created</th><th>Action</th></tr>
           </thead>
           <tbody id="userTableBody">
-            <tr><td colspan="7" class="empty-admin-note">Loading users...</td></tr>
+            <tr><td colspan="8" class="empty-admin-note">Loading users...</td></tr>
           </tbody>
         </table>
       </div>
@@ -277,7 +263,7 @@
         <div class="panel-head">
           <div>
             <h3 style="margin-bottom:2px;">Roles &amp; Permission</h3>
-            <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Roles are assigned per user in User Management. This overview reflects the roles currently in use.</p>
+            <p style="font-size:12.5px; color:#ffffff; margin:0;">Roles are assigned per user in User Management. This overview reflects the roles currently in use.</p>
           </div>
         </div>
         <table class="data-table">
@@ -310,7 +296,7 @@
         <div class="panel-head">
           <div>
             <h3 style="margin-bottom:2px;">Login Activity</h3>
-            <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Monitor and review user logins and account access.</p>
+            <p style="font-size:12.5px; color:#ffffff; margin:0;">Monitor and review user logins and account access.</p>
           </div>
         </div>
         <div class="filter-row">
@@ -343,7 +329,7 @@
         <div class="panel-head">
           <div>
             <h3 style="margin-bottom:2px;">Account Security</h3>
-            <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Manage security settings and protect user accounts.</p>
+            <p style="font-size:12.5px; color:#ffffff; margin:0;">Manage security settings and protect user accounts.</p>
           </div>
         </div>
 
@@ -420,7 +406,7 @@
               Security Alerts
             </div>
             <div id="settingsAlertList"></div>
-            <a class="view-all-link" style="display:inline-block; margin-top:8px;">View All Alerts &raquo;</a>
+            <a class="view-all-link" id="viewAllAlertsLink" href="#" style="display:inline-block; margin-top:8px; cursor:pointer;">View All Alerts &raquo;</a>
           </div>
         </div>
       </div>
@@ -433,7 +419,7 @@
     <div class="summary-grid">
       <div class="summary-card">
         <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="16" cy="9" r="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14 14c2.5 0.3 4 2 4 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
-        <div><p class="summary-label">Total Reservations</p><p class="summary-number" id="statTotalReservations">0</p><p class="summary-sub">All Time</p></div>
+        <div><p class="summary-label">Total Reservations</p><p class="summary-number" id="resStatTotalReservations">0</p><p class="summary-sub">All Time</p></div>
       </div>
       <div class="summary-card">
         <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M7 12L10.5 15.5L17 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/></svg></div>
@@ -449,7 +435,60 @@
       </div>
       <div class="summary-card">
         <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7V17M9 9.5C9 8 10.3 7 12 7C13.7 7 15 8 15 9.5C15 11.5 12 11.5 12 11.5C12 11.5 9 11.5 9 14.5C9 16 10.3 17 12 17C13.7 17 15 16 15 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
-        <div><p class="summary-label">Total Revenue</p><p class="summary-number" id="statReservationRevenue" style="font-size:17px;">&#8369;0.00</p><p class="summary-sub">This month</p></div>
+         <div><p class="summary-label">Total Revenue</p><p class="summary-number" id="statReservationRevenue" style="font-size:22px;">&#8369;0.00</p><p class="summary-sub">This month</p></div>
+      </div>
+    </div>
+
+    <div class="panel calendar-panel">
+      <div class="panel-head">
+        <div>
+          <h3 style="margin-bottom:2px;">Reservation Calendar</h3>
+          <p style="font-size:12.5px; color:#ffffff; margin:0;">Only confirmed reservations appear here. Select a date to see check-in, check-out, and room availability.</p>
+        </div>
+        <button class="btn-primary" type="button" id="openWalkInModalBtn">+ Add Walk-in Reservation</button>
+      </div>
+
+      <div class="calendar-layout">
+        <div class="calendar-col">
+          <div class="calendar-nav">
+            <button type="button" id="calPrevMonthBtn" class="calendar-nav-btn" aria-label="Previous month">&lsaquo;</button>
+            <span id="calMonthLabel" class="calendar-month-label"></span>
+            <button type="button" id="calNextMonthBtn" class="calendar-nav-btn" aria-label="Next month">&rsaquo;</button>
+          </div>
+          <div class="calendar-weekdays">
+            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+          </div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+          <div class="calendar-legend">
+            <span><i class="dot dot-in"></i> Check-In</span>
+            <span><i class="dot dot-out"></i> Check-Out</span>
+          </div>
+        </div>
+
+        <div class="calendar-detail-col">
+          <div class="calendar-detail-top">
+            <h4 id="calSelectedDateLabel" class="calendar-detail-title">Today</h4>
+            <div class="calendar-mode-toggle" id="calDetailModeToggle">
+              <button type="button" class="cal-mode-btn active" data-mode="date">Selected Date</button>
+              <button type="button" class="cal-mode-btn" data-mode="all">All Pending</button>
+            </div>
+          </div>
+
+          <div class="calendar-detail-section">
+            <p class="calendar-detail-heading">Checking In</p>
+            <div id="calCheckinList" class="calendar-detail-list"></div>
+          </div>
+
+          <div class="calendar-detail-section">
+            <p class="calendar-detail-heading">Checking Out</p>
+            <div id="calCheckoutList" class="calendar-detail-list"></div>
+          </div>
+
+          <div class="calendar-detail-section">
+            <p class="calendar-detail-heading">Room Availability</p>
+            <div id="calAvailabilityGrid" class="calendar-avail-grid"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -508,6 +547,24 @@
       </div>
       <div class="modal-footer">
         <button class="btn-primary" id="reservationModalCloseBtn" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay hidden" id="reportDetailModal">
+    <div class="modal-box" style="max-width:860px; width:92%;">
+      <button class="modal-close-btn" id="reportDetailClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title" id="reportDetailTitle">Report</p>
+      <div style="max-height:60vh; overflow:auto;">
+        <table class="data-table">
+          <thead id="reportDetailHead"></thead>
+          <tbody id="reportDetailBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="reportDetailCloseBtn" type="button">Close</button>
+        <button class="btn-primary" id="reportDetailDownloadBtn" type="button">Download CSV</button>
       </div>
     </div>
   </div>
@@ -579,6 +636,24 @@
     </div>
   </div>
 
+  <div class="modal-overlay hidden" id="editAdminProfileModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="editAdminProfileClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title">Edit Profile</p>
+      <form id="editAdminProfileForm" class="settings-form">
+        <label>Full Name<input type="text" id="editAdminProfileName" required></label>
+        <label>Email<input type="email" id="editAdminProfileEmail" readonly></label>
+        <label>Contact Number<input type="text" id="editAdminProfileContact"></label>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="editAdminProfileCancelBtn" type="button">Cancel</button>
+          <button class="btn-primary" type="submit">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div class="modal-overlay hidden" id="accommodationModal">
     <div class="modal-box">
       <button class="modal-close-btn" id="accommodationModalClose" type="button">
@@ -615,9 +690,61 @@
           </label>
         </div>
         <label>Description<input type="text" id="accFormDescription"></label>
+        <div class="amen-editor">
+          <span class="amen-editor-label">Included amenities</span>
+          <div class="amen-editor-list" id="accFormAmenityList"></div>
+          <div class="amen-editor-add">
+            <input type="text" id="accFormAmenityInput" maxlength="40" placeholder="e.g. Kettle, then press Enter">
+            <button type="button" class="btn-secondary" id="accFormAmenityAddBtn">Add</button>
+          </div>
+          <p class="amen-editor-hint">Shown to guests in the Booking Form. Click &times; on a chip to remove it.</p>
+        </div>
         <div class="modal-footer">
           <button class="btn-secondary" id="accommodationModalCancelBtn" type="button">Cancel</button>
           <button class="btn-primary" type="submit">Save Accommodation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="walkInModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="walkInModalClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title">Add Walk-in Reservation</p>
+      <p style="font-size:12.5px; color:var(--ink-soft); margin:-10px 0 14px;">For guests who booked or arrived on-site. This is saved as <strong>Confirmed</strong> right away and will show up on the calendar.</p>
+      <form id="walkInForm" class="settings-form">
+        <label>Guest Name<input type="text" id="walkInGuestName" required></label>
+        <div class="setting-row-split">
+          <label>Contact Number<input type="text" id="walkInGuestPhone" placeholder="Optional"></label>
+          <label>Email Address<input type="email" id="walkInGuestEmail" placeholder="Optional"></label>
+        </div>
+        <label>Accommodation
+          <select id="walkInCabin" required>
+            <option value="">Select accommodation...</option>
+          </select>
+        </label>
+        <div class="setting-row-split">
+          <label>Check-in<input type="date" id="walkInCheckIn" required></label>
+          <label>Check-out<input type="date" id="walkInCheckOut" required></label>
+        </div>
+        <div class="setting-row-split">
+          <label>Number of Guests<input type="number" id="walkInGuestsCount" min="1" value="1" required></label>
+          <label>Payment Method
+            <select id="walkInPaymentMethod">
+              <option value="cash">Cash</option>
+              <option value="gcash">GCash</option>
+              <option value="bank transfer">Bank Transfer</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+        </div>
+        <label>Total Amount<input type="number" id="walkInTotalAmount" min="0" step="0.01" required></label>
+        <p id="walkInFormError" style="display:none; color:#c0392b; font-size:12.5px; margin:-6px 0 6px;"></p>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="walkInModalCancelBtn" type="button">Cancel</button>
+          <button class="btn-primary" type="submit">Save Reservation</button>
         </div>
       </form>
     </div>
@@ -631,13 +758,16 @@
       <p class="modal-title">Add Message</p>
       <form id="addMessageForm" class="settings-form">
         <label>Recipient
-          <select id="addMessageRecipient" required>
-            <option value="">Choose a guest reservation...</option>
+          <select id="addMessageRecipient">
+            <option value="">Choose a recipient...</option>
           </select>
         </label>
+        <label>Or send to a custom email address (optional)
+          <input type="email" id="addMessageCustomEmail" placeholder="e.g. someone@gmail.com">
+        </label>
         <label>Title<input type="text" id="addMessageTitle" required maxlength="150"></label>
-        <label>Message<textarea id="addMessageText" rows="5" style="padding:10px 12px; border-radius:8px; border:1px solid var(--line,#dcdcdc); font-family:inherit; font-size:13.5px;" required maxlength="255"></textarea></label>
-        <p style="font-size:11.5px; color:var(--ink-soft); margin:-8px 0 0;">This will be saved as a notification and emailed to the guest's address on file.</p>
+        <label>Message<textarea id="addMessageText" rows="5" style="padding:10px 12px; border-radius:8px; border:1.5px solid #9aa89a; font-family:inherit; font-size:13.5px; background:#fff; color:#222;" required maxlength="255"></textarea></label>
+        <p style="font-size:11.5px; color:var(--ink-soft); margin:-8px 0 0;">Select an account from the list, or enter a custom email address above. This will be saved as a notification and sent via email.</p>
         <div class="modal-footer">
           <button class="btn-secondary" id="addMessageCancelBtn" type="button">Cancel</button>
           <button class="btn-primary" type="submit">Send Message</button>
@@ -653,7 +783,7 @@
       </button>
       <p class="modal-title">Login Location</p>
       <div id="loginLocationInfo" class="modal-section-title" style="text-transform:none; font-weight:400; margin-bottom:14px;"></div>
-      <iframe id="loginLocationMapFrame" title="Login location map" style="width:100%; height:320px; border:1px solid var(--line,#dcdcdc); border-radius:8px; display:none;"></iframe>
+      <div id="loginLocationMapFrame" style="width:100%; height:320px; border:1px solid var(--line,#dcdcdc); border-radius:8px; display:none; position:relative; z-index:0;"></div>
       <p id="loginLocationMapEmpty" style="display:none; font-size:13px; color:var(--ink-soft); padding:24px; text-align:center; border:1px dashed var(--line,#dcdcdc); border-radius:8px;"></p>
       <div class="modal-footer">
         <button class="btn-secondary" id="loginLocationCancelBtn" type="button">Close</button>
@@ -676,6 +806,49 @@
           <button class="btn-primary" type="submit">Send Response</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="idVerifyModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="idVerifyModalClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title" style="color:#000;">Valid ID Review</p>
+      <div id="idVerifyInfo" class="modal-section-title" style="text-transform:none; font-weight:400; margin-bottom:14px; color:#000;"></div>
+      <div class="id-verify-img-wrap">
+        <img id="idVerifyImage" src="" alt="Valid ID">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="idVerifyRejectBtn" type="button">Reject</button>
+        <button class="btn-primary" id="idVerifyApproveBtn" type="button">Verify</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay hidden" id="accommodationReservationsModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="accResModalClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <div class="acc-res-modal-image" id="accResModalImage"></div>
+      <p class="modal-title" id="accResModalTitle">Accommodation</p>
+      <div id="accResModalBody"></div>
+      <div class="modal-footer">
+        <button class="btn-primary" id="accResModalCloseBtn" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="guestViewModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="guestViewModalClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title">Guest Details</p>
+      <div id="guestViewBody"></div>
+      <div class="modal-footer">
+        <button class="btn-primary" id="guestViewModalCloseBtn" type="button">Close</button>
+      </div>
     </div>
   </div>
 
@@ -705,7 +878,7 @@
       <div class="panel-head">
         <div>
           <h3 style="margin-bottom:2px;">Accommodation List</h3>
-          <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Manage accommodation information, pricing, availability, and details.</p>
+          <p style="font-size:12.5px; color:#ffffff; margin:0;">Manage accommodation information, pricing, availability, and details.</p>
         </div>
         <button class="btn-primary" type="button" id="addAccommodationBtn">+ Add Accommodation</button>
       </div>
@@ -742,7 +915,7 @@
 
     <div class="summary-grid">
       <div class="summary-card">
-        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="16" cy="9" r="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14 14c2.5 0.3 4 2 4 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+        <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M16.5 12c1.38 0 2.49-1.12 2.49-2.5S17.88 7 16.5 7C15.12 7 14 8.12 14 9.5s1.12 2.5 2.5 2.5zM9 12c1.93 0 3.5-1.57 3.5-3.5S10.93 5 9 5 5.5 6.57 5.5 8.5 7.07 12 9 12zm7.5 2c-1.83 0-5.5.92-5.5 2.75V18h11v-1.25c0-1.83-3.67-2.75-5.5-2.75zM9 14c-2.33 0-7 1.17-7 3.5V18h7.5v-1.25c0-.99.36-2.3 1.41-3.3A14.66 14.66 0 0 0 9 14z" fill="currentColor"/></svg></div>
         <div><p class="summary-label">Total Guest</p><p class="summary-number" id="statTotalGuests">0</p><p class="summary-sub">Active Account</p></div>
       </div>
       <div class="summary-card">
@@ -763,7 +936,7 @@
       <div class="panel-head">
         <div>
           <h3 style="margin-bottom:2px;">Guest Records</h3>
-          <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">View and manage all guest information and their reservation history.</p>
+          <p style="font-size:12.5px; color:#ffffff; margin:0;">View and manage all guest information and their reservation history.</p>
         </div>
         <button class="btn-primary" type="button" id="refreshGuestsBtn">&#8635; Refresh</button>
       </div>
@@ -814,7 +987,7 @@
       <div class="panel-head">
         <div>
           <h3 style="margin-bottom:2px;">Notifications</h3>
-          <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Manage and send notifications to guests and staff.</p>
+          <p style="font-size:12.5px; color:#ffffff; margin:0;">Manage and send notifications to guests and staff.</p>
         </div>
         <div style="display:flex; gap:10px;">
           <button class="btn-primary" id="addMessageBtn" type="button">
@@ -856,6 +1029,13 @@
   <section class="view" id="view-feedback">
     <h2 class="page-title">Feedback and Concern</h2>
 
+    <div class="tab-row" id="feedbackTabs">
+      <button class="tab-btn active" data-fbtab="records" type="button">Feedback &amp; Concern</button>
+      <button class="tab-btn" data-fbtab="sent" type="button">Replies &amp; Messages Sent</button>
+    </div>
+
+    <div class="fbtab-panel active" id="fbtab-records">
+
     <div class="summary-grid">
       <div class="summary-card">
         <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H8l-4 4V5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
@@ -879,7 +1059,7 @@
       <div class="panel-head">
         <div>
           <h3 style="margin-bottom:2px;">Feedback &amp; Concern Records</h3>
-          <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">View, manage, and respond to guest feedback and concern.</p>
+          <p style="font-size:12.5px; color:#ffffff; margin:0;">View, manage, and respond to guest feedback and concern.</p>
         </div>
         <button class="btn-primary" id="refreshFeedbackBtn" type="button">&#8635; Refresh</button>
       </div>
@@ -896,6 +1076,9 @@
           <option value="feedback">Feedback</option>
           <option value="concern">Concern</option>
         </select>
+        <select id="feedbackAccommodationFilter">
+          <option value="">All Accommodations</option>
+        </select>
         <select id="feedbackRatingFilter">
           <option value="">All Rating</option>
           <option value="5">5 Stars</option>
@@ -909,12 +1092,75 @@
       </div>
 
       <table class="data-table">
-        <thead><tr><th>ID or Reference No.</th><th>Guest</th><th>Type</th><th>Title</th><th>Rating</th><th>Status</th><th>Date Submitted</th><th>Actions</th></tr></thead>
+        <thead><tr><th>ID or Reference No.</th><th>Guest</th><th>Type</th><th>Title</th><th>Room</th><th>Rating</th><th>Status</th><th>Date Submitted</th><th>Actions</th></tr></thead>
         <tbody id="feedbackTableBody">
           <tr><td colspan="8" class="empty-admin-note">Loading feedback...</td></tr>
         </tbody>
       </table>
       <div class="pagination-row" id="feedbackPagination"></div>
+    </div>
+    </div>
+
+    <div class="fbtab-panel" id="fbtab-sent">
+      <div class="panel" id="sentListPanel">
+        <div class="panel-head">
+          <div>
+            <h3 style="margin-bottom:2px;">Replies &amp; Messages Sent</h3>
+            <p style="font-size:12.5px; color:#ffffff; margin:0;">Replies you gave to guest feedback and messages you sent to guests.</p>
+          </div>
+          <button class="btn-primary" id="refreshSentBtn" type="button">&#8635; Refresh</button>
+        </div>
+
+        <div class="filter-row">
+          <input type="text" id="sentSearchInput" placeholder="Search by guest, email, subject, or message...">
+          <select id="sentKindFilter">
+            <option value="">All Types</option>
+            <option value="reply">Feedback Reply</option>
+            <option value="message">Message</option>
+          </select>
+          <input type="date" id="sentDateFromFilter" title="From Date">
+          <input type="date" id="sentDateToFilter" title="To Date">
+        </div>
+
+        <div class="gm-list-head">
+          <span class="gm-list-title">Sent</span>
+          <span class="gm-list-pager">
+            <span id="sentPageInfo">0 of 0</span>
+            <button class="gm-pg-btn" id="sentPrevBtn" type="button" aria-label="Newer" title="Newer">
+              <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="gm-pg-btn" id="sentNextBtn" type="button" aria-label="Older" title="Older">
+              <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </span>
+        </div>
+        <div class="gm-list" id="sentMessagesBody">
+          <div class="gm-empty">Open this tab to load messages...</div>
+        </div>
+      </div>
+
+      <div class="panel gm-detail" id="sentDetailView" hidden>
+        <div class="gm-d-toolbar">
+          <button class="gm-pg-btn" id="sentDetailBack" type="button" aria-label="Back to list" title="Back to list">
+            <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <h2 class="gm-d-subject"><span id="sentDetailTitle"></span> <span class="gm-chip" id="sentDetailChip"></span></h2>
+        <div class="gm-d-message">
+          <img class="gm-d-avatar" src="assets/images/Camp Mayagay logo.png" alt="">
+          <div class="gm-d-main">
+            <div class="gm-d-head">
+              <div>
+                <strong>Camp Mayagay</strong>
+                <span class="gm-d-to" id="sentDetailTo"></span>
+              </div>
+              <span class="gm-d-time" id="sentDetailTime"></span>
+            </div>
+            <div class="gm-d-body" id="sentDetailBody"></div>
+            <div class="gm-d-foot" id="sentDetailFoot"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -922,13 +1168,13 @@
     <h2 class="page-title">Reports</h2>
 
     <div class="summary-grid" id="reportsSummaryGrid"></div>
-    <div id="reportsStatus" class="empty-admin-note">Loading report from the Java reports service...</div>
+    <div id="reportsStatus" class="empty-admin-note">Loading report...</div>
 
     <div class="panel">
       <div class="panel-head">
         <div>
           <h3 style="margin-bottom:2px;">Reports Overview</h3>
-          <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">View and analyze data summary of reservations, guests, accommodations and feedback.</p>
+          <p style="font-size:12.5px; color:#ffffff; margin:0;">View and analyze data summary of reservations, guests, accommodations and feedback.</p>
         </div>
         <button class="view-all-link" id="downloadCsvBtn" type="button" style="background:none;border:none;cursor:pointer;">Download CSV Report</button>
       </div>
@@ -1003,15 +1249,15 @@
           <div class="panel-head">
             <div>
               <h3 style="margin-bottom:2px;">Profile Settings</h3>
-              <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Manage your account profile and personal information.</p>
+              <p style="font-size:12.5px; color:#ffffff; margin:0;">Manage your account profile and personal information.</p>
             </div>
           </div>
           <div class="profile-settings-row">
             <div class="profile-avatar" id="settingsProfileAvatar">A</div>
             <div class="profile-fields">
-              <div class="profile-field"><span>Name:</span><strong id="settingsProfileName">Staff User</strong></div>
-              <div class="profile-field"><span>Email:</span><strong id="settingsProfileEmail">staff@campmayagay.com</strong></div>
-              <div class="profile-field"><span>Role:</span><strong id="settingsProfileRole">Staff</strong></div>
+              <div class="profile-field"><span>Name:</span><strong id="settingsProfileName">Admin User</strong></div>
+              <div class="profile-field"><span>Email:</span><strong id="settingsProfileEmail">admin@campmayagay.com</strong></div>
+              <div class="profile-field"><span>Role:</span><strong id="settingsProfileRole">Administrator</strong></div>
               <button class="btn-primary" id="editProfileBtn" type="button">Edit Profile</button>
             </div>
           </div>
@@ -1021,7 +1267,7 @@
           <div class="panel-head">
             <div>
               <h3 style="margin-bottom:2px;">Notifications Settings</h3>
-              <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Configure how you receive notifications.</p>
+              <p style="font-size:12.5px; color:#ffffff; margin:0;">Configure how you receive notifications.</p>
             </div>
           </div>
           <div class="setting-row">
@@ -1042,7 +1288,7 @@
           <div class="panel-head">
             <div>
               <h3 style="margin-bottom:2px;">Account Security</h3>
-              <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Manage your account security and login sessions.</p>
+              <p style="font-size:12.5px; color:#ffffff; margin:0;">Manage your account security and login sessions.</p>
             </div>
           </div>
           <div class="account-security-summary">
@@ -1051,6 +1297,33 @@
             <div><span>IP Address</span><strong id="settingsLoginIp">-</strong></div>
           </div>
           <button class="btn-secondary" id="viewLoginActivityBtn" type="button">View Login Activity</button>
+          <form id="reportsPinForm" class="settings-form" style="margin-top:16px;">
+            <label>Current Reports PIN
+              <div class="password-field-wrap">
+                <input type="password" id="reportsPinCurrentInput" inputmode="numeric" maxlength="4" placeholder="4-digit PIN">
+                <button type="button" class="toggle-password-icon" data-target="reportsPinCurrentInput" aria-label="Show PIN">
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+                </button>
+              </div>
+            </label>
+            <label>New Reports PIN
+              <div class="password-field-wrap">
+                <input type="password" id="reportsPinNewInput" inputmode="numeric" maxlength="4" placeholder="4-digit PIN">
+                <button type="button" class="toggle-password-icon" data-target="reportsPinNewInput" aria-label="Show PIN">
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+                </button>
+              </div>
+            </label>
+            <label>Confirm New PIN
+              <div class="password-field-wrap">
+                <input type="password" id="reportsPinConfirmInput" inputmode="numeric" maxlength="4" placeholder="4-digit PIN">
+                <button type="button" class="toggle-password-icon" data-target="reportsPinConfirmInput" aria-label="Show PIN">
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+                </button>
+              </div>
+            </label>
+            <button class="btn-primary" type="submit">Update Reports PIN</button>
+          </form>
         </div>
       </div>
 
@@ -1059,13 +1332,34 @@
           <div class="panel-head">
             <div>
               <h3 style="margin-bottom:2px;">Change Password</h3>
-              <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Update your account password.</p>
+              <p style="font-size:12.5px; color:#ffffff; margin:0;">Update your account password.</p>
             </div>
           </div>
           <form id="changePasswordForm" class="settings-form">
-            <label>Current Password<input type="password" id="currentPasswordInput" placeholder="••••••••"></label>
-            <label>New Password<input type="password" id="newPasswordInput" placeholder="••••••••"></label>
-            <label>Confirm New Password<input type="password" id="confirmPasswordInput" placeholder="••••••••"></label>
+            <label>Current Password
+              <div class="password-field-wrap">
+                <input type="password" id="currentPasswordInput" placeholder="••••••••">
+                <button type="button" class="toggle-password-icon" data-target="currentPasswordInput" aria-label="Show password">
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+                </button>
+              </div>
+            </label>
+            <label>New Password
+              <div class="password-field-wrap">
+                <input type="password" id="newPasswordInput" placeholder="••••••••">
+                <button type="button" class="toggle-password-icon" data-target="newPasswordInput" aria-label="Show password">
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+                </button>
+              </div>
+            </label>
+            <label>Confirm New Password
+              <div class="password-field-wrap">
+                <input type="password" id="confirmPasswordInput" placeholder="••••••••">
+                <button type="button" class="toggle-password-icon" data-target="confirmPasswordInput" aria-label="Show password">
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+                </button>
+              </div>
+            </label>
             <button class="btn-primary" type="submit">Update Password</button>
           </form>
         </div>
@@ -1074,7 +1368,7 @@
           <div class="panel-head">
             <div>
               <h3 style="margin-bottom:2px;">System Preferences</h3>
-              <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Customize system preferences.</p>
+              <p style="font-size:12.5px; color:#ffffff; margin:0;">Customize system preferences.</p>
             </div>
           </div>
           <form id="systemPreferencesForm" class="settings-form">
@@ -1093,12 +1387,37 @@
             </label>
             <label>Currency
               <select id="currencySelect">
-                <option value="PHP">PHP (₱)</option>
-                <option value="USD">USD ($)</option>
+                <option value="PHP">PHP (₱) — Philippines</option>
+                <option value="USD">USD ($) — United States</option>
+                <option value="SGD">SGD (S$) — Singapore</option>
+                <option value="AED">AED (د.إ) — Dubai / UAE</option>
+                <option value="KRW">KRW (₩) — South Korea</option>
+                <option value="JPY">JPY (¥) — Japan</option>
+                <option value="EUR">EUR (€) — Europe</option>
+                <option value="GBP">GBP (£) — United Kingdom</option>
+                <option value="AUD">AUD (A$) — Australia</option>
+                <option value="CNY">CNY (¥) — China</option>
+                <option value="HKD">HKD (HK$) — Hong Kong</option>
+                <option value="THB">THB (฿) — Thailand</option>
               </select>
             </label>
             <button class="btn-primary" type="submit">Save Changes</button>
           </form>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3 style="margin-bottom:2px;">Guest Valid IDs</h3>
+              <p style="font-size:12.5px; color:#ffffff; margin:0;">Review every valid ID guests have submitted.</p>
+            </div>
+            <button class="btn-secondary" id="refreshSettingsIdsBtn" type="button">↻ Refresh</button>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Guest</th><th>Email</th><th>Valid ID</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="settingsIdTableBody">
+              <tr><td colspan="5" class="empty-admin-note">Loading...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -1106,7 +1425,8 @@
 
 </main>
 
-   <script src="assets/js/dashboard-admin.js?v=15"></script>
-   <script src="assets/js/dashboard-staff-permissions.js?v=2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="assets/js/dashboard-admin.js?v=15"></script>
+<script src="assets/js/dashboard-staff-permissions.js?v=3"></script>
 </body>
 </html>

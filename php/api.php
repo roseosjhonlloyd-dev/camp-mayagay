@@ -68,6 +68,15 @@ function requireAdmin(?array $user): void
     if (!$user || $user['role'] !== 'admin') deny('Admins only.', 403);
 }
 
+/** True for Admin and Staff. Staff share the admin dashboard data (all
+ *  reservations, admin notifications, all feedback); what each staff
+ *  account may actually open is still controlled by requireModuleAccess()
+ *  (Security Management > Roles & Permissions). */
+function isStaffOrAdmin(?array $user): bool
+{
+    return $user !== null && in_array($user['role'], ['admin', 'staff'], true);
+}
+
 /* ------------------------------------------------------------
    ROLE-BASED ACCESS CONTROL (Security Management > Roles & Permissions)
 ------------------------------------------------------------ */
@@ -1047,7 +1056,7 @@ try {
         case 'reservations_list':
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'reservation');
-            if ($user['role'] === 'admin') {
+            if (isStaffOrAdmin($user)) {
                 $stmt = $pdo->query(RESERVATION_SELECT . ' ORDER BY r.created_at DESC');
                 $rows = $stmt->fetchAll();
             } else {
@@ -1305,7 +1314,7 @@ try {
             $stmt = $pdo->prepare('SELECT * FROM reservations WHERE reservation_id = :id');
             $stmt->execute(['id' => $id]);
             $row = $stmt->fetch();
-            if (!$row || ((int)$row['user_id'] !== $user['id'] && $user['role'] !== 'admin')) {
+            if (!$row || ((int)$row['user_id'] !== $user['id'] && !isStaffOrAdmin($user))) {
                 deny('Reservation not found.', 404);
             }
             if (in_array($row['reservation_status'], ['cancelled', 'declined', 'completed'], true)) {
@@ -1379,7 +1388,9 @@ try {
            PAYMENTS
         ------------------------------------------------------------ */
         case 'payments_list':
-            requireAdmin($user);
+            requireLogin($user);
+            if (!isStaffOrAdmin($user)) deny('Admins and staff only.', 403);
+            requireModuleAccess($pdo, $user, 'reservation');
             $stmt = $pdo->query(
                 'SELECT p.*, r.code, r.guest_name FROM payments p
                  JOIN reservations r ON r.reservation_id = p.reservation_id
@@ -1394,7 +1405,7 @@ try {
         case 'notifications_list':
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'notifications');
-            if ($user['role'] === 'admin') {
+            if (isStaffOrAdmin($user)) {
                 $stmt = $pdo->query("SELECT * FROM notifications WHERE audience = 'admin' ORDER BY created_at DESC LIMIT 100");
             } else {
                 $stmt = $pdo->prepare("SELECT * FROM notifications WHERE audience = 'guest' AND user_id = :uid ORDER BY created_at DESC LIMIT 100");
@@ -1514,7 +1525,7 @@ try {
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'notifications');
             $ids = $input['ids'] ?? null;
-            if ($user['role'] === 'admin') {
+            if (isStaffOrAdmin($user)) {
                 if ($ids) {
                     $in = implode(',', array_fill(0, count($ids), '?'));
                     $pdo->prepare("UPDATE notifications SET status = 'read' WHERE audience = 'admin' AND notification_id IN ($in)")->execute(array_map('intval', $ids));
@@ -1533,14 +1544,13 @@ try {
             echo json_encode(['success' => true]);
             break;
 
-        case 'notifications_delete':
         case 'notifications_mark_unread':
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'notifications');
             $ids = $input['ids'] ?? null;
             if ($ids && is_array($ids)) {
                 $in = implode(',', array_fill(0, count($ids), '?'));
-                if ($user['role'] === 'admin') {
+                if (isStaffOrAdmin($user)) {
                     $pdo->prepare("UPDATE notifications SET status = 'unread' WHERE audience = 'admin' AND notification_id IN ($in)")->execute(array_map('intval', $ids));
                 } else {
                     $params = array_merge(array_map('intval', $ids), [$user['id']]);
@@ -1549,10 +1559,16 @@ try {
             }
             echo json_encode(['success' => true]);
             break;
+
+        case 'notifications_delete':
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'notifications');
             $ids = $input['ids'] ?? null;
-            if ($user['role'] === 'admin') {
+            // Staff share the admin notifications, so only an admin may wipe them all at once.
+            if ((!$ids || !is_array($ids)) && $user['role'] === 'staff') {
+                deny('Only an admin can delete all notifications at once.', 403);
+            }
+            if (isStaffOrAdmin($user)) {
                 if ($ids) {
                     $in = implode(',', array_fill(0, count($ids), '?'));
                     $pdo->prepare("DELETE FROM notifications WHERE audience = 'admin' AND notification_id IN ($in)")->execute(array_map('intval', $ids));
@@ -1576,7 +1592,9 @@ try {
         ------------------------------------------------------------ */
         case 'feedback_list':
             requireLogin($user);
-            if ($user['role'] === 'admin') {
+            $seeAllFeedback = $user['role'] === 'admin'
+                || ($user['role'] === 'staff' && !empty(getPermissionsForRole($pdo, 'staff')['feedback']));
+            if ($seeAllFeedback) {
                 $stmt = $pdo->query(
                     "SELECT fc.*, a.accommodation_name
                      FROM feedback_concerns fc
