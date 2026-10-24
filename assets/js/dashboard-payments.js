@@ -10,6 +10,7 @@
   var loaded = false;
   var activeTab = '';
   var recordTarget = null;
+  var recordMode = 'add';
 
   function $(id) { return document.getElementById(id); }
   function money(n) {
@@ -92,7 +93,10 @@
       return;
     }
     body.innerHTML = list.map(function (r) {
-      var canPay = r.payment_status !== 'paid' && r.payment_status !== 'refunded';
+      var act;
+      if (r.payment_status === 'paid') act = '<button type="button" class="btn-secondary pay-act" data-pay-id="' + r.id + '">Edit payment</button>';
+      else if (r.payment_status === 'refunded') act = '<span style="opacity:.6">Refunded</span>';
+      else act = '<button type="button" class="btn-secondary pay-act" data-pay-id="' + r.id + '">Record payment</button>';
       return '<tr>' +
         '<td>' + esc(r.code) + '</td>' +
         '<td>' + esc(r.guest_name) + '</td>' +
@@ -103,7 +107,7 @@
         '<td>' + money(r.amount_paid) + '</td>' +
         '<td>' + money(r.balance) + '</td>' +
         '<td><span class="pill pay-st-' + esc(r.payment_status) + '">' + statusLabel(r.payment_status) + '</span></td>' +
-        '<td>' + (canPay ? '<button type="button" class="btn-secondary pay-act" data-pay-id="' + r.id + '">Record payment</button>' : '') + '</td>' +
+        '<td>' + act + '</td>' +
         '</tr>';
     }).join('');
   }
@@ -115,8 +119,12 @@
     recordTarget = r;
     $('payRecordInfo').textContent = r.guest_name + ' · ' + r.code + ' · Total ' + money(r.total_amount) +
       ' · Paid ' + money(r.amount_paid) + ' · Balance ' + money(r.balance);
-    $('payRecordAmount').value = r.balance > 0 ? r.balance.toFixed(2) : '';
-    $('payRecordAmount').max = r.balance.toFixed(2);
+    recordMode = r.payment_status === 'paid' ? 'set' : 'add';
+    $('payRecordPaidBtn').style.display = recordMode === 'set' ? 'none' : '';
+    $('payRecordLabel').firstChild.nodeValue = recordMode === 'set' ? 'Total amount paid' : 'Amount received now';
+    $('payRecordAmount').min = recordMode === 'set' ? '0' : '0.01';
+    $('payRecordAmount').value = recordMode === 'set' ? Number(r.amount_paid).toFixed(2) : (r.balance > 0 ? r.balance.toFixed(2) : '');
+    $('payRecordAmount').max = (recordMode === 'set' ? r.total_amount : r.balance).toFixed(2);
     $('payRecordError').style.display = 'none';
     $('payRecordModal').classList.remove('hidden');
   }
@@ -225,6 +233,12 @@
     $('payRecordForm').addEventListener('submit', function (e) {
       e.preventDefault();
       var amt = Number($('payRecordAmount').value);
+      if (recordMode === 'set') {
+        if (!(amt >= 0)) { showRecError('Enter a valid amount.'); return; }
+        if (recordTarget && amt > recordTarget.total_amount + 0.004) { showRecError('Amount is more than the total of ' + money(recordTarget.total_amount) + '.'); return; }
+        submitRecord({ amount_paid: amt });
+        return;
+      }
       if (!(amt > 0)) { showRecError('Enter an amount greater than 0.'); return; }
       if (recordTarget && amt > recordTarget.balance + 0.004) { showRecError('Amount is more than the balance of ' + money(recordTarget.balance) + '.'); return; }
       submitRecord({ add_amount: amt });

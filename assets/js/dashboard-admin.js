@@ -26,6 +26,7 @@ var users = [];
 var accessModules = [
   { module_key: 'dashboard',     module: 'Dashboard',          admin: true,  staff: true,  guest: false },
   { module_key: 'reservation',   module: 'Reservation',        admin: true,  staff: true,  guest: true  },
+  { module_key: 'payments',      module: 'Payment Transactions', admin: true,  staff: true,  guest: false },
   { module_key: 'accommodation', module: 'Accommodation',      admin: true,  staff: true,  guest: true  },
   { module_key: 'guest_record',  module: 'Guest Record',       admin: true,  staff: true,  guest: false },
   { module_key: 'notifications', module: 'Notifications',      admin: true,  staff: true,  guest: true  },

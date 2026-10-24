@@ -83,6 +83,7 @@ function isStaffOrAdmin(?array $user): bool
 const ACCESS_MODULES = [
     'dashboard'      => 'Dashboard',
     'reservation'    => 'Reservation',
+    'payments'       => 'Payment Transactions',
     'accommodation'  => 'Accommodation',
     'guest_record'   => 'Guest Record',
     'notifications'  => 'Notifications',
@@ -95,6 +96,7 @@ const ACCESS_MODULES = [
 const DEFAULT_ACCESS_MATRIX = [
     'dashboard'     => ['admin' => true,  'staff' => true,  'guest' => false],
     'reservation'   => ['admin' => true,  'staff' => true,  'guest' => true],
+    'payments'      => ['admin' => true,  'staff' => true,  'guest' => false],
     'accommodation' => ['admin' => true,  'staff' => true,  'guest' => true],
     'guest_record'  => ['admin' => true,  'staff' => true,  'guest' => false],
     'notifications' => ['admin' => true,  'staff' => true,  'guest' => true],
@@ -1425,7 +1427,7 @@ try {
         case 'payments_list':
             requireLogin($user);
             if (!isStaffOrAdmin($user)) deny('Admins and staff only.', 403);
-            requireModuleAccess($pdo, $user, 'reservation');
+            requireModuleAccess($pdo, $user, 'payments');
             ensureAmountPaidColumn($pdo);
             // One row per reservation: how much it costs, how much was paid,
             // and the balance. (The heavy `data` JSON / receipt image is not sent.)
@@ -1470,7 +1472,7 @@ try {
         case 'payments_record':
             requireLogin($user);
             if (!isStaffOrAdmin($user)) deny('Admins and staff only.', 403);
-            requireModuleAccess($pdo, $user, 'reservation');
+            requireModuleAccess($pdo, $user, 'payments');
             ensureAmountPaidColumn($pdo);
             $id = (int)($input['id'] ?? 0);
             $stmt = $pdo->prepare('SELECT reservation_id, total_amount, amount_paid, payment_status, payment_method, code FROM reservations WHERE reservation_id = :id');
