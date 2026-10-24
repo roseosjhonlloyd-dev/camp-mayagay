@@ -155,14 +155,31 @@ function paymentStatusFor(float $total, float $paid): string
 }
 
 /** Photos that ship with the code (committed to GitHub under assets/images/accommodations),
- *  so they survive every Railway deploy. slug => relative path. */
+ *  so they survive every Railway deploy. Matched by accommodation NAME (not slug),
+ *  because new accommodations added from the admin get their own slug. */
 const BUNDLED_ACCOMMODATION_PHOTOS = [
-    'nipa1' => 'assets/images/accommodations/nipa1.jpg',
-    'nipa2' => 'assets/images/accommodations/nipa2.jpg',
-    'tent'  => 'assets/images/accommodations/tent.jpg',
-    'big1'  => 'assets/images/accommodations/big1.jpg',
-    'big2'  => 'assets/images/accommodations/big2.jpg',
+    'nipahut1'   => 'assets/images/accommodations/nipa1.jpg',
+    'nipahut2'   => 'assets/images/accommodations/nipa2.jpg',
+    'nipahut3'   => 'assets/images/accommodations/nipa3.jpg',
+    'nipahut4'   => 'assets/images/accommodations/nipa4.jpg',
+    'nipahut5'   => 'assets/images/accommodations/nipa5.jpg',
+    'tentarea'   => 'assets/images/accommodations/tent.jpg',
+    'bonfirearea'=> 'assets/images/accommodations/bonfire.jpg',
+    'bighouse1'  => 'assets/images/accommodations/big1.jpg',
+    'bighouse2'  => 'assets/images/accommodations/big2.jpg',
 ];
+
+/** "Big House 2 ( 2nd floor )" -> the bundled photo path, or null. */
+function bundledPhotoForName(string $name): ?string
+{
+    $n = preg_replace('/[^a-z0-9]/', '', strtolower($name));
+    foreach (BUNDLED_ACCOMMODATION_PHOTOS as $key => $path) {
+        if (strpos($n, $key) === 0) {
+            return is_file(__DIR__ . '/../' . $path) ? $path : null;
+        }
+    }
+    return null;
+}
 
 /** One time only: point the accommodations at the bundled photos (replaces the old pictures).
  *  Remembered in system_settings so later admin uploads are never overwritten. */
@@ -172,16 +189,17 @@ function applyBundledAccommodationPhotos(PDO $pdo): void
     if ($done) return;
     $done = true;
     try {
-        $flag = $pdo->prepare("SELECT 1 FROM system_settings WHERE setting_key = 'accom_photos_v1'");
+        $flag = $pdo->prepare("SELECT 1 FROM system_settings WHERE setting_key = 'accom_photos_v2'");
         $flag->execute();
         if ($flag->fetchColumn()) return;
-        $upd = $pdo->prepare('UPDATE accommodations SET image = :img WHERE slug = :slug');
-        foreach (BUNDLED_ACCOMMODATION_PHOTOS as $slug => $path) {
-            if (is_file(__DIR__ . '/../' . $path)) {
-                $upd->execute(['img' => $path, 'slug' => $slug]);
+        $upd = $pdo->prepare('UPDATE accommodations SET image = :img WHERE accommodation_id = :id');
+        foreach ($pdo->query('SELECT accommodation_id, accommodation_name FROM accommodations')->fetchAll() as $row) {
+            $path = bundledPhotoForName((string)$row['accommodation_name']);
+            if ($path !== null) {
+                $upd->execute(['img' => $path, 'id' => $row['accommodation_id']]);
             }
         }
-        $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('accom_photos_v1', '1')")->execute();
+        $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('accom_photos_v2', '1')")->execute();
     } catch (PDOException $e) {
         // non-fatal: the list below still works with whatever image is saved
     }
@@ -876,12 +894,12 @@ try {
             $stmt = $pdo->query('SELECT * FROM accommodations ORDER BY accommodation_id ASC');
             $accRows = $stmt->fetchAll();
             foreach ($accRows as &$accRow) {
-                // If a saved upload no longer exists on disk (Railway wipes uploads on deploy),
-                // fall back to the bundled photo instead of showing a broken image.
+                // If there is no image, or the saved upload no longer exists on disk
+                // (Railway wipes uploads on deploy), use the bundled photo for that name.
                 $img = (string)($accRow['image'] ?? '');
-                if ($img !== '' && !preg_match('#^https?://#', $img) && !is_file(__DIR__ . '/../' . $img)) {
-                    $fallback = BUNDLED_ACCOMMODATION_PHOTOS[$accRow['slug'] ?? ''] ?? null;
-                    $accRow['image'] = ($fallback && is_file(__DIR__ . '/../' . $fallback)) ? $fallback : null;
+                $missing = $img === '' || (!preg_match('#^https?://#', $img) && !is_file(__DIR__ . '/../' . $img));
+                if ($missing) {
+                    $accRow['image'] = bundledPhotoForName((string)($accRow['accommodation_name'] ?? ''));
                 }
                 $decoded = isset($accRow['amenities']) && $accRow['amenities'] !== null ? json_decode($accRow['amenities'], true) : null;
                 $accRow['amenities'] = is_array($decoded) ? $decoded : null;
