@@ -26,6 +26,7 @@ var users = [];
 var accessModules = [
   { module_key: 'dashboard',     module: 'Dashboard',          admin: true,  staff: true,  guest: false },
   { module_key: 'reservation',   module: 'Reservation',        admin: true,  staff: true,  guest: true  },
+  { module_key: 'payments',      module: 'Payment Transactions', admin: true,  staff: true,  guest: false },
   { module_key: 'accommodation', module: 'Accommodation',      admin: true,  staff: true,  guest: true  },
   { module_key: 'guest_record',  module: 'Guest Record',       admin: true,  staff: true,  guest: false },
   { module_key: 'notifications', module: 'Notifications',      admin: true,  staff: true,  guest: true  },
@@ -634,6 +635,7 @@ function openWalkInModal() {
     checkOutInput.value = toDateKey(nextDay);
   }
   document.getElementById('walkInGuestsCount').value = 1;
+  var apEl = document.getElementById('walkInAmountPaid'); if (apEl) apEl.value = 0;
   modal.classList.remove('hidden');
 }
 
@@ -707,6 +709,7 @@ function initWalkInModal() {
       guests_count: Number(document.getElementById('walkInGuestsCount').value) || 1,
       payment_method: document.getElementById('walkInPaymentMethod').value,
       total_amount: Number(totalInput.value) || 0,
+      amount_paid: Number((document.getElementById('walkInAmountPaid') || {}).value) || 0,
       status: 'confirmed'
     }).then(function (res) {
       if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = originalText; }

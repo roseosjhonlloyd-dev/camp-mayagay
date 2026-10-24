@@ -32,7 +32,7 @@ $errors = [];
 
 $validIdMatches = [];
 if ($validIdImage === '') {
-    $errors['valid_id'] = 'Please upload a photo of a valid ID.';
+    // Valid ID is optional at sign-up; the guest can upload it later in Settings.
 } elseif (!preg_match('/^data:image\/(jpeg|png);base64,(.+)$/', $validIdImage, $validIdMatches)) {
     $errors['valid_id'] = 'Please upload a JPEG or PNG image.';
 }
