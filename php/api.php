@@ -154,6 +154,39 @@ function paymentStatusFor(float $total, float $paid): string
     return 'paid';
 }
 
+/** Photos that ship with the code (committed to GitHub under assets/images/accommodations),
+ *  so they survive every Railway deploy. slug => relative path. */
+const BUNDLED_ACCOMMODATION_PHOTOS = [
+    'nipa1' => 'assets/images/accommodations/nipa1.jpg',
+    'nipa2' => 'assets/images/accommodations/nipa2.jpg',
+    'tent'  => 'assets/images/accommodations/tent.jpg',
+    'big1'  => 'assets/images/accommodations/big1.jpg',
+    'big2'  => 'assets/images/accommodations/big2.jpg',
+];
+
+/** One time only: point the accommodations at the bundled photos (replaces the old pictures).
+ *  Remembered in system_settings so later admin uploads are never overwritten. */
+function applyBundledAccommodationPhotos(PDO $pdo): void
+{
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    try {
+        $flag = $pdo->prepare("SELECT 1 FROM system_settings WHERE setting_key = 'accom_photos_v1'");
+        $flag->execute();
+        if ($flag->fetchColumn()) return;
+        $upd = $pdo->prepare('UPDATE accommodations SET image = :img WHERE slug = :slug');
+        foreach (BUNDLED_ACCOMMODATION_PHOTOS as $slug => $path) {
+            if (is_file(__DIR__ . '/../' . $path)) {
+                $upd->execute(['img' => $path, 'slug' => $slug]);
+            }
+        }
+        $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('accom_photos_v1', '1')")->execute();
+    } catch (PDOException $e) {
+        // non-fatal: the list below still works with whatever image is saved
+    }
+}
+
 function sanitizeAmenities($raw): ?string
 {
     if (!is_array($raw)) return null;
@@ -839,9 +872,17 @@ try {
         case 'accommodations_list':
             if ($user) requireModuleAccess($pdo, $user, 'accommodation');
             ensureAmenitiesColumn($pdo);
+            applyBundledAccommodationPhotos($pdo);
             $stmt = $pdo->query('SELECT * FROM accommodations ORDER BY accommodation_id ASC');
             $accRows = $stmt->fetchAll();
             foreach ($accRows as &$accRow) {
+                // If a saved upload no longer exists on disk (Railway wipes uploads on deploy),
+                // fall back to the bundled photo instead of showing a broken image.
+                $img = (string)($accRow['image'] ?? '');
+                if ($img !== '' && !preg_match('#^https?://#', $img) && !is_file(__DIR__ . '/../' . $img)) {
+                    $fallback = BUNDLED_ACCOMMODATION_PHOTOS[$accRow['slug'] ?? ''] ?? null;
+                    $accRow['image'] = ($fallback && is_file(__DIR__ . '/../' . $fallback)) ? $fallback : null;
+                }
                 $decoded = isset($accRow['amenities']) && $accRow['amenities'] !== null ? json_decode($accRow['amenities'], true) : null;
                 $accRow['amenities'] = is_array($decoded) ? $decoded : null;
             }
