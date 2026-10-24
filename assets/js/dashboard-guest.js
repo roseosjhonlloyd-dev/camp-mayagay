@@ -589,11 +589,20 @@
   }
 
   let pendingBooking = null;
-  const extraQty = { person:0, blanket:0, pillow:0, nights:1 };
+  const extraQty = { person:0, blanket:0, pillow:0, nights:1, tents:1, heads:1 };
+  const STEP_MAX = { person:5, blanket:5, pillow:5, tents:5, heads:20 };
+  const STEP_MIN = { nights:1, tents:1, heads:1 };
+  // Tent Area pricing (per the camp owner): own tent 250/tent, rented tent 500/tent,
+  // plus 150 entrance per head.
+  const TENT_OWN_PRICE = 250, TENT_RENT_PRICE = 500, ENTRANCE_PER_HEAD = 150;
+  function isTentArea(cabin){ return !!cabin && /^tent area/i.test(cabin.name || ''); }
   const EXTRA_MAX = 5;
 
   function resetSteppers(){
-    extraQty.person = 0; extraQty.blanket = 0; extraQty.pillow = 0; extraQty.nights = 1;
+    extraQty.person = 0; extraQty.blanket = 0; extraQty.pillow = 0; extraQty.nights = 1; extraQty.tents = 1; extraQty.heads = 1;
+    document.getElementById('qtyTents').textContent = 1;
+    document.getElementById('qtyHeads').textContent = 1;
+    document.getElementById('tentOwn').checked = true;
     document.getElementById('qtyPerson').textContent = 0;
     document.getElementById('qtyBlanket').textContent = 0;
     document.getElementById('qtyPillow').textContent = 0;
@@ -607,9 +616,10 @@
     st.querySelectorAll('button').forEach(btn => {
       btn.addEventListener('click', () => {
         const delta = Number(btn.dataset.step);
-        const min = (key === 'nights') ? 1 : 0;
+        const min = STEP_MIN[key] || 0;
         const next = extraQty[key] + delta;
-        if (key !== 'nights' && next > EXTRA_MAX){ showToast('Maximum of ' + EXTRA_MAX + ' only'); return; }
+        const max = STEP_MAX[key];
+        if (max !== undefined && next > max){ showToast('Maximum of ' + max + ' only'); return; }
         extraQty[key] = Math.max(min, next);
         const cap = key.charAt(0).toUpperCase() + key.slice(1);
         document.getElementById('qty' + cap).textContent = extraQty[key];
@@ -639,6 +649,9 @@
     document.getElementById('guestPhone').value = sessionUser ? (sessionUser.contact_number || '') : '';
     document.getElementById('guestEmail').value = sessionUser ? (sessionUser.email || '') : '';
     resetSteppers();
+    const tentMode = isTentArea(cabin);
+    document.getElementById('tentBox').style.display = tentMode ? '' : 'none';
+    document.getElementById('personRow').style.display = tentMode ? 'none' : '';
     const amenBox = document.getElementById('bookingAmenitiesBox');
     const amenList = document.getElementById('bookingAmenities');
     amenList.innerHTML = '';
@@ -668,6 +681,7 @@
     pendingBooking.checkIn = '14:00';
     pendingBooking.checkOut = '12:00';
     pendingBooking.nights = document.getElementById('qtyNights') ? extraQty.nights : 1;
+    pendingBooking.tent = isTentArea(pendingBooking.cabin) ? { rent: document.getElementById('tentRent').checked, tents: extraQty.tents, heads: extraQty.heads } : null;
     pendingBooking.persons = document.getElementById('chkPerson').checked ? extraQty.person : 0;
     pendingBooking.blankets = document.getElementById('chkBlanket').checked ? extraQty.blanket : 0;
     pendingBooking.pillows = document.getElementById('chkPillow').checked ? extraQty.pillow : 0;
@@ -690,7 +704,7 @@
     document.getElementById('bankSelect').value = 'bdo';
     document.getElementById('tncCheck').checked = false;
     updateBankDisplay();
-    const { total } = computeCharges(pendingBooking.cabin, pendingBooking.persons, pendingBooking.blankets, pendingBooking.pillows, pendingBooking.nights);
+    const { total } = computeCharges(pendingBooking.cabin, pendingBooking.persons, pendingBooking.blankets, pendingBooking.pillows, pendingBooking.nights, pendingBooking.tent);
     document.getElementById('paymentTotalAmount').textContent = peso(total);
     pendingBooking.paymentMethod = null;
     pendingBooking.gcashRef = '';
@@ -780,10 +794,14 @@
   });
   document.getElementById('paymentConfirm').addEventListener('click', finalizeBooking);
 
-  function computeCharges(cabin, persons, blankets, pillows, nights){
+  function computeCharges(cabin, persons, blankets, pillows, nights, tent){
     nights = Math.max(1, Number(nights) || 1);
-    const baseRate = cabin.price * nights;
-    const extraGuestsCharge = persons * 150 * nights;
+    let baseRate = cabin.price * nights;
+    let extraGuestsCharge = persons * 150 * nights;
+    if (tent){
+      baseRate = tent.tents * (tent.rent ? TENT_RENT_PRICE : TENT_OWN_PRICE) * nights;
+      extraGuestsCharge = tent.heads * ENTRANCE_PER_HEAD * nights;
+    }
     const totalAccommodation = baseRate + extraGuestsCharge;
     const addons = [];
     if (blankets > 0) addons.push({ label: 'Blankets (' + blankets + ')', price: blankets * 50 });
@@ -805,18 +823,21 @@
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Sinasave ang booking...';
 
-    const { cabinId, dayIndex, cabin, guest, checkIn: checkInTime, checkOut: checkOutTime, persons, blankets, pillows, paymentMethod, nights } = pendingBooking;
+    const { cabinId, dayIndex, cabin, guest, checkIn: checkInTime, checkOut: checkOutTime, persons, blankets, pillows, paymentMethod, nights, tent } = pendingBooking;
 
     const checkInDate = getDateForDay(dayIndex);
     const checkOutDate = new Date(checkInDate);
     checkOutDate.setDate(checkInDate.getDate() + Math.max(1, Number(nights) || 1));
 
-    const { baseRate, extraGuestsCharge, totalAccommodation, addons, addonsTotal, total } = computeCharges(cabin, persons, blankets, pillows, nights);
+    const { baseRate, extraGuestsCharge, totalAccommodation, addons, addonsTotal, total } = computeCharges(cabin, persons, blankets, pillows, nights, tent);
 
     const lineItems = [
       { label: cabin.name + ' - ' + cabin.note + ' (' + Math.max(1, Number(nights) || 1) + ' night' + (Math.max(1, Number(nights) || 1) > 1 ? 's' : '') + ')', price: baseRate },
     ];
-    if (persons > 0) lineItems.push({ label: persons + ' Extra Person' + (persons > 1 ? 's' : ''), price: extraGuestsCharge });
+    if (tent){
+      lineItems[0].label = cabin.name + ' - ' + tent.tents + ' ' + (tent.rent ? 'rented' : 'own') + ' tent' + (tent.tents > 1 ? 's' : '') + ' @ \u20b1' + (tent.rent ? TENT_RENT_PRICE : TENT_OWN_PRICE) + ' (' + Math.max(1, Number(nights) || 1) + ' night' + (Math.max(1, Number(nights) || 1) > 1 ? 's' : '') + ')';
+      lineItems.push({ label: 'Entrance fee: ' + tent.heads + ' guest' + (tent.heads > 1 ? 's' : '') + ' @ \u20b1' + ENTRANCE_PER_HEAD, price: extraGuestsCharge });
+    } else if (persons > 0) lineItems.push({ label: persons + ' Extra Person' + (persons > 1 ? 's' : ''), price: extraGuestsCharge });
     lineItems.push(...addons);
 
     state.reservationSeq += 1;
@@ -829,7 +850,7 @@
       checkInLabel: fmtDate(checkInDate) + ' \u00b7 ' + fmtTime(checkInTime),
       checkOutLabel: fmtDate(checkOutDate) + ' \u00b7 ' + fmtTime(checkOutTime),
       guest, paymentMethod, lineItems, total, status: 'Reserved',
-      guestsCount: 1 + persons, baseRate, extraGuestsCharge, totalAccommodation, addons, addonsTotal,
+      guestsCount: tent ? tent.heads : 1 + persons, baseRate, extraGuestsCharge, totalAccommodation, addons, addonsTotal,
       gcashRef: pendingBooking.gcashRef || '',
       receiptImage: paymentMethod === 'Bank Transfer' ? uploadedReceiptDataUrl : null,
       receiptFileName: paymentMethod === 'Bank Transfer' ? uploadedReceiptName : null
@@ -1048,7 +1069,7 @@
       <hr class="receipt-divider">
       <p class="receipt-section-label">CHARGE SUMMARY</p>
       <div class="receipt-row"><span>Base Rate:</span><span>${peso(r.baseRate)}</span></div>
-      ${r.extraGuestsCharge > 0 ? `<div class="receipt-row"><span>Extra Guests:</span><span>${peso(r.extraGuestsCharge)}</span></div>` : ''}
+      ${r.extraGuestsCharge > 0 ? `<div class="receipt-row"><span>${r.cabinId && /^tent/i.test(r.cabin || '') ? 'Entrance Fee' : 'Extra Guests'}:</span><span>${peso(r.extraGuestsCharge)}</span></div>` : ''}
       <div class="receipt-row bold"><span>Total Accommodation:</span><span>${peso(r.totalAccommodation)}</span></div>
       ${r.addons.length ? `<br><div class="receipt-row"><span>Add-ons:</span><span></span></div>` + r.addons.map(a => `<div class="receipt-row indent"><span>${a.label}:</span><span>${peso(a.price)}</span></div>`).join('') : ''}
       <hr class="receipt-divider">

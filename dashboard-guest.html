@@ -495,8 +495,29 @@
         <span class="amenity-chip">Mugs</span>
       </div>
     </div>
-    <div style="margin-top:6px;">
+    <div id="tentBox" style="display:none; margin-top:10px;">
+      <span class="amenities-title">Tent Area options</span>
       <div class="extras-row">
+        <label class="extras-check"><input type="radio" name="tentMode" id="tentOwn" value="own" checked> Bring own tent <span class="extras-price">&#8369;250/tent</span></label>
+      </div>
+      <div class="extras-row">
+        <label class="extras-check"><input type="radio" name="tentMode" id="tentRent" value="rent"> Rent a tent from the camp <span class="extras-price">&#8369;500/tent</span></label>
+      </div>
+      <div class="extras-row">
+        <label class="extras-check" style="font-weight:600;">Number of tents</label>
+        <div class="stepper" data-stepper="tents">
+          <button type="button" data-step="-1">&minus;</button><span id="qtyTents">1</span><button type="button" data-step="1">&plus;</button>
+        </div>
+      </div>
+      <div class="extras-row">
+        <label class="extras-check" style="font-weight:600;">Guests <span class="extras-price">&#8369;150 entrance/head</span></label>
+        <div class="stepper" data-stepper="heads">
+          <button type="button" data-step="-1">&minus;</button><span id="qtyHeads">1</span><button type="button" data-step="1">&plus;</button>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:6px;">
+      <div class="extras-row" id="personRow">
         <label class="extras-check"><input type="checkbox" id="chkPerson"> Add person <span class="extras-price">₱150/person</span></label>
         <div class="stepper" data-stepper="person">
           <button type="button" data-step="-1">&minus;</button><span id="qtyPerson">0</span><button type="button" data-step="1">&plus;</button>
@@ -678,7 +699,7 @@
   <a class="auth-switch" href="php/logout.php">Log out</a>
 </div>
 
-<script src="assets/js/dashboard-guest.js?v=21"></script>
+<script src="assets/js/dashboard-guest.js?v=22"></script>
 <script>
   (function () {
     var okBtn = document.getElementById('passwordOkBtn');
