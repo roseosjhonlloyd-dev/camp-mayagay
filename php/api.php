@@ -189,7 +189,7 @@ function applyBundledAccommodationPhotos(PDO $pdo): void
     if ($done) return;
     $done = true;
     try {
-        $flag = $pdo->prepare("SELECT 1 FROM system_settings WHERE setting_key = 'accom_photos_v2'");
+        $flag = $pdo->prepare("SELECT 1 FROM system_settings WHERE setting_key = 'accom_photos_v3'");
         $flag->execute();
         if ($flag->fetchColumn()) return;
         $upd = $pdo->prepare('UPDATE accommodations SET image = :img WHERE accommodation_id = :id');
@@ -199,7 +199,7 @@ function applyBundledAccommodationPhotos(PDO $pdo): void
                 $upd->execute(['img' => $path, 'id' => $row['accommodation_id']]);
             }
         }
-        $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('accom_photos_v2', '1')")->execute();
+        $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('accom_photos_v3', '1')")->execute();
     } catch (PDOException $e) {
         // non-fatal: the list below still works with whatever image is saved
     }
