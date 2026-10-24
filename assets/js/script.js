@@ -300,8 +300,9 @@ function initRegisterForm() {
     }
 
     var idFile = validIdInput && validIdInput.files && validIdInput.files[0];
+    // Valid ID is optional - only validate it when a file was chosen.
     if (!idFile) {
-      setFieldError('valid_id', 'Please upload a photo of a valid ID.'); hasError = true;
+      // no file: allowed
     } else if (!/image\/(jpeg|png)/.test(idFile.type)) {
       setFieldError('valid_id', 'Please upload a JPEG or PNG file.'); hasError = true;
     } else if (idFile.size > 5 * 1024 * 1024) {
@@ -326,8 +327,8 @@ function initRegisterForm() {
     var originalText = submitBtn.textContent;
     submitBtn.textContent = 'Creating account...';
 
-    readFileAsDataUrl(idFile).then(function (dataUrl) {
-      values.valid_id_image = dataUrl;
+    (idFile ? readFileAsDataUrl(idFile) : Promise.resolve('')).then(function (dataUrl) {
+      if (dataUrl) values.valid_id_image = dataUrl;
       return fetch('php/register.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
