@@ -250,6 +250,81 @@
 
   function peso(n){ return '\u20b1' + n.toLocaleString(); }
 
+  // ---- Accommodation photo slider -----------------------------------
+  const ACCOM_EXTRA_DIR = 'assets/images/accommodations/';
+  const ACCOM_EXTRA_PHOTOS = {
+    nipahut1:  ['Nipa1 inside.jfif'],
+    nipahut2:  ['Nipahut2 inside.jpg'],
+    nipahut3:  ['Nipahut3 inside.jpg'],
+    nipahut4:  ['Nipahut 4 inside.png'],
+    glassdoor: ['Glassdoor inside1.jpg', 'Glassdoor inside2.jpg', 'Glassdoor inside3.jpg'],
+    bighouse2: ['Bighouse 2 inside1.jpg', 'Bighouse 2 inside2.jpg', 'Bighouse 2 inside3.jpg']
+  };
+  function extraPhotosFor(cabin){
+    const n = String(cabin.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (const key in ACCOM_EXTRA_PHOTOS){
+      if (n.indexOf(key) === 0) return ACCOM_EXTRA_PHOTOS[key].map(f => ACCOM_EXTRA_DIR + f);
+    }
+    return [];
+  }
+  function accomSlider(cabin){
+    const slides = (cabin.image ? [cabin.image] : []).concat(extraPhotosFor(cabin));
+    if (!slides.length) return artContent(cabin);
+    const imgs = slides.map((src, i) =>
+      `<img class="slide${i === 0 ? ' active' : ''}" src="${encodeURI(src)}" alt="${cabin.name}" onerror="this.remove()">`
+    ).join('');
+    return imgs +
+      '<button type="button" class="slide-btn slide-prev" aria-label="Previous photo">&#10094;</button>' +
+      '<button type="button" class="slide-btn slide-next" aria-label="Next photo">&#10095;</button>' +
+      '<div class="slide-dots"></div>';
+  }
+  function refreshSlider(art){
+    const imgs = art.querySelectorAll('img.slide');
+    if (imgs.length && !art.querySelector('img.slide.active')) imgs[0].classList.add('active');
+    const multi = imgs.length > 1;
+    art.querySelectorAll('.slide-btn').forEach(b => { b.style.display = multi ? '' : 'none'; });
+    const dots = art.querySelector('.slide-dots');
+    if (dots){
+      const cur = Array.prototype.findIndex.call(imgs, im => im.classList.contains('active'));
+      dots.innerHTML = multi ? Array.prototype.map.call(imgs, (im, i) => `<span class="${i === cur ? 'on' : ''}"></span>`).join('') : '';
+    }
+  }
+  function moveSlide(art, delta){
+    const imgs = art.querySelectorAll('img.slide');
+    if (imgs.length < 2) return;
+    let cur = Array.prototype.findIndex.call(imgs, im => im.classList.contains('active'));
+    if (cur < 0) cur = 0;
+    imgs[cur].classList.remove('active');
+    imgs[(cur + delta + imgs.length) % imgs.length].classList.add('active');
+    refreshSlider(art);
+  }
+  function initAccomSliders(grid){
+    if (!grid.dataset.sliderReady){
+      grid.dataset.sliderReady = '1';
+      grid.addEventListener('click', e => {
+        const btn = e.target.closest('.slide-btn');
+        if (!btn) return;
+        moveSlide(btn.closest('.accom-art'), btn.classList.contains('slide-next') ? 1 : -1);
+      });
+      let startX = null;
+      grid.addEventListener('touchstart', e => {
+        startX = e.target.closest('.accom-art') ? e.touches[0].clientX : null;
+      }, { passive: true });
+      grid.addEventListener('touchend', e => {
+        const art = e.target.closest('.accom-art');
+        if (startX === null || !art) return;
+        const dx = e.changedTouches[0].clientX - startX;
+        startX = null;
+        if (Math.abs(dx) > 40) moveSlide(art, dx < 0 ? 1 : -1);
+      });
+      grid.addEventListener('error', e => {
+        const art = e.target.closest && e.target.closest('.accom-art');
+        if (art) setTimeout(() => refreshSlider(art), 0);
+      }, true);
+    }
+    grid.querySelectorAll('.accom-art').forEach(refreshSlider);
+  }
+
   function artContent(cabin){
     if (cabin.image){
       return `<img src="${cabin.image}" alt="${cabin.name}">`;
@@ -508,7 +583,7 @@
 
     grid.innerHTML = pageItems.map(c => `
       <div class="accom-card">
-        <div class="accom-art" style="background:${ART_BG[c.icon]}${c.image ? ";--art-img:url('" + encodeURI(c.image).replace(/'/g, '%27') + "')" : ''}">${artContent(c)}</div>
+        <div class="accom-art" style="background:${ART_BG[c.icon]}${c.image ? ";--art-img:url('" + encodeURI(c.image).replace(/'/g, '%27') + "')" : ''}">${accomSlider(c)}</div>
         <div class="accom-info">
           <div>
             <p class="accom-name">${c.name}</p>
@@ -528,6 +603,7 @@
     grid.querySelectorAll('[data-reviews]').forEach(btn => {
       btn.addEventListener('click', () => openAccReviews(Number(btn.dataset.reviews)));
     });
+    initAccomSliders(grid);
     grid.querySelectorAll('.day-pill.avail').forEach(btn => {
       btn.addEventListener('click', () => openBookingModal(btn.dataset.cabin, Number(btn.dataset.day)));
     });

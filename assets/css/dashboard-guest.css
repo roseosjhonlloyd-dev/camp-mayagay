@@ -1426,3 +1426,13 @@ body.dark-mode .gm-icon-btn:hover{background:rgba(255,255,255,0.12);}
   .notif-panel .notif-row:hover .notif-time{display:block;}
   .notif-detail-view .gm-subject{margin-left:0; font-size:19px;}
 }
+  /* Accommodation photo slider */
+  .accom-art img.slide{opacity:0; transition:opacity .35s ease; z-index:1;}
+  .accom-art img.slide.active{opacity:1; z-index:2;}
+  .accom-art .slide-btn{position:absolute; top:50%; transform:translateY(-50%); z-index:5; width:34px; height:34px; border:none; border-radius:50%; background:rgba(0,0,0,.45); color:#fff; font-size:15px; line-height:34px; padding:0; cursor:pointer;}
+  .accom-art .slide-btn:hover{background:rgba(0,0,0,.65);}
+  .accom-art .slide-prev{left:10px;}
+  .accom-art .slide-next{right:10px;}
+  .accom-art .slide-dots{position:absolute; left:0; right:0; bottom:10px; z-index:5; display:flex; justify-content:center; gap:6px; pointer-events:none;}
+  .accom-art .slide-dots span{width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.55);}
+  .accom-art .slide-dots span.on{background:#fff; box-shadow:0 0 0 1px rgba(0,0,0,.25);}

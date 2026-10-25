@@ -1073,6 +1073,7 @@ body{
 .gm-row-date{font-size:12px; white-space:nowrap; min-width:62px; text-align:right;}
 .gm-row.seen .gm-row-date{opacity:.7; font-weight:400;}
 .gm-empty{padding:34px 16px; text-align:center; font-size:13px; opacity:.75; color:#fff;}
+
 @media (max-width:700px){
   .gm-row{grid-template-columns:1fr auto; height:auto; padding:10px 12px; row-gap:2px;}
   .gm-row-to{grid-column:1; font-size:13px;}
@@ -1155,7 +1156,7 @@ body{
 .donut-chart{
   width:130px; height:130px;
   -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 24px), #000 calc(100% - 23px));
-          mask:radial-gradient(farthest-side, transparent calc(100% - 24px), #000 calc(100% - 23px));
+   mask:radial-gradient(farthest-side, transparent calc(100% - 24px), #000 calc(100% - 23px));
 }
 .donut-chart::after{display:none;}
 /* Feedback Summary: kitang-kita ang dilaw na bar */
