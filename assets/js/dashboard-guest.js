@@ -298,9 +298,65 @@
     imgs[(cur + delta + imgs.length) % imgs.length].classList.add('active');
     refreshSlider(art);
   }
+  // ---- Fullscreen photo viewer (click a photo) -----------------------
+  function openAccomLightbox(art){
+    const imgs = Array.prototype.slice.call(art.querySelectorAll('img.slide'));
+    if (!imgs.length) return;
+    let idx = Math.max(0, imgs.findIndex(im => im.classList.contains('active')));
+    const name = imgs[0].alt || '';
+    const box = document.createElement('div');
+    box.className = 'accom-lb';
+    box.innerHTML = '<button type="button" class="lb-close" aria-label="Close">&times;</button>' +
+      '<button type="button" class="lb-nav lb-prev" aria-label="Previous">&#10094;</button>' +
+      '<img class="lb-img" alt="">' +
+      '<button type="button" class="lb-nav lb-next" aria-label="Next">&#10095;</button>' +
+      '<div class="lb-count"></div>';
+    document.body.appendChild(box);
+    document.body.style.overflow = 'hidden';
+    const big = box.querySelector('.lb-img');
+    const count = box.querySelector('.lb-count');
+    function show(){
+      big.src = imgs[idx].src;
+      big.alt = name;
+      count.textContent = name + ' \u00b7 ' + (idx + 1) + ' / ' + imgs.length;
+      box.classList.toggle('single', imgs.length < 2);
+    }
+    function go(d){ idx = (idx + d + imgs.length) % imgs.length; show(); }
+    function close(){
+      document.removeEventListener('keydown', onKey);
+      box.remove();
+      document.body.style.overflow = '';
+      imgs.forEach((im, i) => im.classList.toggle('active', i === idx));
+      refreshSlider(art);
+    }
+    function onKey(e){
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowRight') go(1);
+      else if (e.key === 'ArrowLeft') go(-1);
+    }
+    document.addEventListener('keydown', onKey);
+    box.addEventListener('click', e => {
+      if (e.target.closest('.lb-close') || e.target === box) close();
+      else if (e.target.closest('.lb-prev')) go(-1);
+      else if (e.target.closest('.lb-next')) go(1);
+    });
+    let sx = null;
+    box.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
+    box.addEventListener('touchend', e => {
+      if (sx === null) return;
+      const dx = e.changedTouches[0].clientX - sx;
+      sx = null;
+      if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+    });
+    show();
+  }
   function initAccomSliders(grid){
     if (!grid.dataset.sliderReady){
       grid.dataset.sliderReady = '1';
+      grid.addEventListener('click', e => {
+        const im = e.target.closest('img.slide');
+        if (im) openAccomLightbox(im.closest('.accom-art'));
+      });
       grid.addEventListener('click', e => {
         const btn = e.target.closest('.slide-btn');
         if (!btn) return;
