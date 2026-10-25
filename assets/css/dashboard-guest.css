@@ -1448,3 +1448,5 @@ body.dark-mode .gm-icon-btn:hover{background:rgba(255,255,255,0.12);}
   .accom-lb .lb-next{right:16px;}
   .accom-lb.single .lb-nav{display:none;}
   .accom-lb .lb-count{position:absolute; bottom:18px; left:0; right:0; text-align:center; color:#fff; font-size:14px;}
+
+  .accom-art .slide-btn, .accom-art .slide-dots{display:none !important;}

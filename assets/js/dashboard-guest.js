@@ -326,7 +326,6 @@
       document.removeEventListener('keydown', onKey);
       box.remove();
       document.body.style.overflow = '';
-      imgs.forEach((im, i) => im.classList.toggle('active', i === idx));
       refreshSlider(art);
     }
     function onKey(e){
