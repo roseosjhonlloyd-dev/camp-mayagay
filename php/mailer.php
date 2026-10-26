@@ -77,41 +77,9 @@ function smtpSend(string $toEmail, string $subject, string $html, string $text, 
     }
 }
 
-/**
- * Public base URL of the website, used for the logo in emails.
- * Set APP_URL in Railway Variables (e.g. https://campmayagay.com) if the
- * site address changes; otherwise it falls back to the current host.
- */
-function mailBaseUrl(): string
-{
-    $env = getenv('APP_URL');
-    if ($env) {
-        return rtrim($env, '/');
-    }
-    $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? '';
-    if ($host !== '' && preg_match('/^[A-Za-z0-9.\-:]+$/', $host)) {
-        return 'https://' . $host;
-    }
-    return 'https://camp-mayagay-production-a5a4.up.railway.app';
-}
-
-/** Wraps an email body with the Camp Mayagay logo header. */
-function wrapEmailHtml(string $bodyHtml): string
-{
-    $logo = htmlspecialchars(mailBaseUrl() . '/assets/images/logo-email.jpg', ENT_QUOTES);
-    return
-        '<div style="max-width:560px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;color:#222;">' .
-        '<div style="text-align:center;padding:16px 0;">' .
-        '<img src="' . $logo . '" alt="Camp Mayagay" width="160" height="160" style="width:160px;height:160px;border:0;">' .
-        '</div>' .
-        $bodyHtml .
-        '</div>';
-}
-
 /** Picks the transport based on MAIL_DRIVER (default: smtp). */
 function sendMailMessage(string $toEmail, string $subject, string $html, string $text, ?string &$errorOut = null): bool
 {
-    $html = wrapEmailHtml($html);
     if (MAIL_DRIVER === 'brevo') {
         return brevoSend($toEmail, $subject, $html, $text, $errorOut);
     }
