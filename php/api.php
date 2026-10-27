@@ -387,6 +387,24 @@ function reservationRow(array $r): array
     ];
 }
 
+/** True when another active reservation (pending/confirmed/completed) already
+ *  occupies this accommodation during [$checkIn, $checkOut). $excludeId skips
+ *  the reservation being edited. */
+function reservationOverlaps(PDO $pdo, int $accommodationId, string $checkIn, string $checkOut, int $excludeId = 0): bool
+{
+    $stmt = $pdo->prepare(
+        "SELECT reservation_id FROM reservations
+         WHERE accommodation_id = :aid
+           AND reservation_id <> :ex
+           AND reservation_status IN ('pending', 'confirmed', 'completed')
+           AND check_in_date < :check_out
+           AND check_out_date > :check_in
+         LIMIT 1"
+    );
+    $stmt->execute(['aid' => $accommodationId, 'ex' => $excludeId, 'check_in' => $checkIn, 'check_out' => $checkOut]);
+    return (bool)$stmt->fetch();
+}
+
 const RESERVATION_SELECT = 'SELECT r.*, a.slug, a.accommodation_name FROM reservations r
      JOIN accommodations a ON a.accommodation_id = r.accommodation_id';
 
@@ -1163,7 +1181,7 @@ try {
                 "SELECT a.slug, r.check_in_date, r.check_out_date
                  FROM reservations r
                  JOIN accommodations a ON a.accommodation_id = r.accommodation_id
-                 WHERE r.reservation_status IN ('pending', 'confirmed')"
+                 WHERE r.reservation_status IN ('pending', 'confirmed', 'completed')"
             );
             $rows = $stmt->fetchAll();
             $bookings = array_map(function ($row) {
@@ -1249,7 +1267,7 @@ try {
                 $overlapStmt = $pdo->prepare(
                     "SELECT reservation_id FROM reservations
                      WHERE accommodation_id = :accommodation_id
-                       AND reservation_status IN ('pending', 'confirmed')
+                       AND reservation_status IN ('pending', 'confirmed', 'completed')
                        AND check_in_date < :check_out
                        AND check_out_date > :check_in
                      LIMIT 1"
@@ -1347,6 +1365,16 @@ try {
                 echo json_encode(['success' => false, 'message' => 'Invalid id or status.']);
                 break;
             }
+            // Bringing a declined/cancelled booking back (or re-activating any)
+            // must not double-book the accommodation.
+            if (in_array($status, ['pending', 'confirmed', 'completed'], true)) {
+                $cur = $pdo->prepare('SELECT accommodation_id, check_in_date, check_out_date FROM reservations WHERE reservation_id = :id');
+                $cur->execute(['id' => $id]);
+                $curRow = $cur->fetch();
+                if ($curRow && reservationOverlaps($pdo, (int)$curRow['accommodation_id'], (string)$curRow['check_in_date'], (string)$curRow['check_out_date'], $id)) {
+                    deny('Hindi ito maibabalik/ma-update: may ibang reservation na sa accommodation na ito sa parehong petsa.', 409);
+                }
+            }
             $pdo->prepare('UPDATE reservations SET reservation_status = :status WHERE reservation_id = :id')
                 ->execute(['status' => $status, 'id' => $id]);
 
@@ -1389,6 +1417,23 @@ try {
             if (isset($input['guests_count'])) { $fields[] = 'number_of_guests = :number_of_guests'; $params['number_of_guests'] = (int)$input['guests_count']; }
             if (isset($input['total_amount'])) { $fields[] = 'total_amount = :total_amount'; $params['total_amount'] = (float)$input['total_amount']; }
             if (empty($fields)) { echo json_encode(['success' => false, 'message' => 'Nothing to update.']); break; }
+
+            // Changing the dates must not double-book the accommodation.
+            if (isset($input['check_in']) || isset($input['check_out'])) {
+                $cur = $pdo->prepare('SELECT accommodation_id, reservation_status, check_in_date, check_out_date FROM reservations WHERE reservation_id = :id');
+                $cur->execute(['id' => $id]);
+                $curRow = $cur->fetch();
+                if ($curRow && in_array($curRow['reservation_status'], ['pending', 'confirmed', 'completed'], true)) {
+                    $newIn  = isset($input['check_in'])  ? (string)$input['check_in']  : (string)$curRow['check_in_date'];
+                    $newOut = isset($input['check_out']) ? (string)$input['check_out'] : (string)$curRow['check_out_date'];
+                    if ($newOut <= $newIn) {
+                        deny('Check-out must be after check-in.', 422);
+                    }
+                    if (reservationOverlaps($pdo, (int)$curRow['accommodation_id'], $newIn, $newOut, $id)) {
+                        deny('Hindi na available ang accommodation na ito sa napiling petsa.', 409);
+                    }
+                }
+            }
 
             $sql = 'UPDATE reservations SET ' . implode(', ', $fields) . ' WHERE reservation_id = :id';
             $pdo->prepare($sql)->execute($params);
