@@ -1283,7 +1283,7 @@ try {
                     http_response_code(409);
                     echo json_encode([
                         'success' => false,
-                        'message' => 'Hindi na available ang accommodation na ito para sa napiling petsa. Pumili ng ibang petsa o accommodation.',
+                        'message' => 'This accommodation is no longer available for the selected dates. Please choose different dates or another accommodation.',
                     ]);
                     break;
                 }
@@ -1372,7 +1372,7 @@ try {
                 $cur->execute(['id' => $id]);
                 $curRow = $cur->fetch();
                 if ($curRow && reservationOverlaps($pdo, (int)$curRow['accommodation_id'], (string)$curRow['check_in_date'], (string)$curRow['check_out_date'], $id)) {
-                    deny('Hindi ito maibabalik/ma-update: may ibang reservation na sa accommodation na ito sa parehong petsa.', 409);
+                    deny('This reservation cannot be restored or updated: another reservation already occupies this accommodation on the same dates.', 409);
                 }
             }
             $pdo->prepare('UPDATE reservations SET reservation_status = :status WHERE reservation_id = :id')
@@ -1430,7 +1430,7 @@ try {
                         deny('Check-out must be after check-in.', 422);
                     }
                     if (reservationOverlaps($pdo, (int)$curRow['accommodation_id'], $newIn, $newOut, $id)) {
-                        deny('Hindi na available ang accommodation na ito sa napiling petsa.', 409);
+                        deny('This accommodation is no longer available for the selected dates.', 409);
                     }
                 }
             }
