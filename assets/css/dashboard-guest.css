@@ -1450,3 +1450,13 @@ body.dark-mode .gm-icon-btn:hover{background:rgba(255,255,255,0.12);}
   .accom-lb .lb-count{position:absolute; bottom:18px; left:0; right:0; text-align:center; color:#fff; font-size:14px;}
 
   .accom-art .slide-btn, .accom-art .slide-dots{display:none !important;}
+/* Compose message (Contact Us / Reply) */
+.compose-modal{max-width:560px;}
+.compose-modal .stack{display:flex; flex-direction:column; gap:10px;}
+.compose-row{display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--sand-dim); padding:6px 0;}
+.compose-label{color:var(--ink-soft); font-size:13px; width:28px;}
+.compose-to{background:var(--sand-dim,#eee); border-radius:14px; padding:3px 12px; font-size:13px;}
+.compose-row input{border:none; outline:none; background:transparent; width:100%; font:inherit; padding:6px 0;}
+.compose-modal textarea{border:none; outline:none; resize:vertical; font:inherit; background:transparent; width:100%;}
+.compose-actions{display:flex; gap:10px; align-items:center;}
+.gm-reply-row{margin-top:22px;}

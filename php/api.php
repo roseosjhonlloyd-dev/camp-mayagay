@@ -1708,6 +1708,36 @@ try {
             }
             break;
 
+        /** Guest writes a message to the admin ("Contact Us" / Reply).
+         *  Shows up in the admin's Notifications; the admin answers with
+         *  "Add Message", which lands in the guest's Notifications (and email). */
+        case 'guest_message_send':
+            requireLogin($user);
+            requireModuleAccess($pdo, $user, 'feedback');
+            $subject = trim(preg_replace('/\s+/', ' ', (string)($input['subject'] ?? '')));
+            $body    = trim((string)($input['message'] ?? ''));
+            if ($subject === '' || $body === '') {
+                deny('Subject and message are required.', 422);
+            }
+            $subject = mb_substr($subject, 0, 100);
+            $body    = mb_substr($body, 0, 2000);
+            if (!empty($_SESSION['last_guest_message_at']) && time() - (int)$_SESSION['last_guest_message_at'] < 20) {
+                deny('Please wait a few seconds before sending another message.', 429);
+            }
+            $_SESSION['last_guest_message_at'] = time();
+            $senderName = trim((string)($user['firstname'] ?? '') . ' ' . (string)($user['lastname'] ?? ''));
+            if ($senderName === '') $senderName = $user['username'] ?? 'Guest';
+            addNotification(
+                $pdo,
+                null,
+                'admin',
+                'feedback',
+                mb_substr('Message from ' . $senderName . ': ' . $subject, 0, 150),
+                $body . "\n\n- " . $senderName . ' <' . ($user['email'] ?? 'no email') . '>'
+            );
+            echo json_encode(['success' => true]);
+            break;
+
         case 'notifications_mark_read':
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'notifications');

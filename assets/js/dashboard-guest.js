@@ -1387,11 +1387,13 @@
 
   /* Full message opens in the page (like opening an email), with a back arrow. */
   let openNotifId = null;
+  let openNotifTitle = '';
   function openNotifDetail(n){
     openNotifId = n.id;
     document.getElementById('notifDetailTitle').textContent = n.title || 'Notification';
     document.getElementById('notifDetailTime').textContent = n.timestamp || '';
     document.getElementById('notifDetailBody').textContent = n.desc || '';
+    openNotifTitle = n.title || '';
     document.querySelector('.notif-panel').hidden = true;
     document.getElementById('notifDetailView').hidden = false;
     window.scrollTo({ top:0 });
@@ -1547,10 +1549,37 @@
   });
   var helpContactUsBtn = document.getElementById('helpContactUsBtn');
   if (helpContactUsBtn) {
-    helpContactUsBtn.addEventListener('click', () => {
-      showToast('Call +63 912 345 6789 or email info@campmayagay.ph');
-    });
+    helpContactUsBtn.addEventListener('click', () => openCompose(''));
   }
+
+  /* Compose a message to the admin (Contact Us and Reply). */
+  function openCompose(subject){
+    document.getElementById('composeSubject').value = subject || '';
+    document.getElementById('composeBody').value = '';
+    document.getElementById('composeModal').classList.add('open');
+    setTimeout(() => document.getElementById(subject ? 'composeBody' : 'composeSubject').focus(), 50);
+  }
+  function closeCompose(){ document.getElementById('composeModal').classList.remove('open'); }
+  document.getElementById('composeCloseX').addEventListener('click', closeCompose);
+  document.getElementById('composeCancelBtn').addEventListener('click', closeCompose);
+  document.getElementById('composeModal').addEventListener('click', (e) => { if (e.target.id === 'composeModal') closeCompose(); });
+  document.getElementById('notifReplyBtn').addEventListener('click', () => {
+    const t = openNotifTitle || 'Camp Mayagay';
+    openCompose(/^re:/i.test(t) ? t : 'Re: ' + t);
+  });
+  document.getElementById('composeForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const subject = document.getElementById('composeSubject').value.trim();
+    const message = document.getElementById('composeBody').value.trim();
+    if (!subject || !message){ showToast('Please enter a subject and a message.'); return; }
+    const btn = document.getElementById('composeSendBtn');
+    btn.disabled = true;
+    apiCall('guest_message_send', { subject: subject, message: message }).then(res => {
+      btn.disabled = false;
+      if (res && res.success){ closeCompose(); showToast('Message sent to Camp Mayagay.'); }
+      else showToast((res && res.message) || 'Could not send your message.');
+    }).catch(() => { btn.disabled = false; showToast('Could not send your message.'); });
+  });
   document.getElementById('saveSettingsBtn').addEventListener('click', (e) => {
     e.preventDefault();
     const fullName = document.getElementById('settingsName').value.trim();
