@@ -117,8 +117,7 @@
 
     <div class="dropdown" id="profileDropdown">
       <div class="dropdown-title" id="profileDropdownName">Guest</div>
-      <button class="menu-item" type="button">My profile</button>
-      <button class="menu-item" type="button" data-view-link="settings">Settings</button>
+      <button class="menu-item" type="button" data-view-link="settings">My profile</button>
       <button class="menu-item" type="button" id="dropdownLogoutBtn">Log out</button>
     </div>
   </div>
@@ -535,7 +534,7 @@
         </div>
       </div>
     </div>
-    <div style="margin-top:6px;">
+    <div style="margin-top:6px;" id="extrasBox">
       <div class="extras-row" id="personRow">
         <label class="extras-check"><input type="checkbox" id="chkPerson"> Add person <span class="extras-price">₱150/person</span></label>
         <div class="stepper" data-stepper="person">
@@ -718,7 +717,7 @@
   <a class="auth-switch" href="php/logout.php">Log out</a>
 </div>
 
-<script src="assets/js/dashboard-guest.js?v=26"></script>
+<script src="assets/js/dashboard-guest.js?v=27"></script>
 <script>
   (function () {
     var okBtn = document.getElementById('passwordOkBtn');

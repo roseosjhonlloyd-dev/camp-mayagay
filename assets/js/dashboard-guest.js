@@ -783,6 +783,8 @@
     const tentMode = isTentArea(cabin);
     document.getElementById('tentBox').style.display = tentMode ? '' : 'none';
     document.getElementById('personRow').style.display = tentMode ? 'none' : '';
+    // Bonfire Area: walang Add person / Blanket / Pillow.
+    document.getElementById('extrasBox').style.display = /^bonfire/i.test(cabin.name || '') ? 'none' : '';
     const amenBox = document.getElementById('bookingAmenitiesBox');
     const amenList = document.getElementById('bookingAmenities');
     amenList.innerHTML = '';
