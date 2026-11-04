@@ -839,6 +839,8 @@
     updateBankDisplay();
     const { total } = computeCharges(pendingBooking.cabin, pendingBooking.persons, pendingBooking.blankets, pendingBooking.pillows, pendingBooking.nights, pendingBooking.tent);
     document.getElementById('paymentTotalAmount').textContent = peso(total);
+    const downEl = document.getElementById('paymentDownAmount');
+    if (downEl) downEl.textContent = peso(Math.ceil(total / 2));
     pendingBooking.paymentMethod = null;
     pendingBooking.gcashRef = '';
     updatePaymentConfirmState();
@@ -982,7 +984,7 @@
       cabinId, dayIndex, cabin: cabin.name, icon: cabin.icon, capacity: cabin.note,
       checkInLabel: fmtDate(checkInDate) + ' \u00b7 ' + fmtTime(checkInTime),
       checkOutLabel: fmtDate(checkOutDate) + ' \u00b7 ' + fmtTime(checkOutTime),
-      guest, paymentMethod, lineItems, total, status: 'Reserved',
+      guest, paymentMethod, lineItems, total, status: 'Pending',
       guestsCount: tent ? tent.heads : 1 + persons, baseRate, extraGuestsCharge, totalAccommodation, addons, addonsTotal,
       gcashRef: pendingBooking.gcashRef || '',
       receiptImage: paymentMethod === 'Bank Transfer' ? uploadedReceiptDataUrl : null,
@@ -1020,6 +1022,8 @@
       // Successful na - ngayon lang natin gagawin ang mga sumusunod.
       reservation.id = 'r' + res.reservation.id;
       reservation.dbId = res.reservation.id;
+      // The server assigns the final unique reference number.
+      if (res.reservation.code) reservation.code = res.reservation.code;
       state.availability[availKey(cabinId, dayIndex)] = false;
       state.reservations.unshift(reservation);
 
@@ -1030,7 +1034,7 @@
       closePaymentModal();
 
       document.getElementById('thankyouSummary').textContent =
-        cabin.name + ', ' + reservation.checkInLabel + ' \u2013 ' + reservation.checkOutLabel + ', paid via ' + paymentMethod + '.';
+        cabin.name + ', ' + reservation.checkInLabel + ' \u2013 ' + reservation.checkOutLabel + ' \u00b7 Ref ' + reservation.code + ' \u00b7 via ' + paymentMethod + '. Status: Pending until Camp Mayagay confirms your payment.';
       document.getElementById('thankyouModal').classList.add('open');
       pendingBooking = null;
     }).catch(() => {
@@ -1272,13 +1276,17 @@
     const accSelect = document.getElementById('fbAccommodation');
     const accommodationId = accSelect ? accSelect.value : '';
     const accommodationName = accSelect && accSelect.value ? accSelect.options[accSelect.selectedIndex].text : '';
-    apiCall('feedback_create', { rating: currentRating, message, accommodation_id: accommodationId }).then(res => {
+    const fbCategory = (document.getElementById('fbCategory') || {}).value || 'feedback';
+    const fbSubjectEl = document.getElementById('fbSubject');
+    const fbSubject = (fbSubjectEl && fbSubjectEl.value.trim()) || (fbCategory === 'concern' ? 'Guest concern' : 'Guest feedback');
+    apiCall('feedback_create', { rating: currentRating, message, accommodation_id: accommodationId, subject: fbSubject, category: fbCategory }).then(res => {
       if (!res || !res.success) {
         showToast((res && res.message) || 'Could not send feedback. Please try again.');
         return;
       }
       state.feedback.unshift({ rating: currentRating, message, accommodationName, when: new Date().toLocaleString() });
       document.getElementById('fbMessage').value = '';
+      if (fbSubjectEl) fbSubjectEl.value = '';
       if (accSelect) accSelect.value = '';
       currentRating = 0;
       renderStars();

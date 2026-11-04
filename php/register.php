@@ -127,13 +127,13 @@ try {
     // Record the sign-up itself as a security log entry, with device and
     // approximate location, same as a login attempt.
     require_once __DIR__ . '/login_helpers.php';
-    $signupLocation = detectLoginLocation($_SERVER['REMOTE_ADDR'] ?? null);
+    $signupLocation = detectLoginLocation(clientIp());
     $pdo->prepare(
         "INSERT INTO security_logs (user_id, activity, ip_address, device_info, location, location_lat, location_lng, login_time, status)
          VALUES (:uid, 'signup', :ip, :device, :location, :lat, :lng, NOW(), 'success')"
     )->execute([
         'uid'      => $newUserId,
-        'ip'       => $_SERVER['REMOTE_ADDR'] ?? null,
+        'ip'       => clientIp(),
         'device'   => detectDeviceInfo((string)($_SERVER['HTTP_USER_AGENT'] ?? '')),
         'location' => $signupLocation['label'],
         'lat'      => $signupLocation['lat'],

@@ -195,7 +195,7 @@
   <section class="view" id="view-history">
     <div class="panel">
       <h2>Reservation history</h2>
-      <p class="sub">Bookings you've made during this session.</p>
+      <p class="sub">Your bookings.</p>
       <div id="historyList"></div>
     </div>
   </section>
@@ -224,6 +224,15 @@
         <h4 class="fb-panel-title" style="margin-top:26px;">Tell us more</h4>
         <p class="sub" style="margin:2px 0 12px;">Description of concern or feedback</p>
         <form class="stack" id="feedbackForm">
+          <div class="field">
+            <select id="fbCategory" aria-label="Type">
+              <option value="feedback">Feedback</option>
+              <option value="concern">Concern</option>
+            </select>
+          </div>
+          <div class="field">
+            <input type="text" id="fbSubject" maxlength="150" placeholder="Subject (e.g. Cleanliness, Booking issue)">
+          </div>
           <div class="field">
             <textarea id="fbMessage" placeholder="Write the feedback or any concern here..." style="min-height:150px;"></textarea>
           </div>
@@ -568,6 +577,10 @@
         <span>Total amount due</span>
         <span id="paymentTotalAmount">₱0</span>
       </div>
+      <div class="pay-total-row" style="margin-top:4px;">
+        <span>50% down payment to confirm</span>
+        <span id="paymentDownAmount">₱0</span>
+      </div>
     </div>
 
     <div class="pay-block">
@@ -717,7 +730,7 @@
   <a class="auth-switch" href="php/logout.php">Log out</a>
 </div>
 
-<script src="assets/js/dashboard-guest.js?v=27"></script>
+<script src="assets/js/dashboard-guest.js?v=28"></script>
 <script>
   (function () {
     var okBtn = document.getElementById('passwordOkBtn');

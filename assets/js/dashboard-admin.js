@@ -44,7 +44,8 @@ var accessModulePage = 1;
 var loginLogs = [];
 
 function computeLoginActivityStats() {
-  var todayStr = new Date().toISOString().slice(0, 10);
+  var nowD = new Date();
+  var todayStr = nowD.getFullYear() + '-' + String(nowD.getMonth() + 1).padStart(2, '0') + '-' + String(nowD.getDate()).padStart(2, '0');
   var totalToday = 0, successful = 0, failed = 0, suspicious = 0;
   var failsByUser = {};
 
@@ -123,6 +124,16 @@ function generateSecurityAlerts() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+  // Settings profile = the logged-in account (not a hardcoded placeholder).
+  adminApiCall('session', {}).then(function (res) {
+    if (!res || !res.success || !res.user) return;
+    var u = res.user;
+    var full = ((u.firstname || '') + ' ' + (u.lastname || '')).trim() || u.username || '';
+    var n = document.getElementById('settingsProfileName'); if (n) n.textContent = full;
+    var e = document.getElementById('settingsProfileEmail'); if (e) e.textContent = u.email || '';
+    var r = document.getElementById('settingsProfileRole'); if (r) r.textContent = u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1) : '';
+    var a = document.getElementById('settingsProfileAvatar'); if (a) a.textContent = (full.charAt(0) || 'A').toUpperCase();
+  }).catch(function () {});
   initSidebarNavigation();
   initMobileSidebar();
   initSecurityTabs();
@@ -318,7 +329,8 @@ function renderTodayDashboardStats() {
   var totalRevenue = 0;
 
   allReservations.forEach(function (r) {
-    if (r.status === 'cancelled' || r.status === 'declined') return;
+    // Only confirmed / completed bookings count (same rule as the calendar).
+    if (r.status !== 'confirmed' && r.status !== 'completed') return;
     if (String(r.check_in).slice(0, 10) === todayKey) checkinsToday++;
     if (String(r.check_out).slice(0, 10) === todayKey) checkoutsToday++;
     totalRevenue += Number(r.total_amount) || 0;
@@ -490,7 +502,7 @@ function openReservationModal(id) {
     '<div class="modal-info-row"><span>Status</span><span><span class="status-pill ' + pillClass + '">' + statusLabel + '</span></span></div>' +
     (r.cancel_requested ? '<div class="modal-info-row"><span>Cancellation Reason</span><span>' + (r.cancel_reason || '-') + '</span></div>' : '') +
     '<div class="modal-info-row"><span>Payment Method</span><span>' + (r.payment_method || '-') + '</span></div>' +
-    '<div class="modal-info-row"><span>Payment Status</span><span>' + (r.payment_status || '-') + '</span></div>' +
+    '<div class="modal-info-row"><span>Payment Status</span><span>' + (r.payment_status ? r.payment_status.charAt(0).toUpperCase() + r.payment_status.slice(1) : '-') + '</span></div>' +
     '<div class="modal-info-row"><span>Date Created</span><span>' + formatDateTime(r.created_at) + '</span></div>';
 
   var receiptImage = (r.data && r.data.receiptImage) ? r.data.receiptImage : null;
@@ -570,7 +582,7 @@ function renderStatTotals() {
     if (r.status === 'confirmed' || r.status === 'completed') confirmed++;
     if (r.status === 'pending') pending++;
     if (r.status === 'cancelled' || r.status === 'declined') cancelled++;
-    if (r.status !== 'cancelled' && r.status !== 'declined') revenue += Number(r.total_amount) || 0;
+    if (r.status === 'confirmed' || r.status === 'completed') revenue += Number(r.total_amount) || 0;
   });
   var setTxt = function (id, val) { var e = document.getElementById(id); if (e) e.textContent = val; };
   setTxt('statConfirmedReservations', confirmed);
@@ -1261,7 +1273,8 @@ function getFilteredGuests() {
   return allGuests.filter(function (g) {
     var matchesSearch = searchText === '' ||
       g.guest_name.toLowerCase().indexOf(searchText) !== -1 ||
-      (g.guest_email || '').toLowerCase().indexOf(searchText) !== -1;
+      (g.guest_email || '').toLowerCase().indexOf(searchText) !== -1 ||
+      (g.codes || '').toLowerCase().indexOf(searchText) !== -1;
     var matchesStatus = statusValue === '' || g.status === statusValue;
     return matchesSearch && matchesStatus;
   });
@@ -1341,8 +1354,8 @@ function renderGuestStats() {
   setTxt('statInactiveGuests', allGuests.filter(function (g) { return g.status === 'inactive'; }).length);
   var now = new Date();
   var newThisMonth = allGuests.filter(function (g) {
-    if (!g.last_reservation) return false;
-    var d = new Date(g.last_reservation.replace(' ', 'T'));
+    if (!g.registered_at) return false;
+    var d = new Date(String(g.registered_at).replace(' ', 'T'));
     return !isNaN(d.getTime()) && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).length;
   setTxt('statNewGuests', newThisMonth);
@@ -1384,6 +1397,7 @@ var allNotifications = [];
 function loadAdminNotifications() {
   adminApiCall('notifications_list', {}).then(function (res) {
     allNotifications = (res && res.success && res.notifications) ? res.notifications : [];
+    window.notifEmailStats = (res && res.email_stats) ? res.email_stats : null;
 
     var widget = document.getElementById('systemNotifList');
     if (widget) {
@@ -1539,8 +1553,8 @@ function renderNotificationStats() {
   var setTxt = function (id, val) { var e = document.getElementById(id); if (e) e.textContent = val; };
   setTxt('statTotalNotifications', allNotifications.length);
   setTxt('statUnreadNotifications', allNotifications.filter(function (n) { return !n.is_read; }).length);
-  setTxt('statSentNotifications', allNotifications.filter(function (n) { return n.email_status === 'sent'; }).length);
-  setTxt('statFailedNotifications', allNotifications.filter(function (n) { return n.email_status === 'failed'; }).length);
+  setTxt('statSentNotifications', window.notifEmailStats ? window.notifEmailStats.sent : allNotifications.filter(function (n) { return n.email_status === 'sent'; }).length);
+  setTxt('statFailedNotifications', window.notifEmailStats ? window.notifEmailStats.failed : allNotifications.filter(function (n) { return n.email_status === 'failed'; }).length);
 
   // Naka-disable ang "Mark all as read" kapag wala nang unread
   var markAllBtn = document.getElementById('markAllNotifReadBtn');
@@ -2231,10 +2245,10 @@ var securitySummaryModes = {
       '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3L21 19H3L12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 10V14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="16.5" r="0.9" fill="currentColor"/></svg>'
     ],
     cards: [
-      { label: 'Total Login Today', value: function () { return computeLoginActivityStats().totalToday; }, sub: 'Active Account' },
-      { label: 'Successful Login', value: function () { return computeLoginActivityStats().successful; }, sub: 'Full Access' },
-      { label: 'Failed Attempt', value: function () { return computeLoginActivityStats().failed; }, sub: 'Full Access' },
-      { label: 'Suspicious Activity', value: function () { return computeLoginActivityStats().suspicious; }, sub: 'Full Access' }
+      { label: 'Total Login Today', value: function () { return computeLoginActivityStats().totalToday; }, sub: 'Logins since midnight' },
+      { label: 'Successful Login', value: function () { return computeLoginActivityStats().successful; }, sub: 'All recorded logins' },
+      { label: 'Failed Attempt', value: function () { return computeLoginActivityStats().failed; }, sub: 'Wrong password / blocked' },
+      { label: 'Suspicious Activity', value: function () { return computeLoginActivityStats().suspicious; }, sub: '3+ failed tries per user' }
     ]
   }
 };
@@ -2265,25 +2279,35 @@ function updateSecuritySummaryGrid(tabName) {
  *  week (Mon-Sun), so "Reservations Overview" matches the actual data
  *  instead of showing fixed sample numbers. */
 function computeWeeklyReservationCounts() {
-  var today = new Date();
-  var dow = today.getDay();
-  var mondayOffset = dow === 0 ? -6 : 1 - dow;
-  var monday = new Date(today);
-  monday.setDate(today.getDate() + mondayOffset);
-
-  var dayKeys = [];
-  for (var i = 0; i < 7; i++) {
-    var d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    dayKeys.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
-  }
-
-  var counts = [0, 0, 0, 0, 0, 0, 0];
-  (typeof allReservations !== 'undefined' ? allReservations : []).forEach(function (r) {
-    if (!r.check_in) return;
-    var idx = dayKeys.indexOf(String(r.check_in).slice(0, 10));
-    if (idx !== -1) counts[idx]++;
+  var list = (typeof allReservations !== 'undefined' ? allReservations : []).filter(function (r) {
+    var st = String(r.status || '').toLowerCase();
+    return r.check_in && st !== 'declined' && st !== 'cancelled';
   });
+  function keyOf(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function mondayOf(d) {
+    var m = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    var dow = m.getDay();
+    m.setDate(m.getDate() + (dow === 0 ? -6 : 1 - dow));
+    return m;
+  }
+  function countsFor(monday) {
+    var keys = [];
+    for (var i = 0; i < 7; i++) { var d = new Date(monday); d.setDate(monday.getDate() + i); keys.push(keyOf(d)); }
+    var c = [0, 0, 0, 0, 0, 0, 0];
+    list.forEach(function (r) { var idx = keys.indexOf(String(r.check_in).slice(0, 10)); if (idx !== -1) c[idx]++; });
+    return c;
+  }
+  var monday = mondayOf(new Date());
+  var counts = countsFor(monday);
+  // Current week empty -> show the most recent week that has check-ins so the chart is not flat.
+  if (counts.every(function (n) { return n === 0; }) && list.length) {
+    var latest = list.reduce(function (a, r) { var t = String(r.check_in).slice(0, 10); return t > a ? t : a; }, '0000-00-00');
+    var up = list.map(function (r) { return String(r.check_in).slice(0, 10); }).filter(function (t) { return t <= keyOf(new Date()); }).sort().pop();
+    var ref = new Date((up || latest) + 'T00:00:00');
+    if (!isNaN(ref.getTime())) { monday = mondayOf(ref); counts = countsFor(monday); }
+  }
   return counts;
 }
 
@@ -3069,7 +3093,7 @@ function computeReportsData(filters) {
   var scopedForAcc = filters.accommodationSlug ? scoped.filter(function (r) { return r.cabin_id === filters.accommodationSlug; }) : scoped;
 
   var totalRevenue = scopedForAcc.reduce(function (sum, r) {
-    if (r.status === 'cancelled' || r.status === 'declined') return sum;
+    if (r.status !== 'confirmed' && r.status !== 'completed') return sum;
     return sum + (Number(r.total_amount) || 0);
   }, 0);
 
@@ -3142,10 +3166,10 @@ function renderReportsSummary(data) {
   var occupancyRate = totalCabinBookings ? Math.round((totalCabinBookings / (totalCabinBookings + 10)) * 100) : 0;
 
   gridEl.innerHTML =
-    summaryCard('green', 'Total Reservations', data.total_reservations, 'This month') +
-    summaryCard('yellow', 'Total Revenue', peso(data.total_revenue), 'This month') +
+    summaryCard('green', 'Total Reservations', data.total_reservations, 'In selected period') +
+    summaryCard('yellow', 'Booked Revenue', peso(data.total_revenue), 'Confirmed bookings only') +
     summaryCard('blue', 'Occupancy Rate', occupancyRate + '%', 'Estimated') +
-    summaryCard('red', 'New Guests', data.guests_total, 'This month') +
+    summaryCard('red', 'Guests', data.guests_total, 'In selected period') +
     summaryCard('green', 'Total Feedback', data.total_feedback, 'Based on ' + data.total_feedback + ' ratings');
 
   drawWeeklyChart('reportsTrendChart');
@@ -3173,12 +3197,18 @@ function renderReportsSummary(data) {
     if (!typeVal || typeVal === 'feedback') rowsHtml += detailedReportRow('feedback', 'Feedback Report', data.total_feedback, 'Guest feedback and concern summary.', generatedAt);
     reportsBody.innerHTML = rowsHtml;
   }
+}
 
+/* Logs a report + notification, called only when the admin actually exports. */
+function logReportExport() {
+  var d = lastReportsData;
+  if (!d) return;
   adminApiCall('reports_generate', {
-    total_reservations: data.total_reservations,
-    total_revenue: data.total_revenue,
-    total_feedback: data.total_feedback,
-    accommodation_count: accommodationCount
+    export: true,
+    total_reservations: d.total_reservations,
+    total_revenue: d.total_revenue,
+    total_feedback: d.total_feedback,
+    accommodation_count: (d.cabin_breakdown || []).length
   }).then(function () { loadAdminNotifications(); });
 }
 function detailedReportRow(key, type, total, details, generatedAt) {
@@ -3199,6 +3229,17 @@ function detailedReportRow(key, type, total, details, generatedAt) {
 var lastReportsData = null;
 var openReportKey = '';
 
+function reportDateTime(raw) {
+  if (!raw) return '-';
+  var d = new Date(String(raw).replace(' ', 'T'));
+  if (isNaN(d.getTime())) return String(raw);
+  var datePart = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  if (String(raw).length <= 10) return datePart;
+  return datePart + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+function reportCap(v) { v = String(v || ''); return v ? v.charAt(0).toUpperCase() + v.slice(1) : '-'; }
+function reportPeso(n) { return '\u20b1' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
 function buildReportTable(key) {
   var d = lastReportsData || {};
   if (key === 'reservation') {
@@ -3206,7 +3247,7 @@ function buildReportTable(key) {
       title: 'Reservation Report',
       headers: ['Code', 'Guest Name', 'Accommodation', 'Check-in', 'Check-out', 'Guests', 'Status', 'Total Amount'],
       rows: (d.reservation_rows || []).map(function (r) {
-        return [r.code || '', r.guest_name || '', r.cabin_name || '', r.check_in || '', r.check_out || '', r.guests_count || 0, r.status || '', Number(r.total_amount) || 0];
+        return [r.code || '', r.guest_name || '', r.cabin_name || '', reportDateTime(r.check_in), reportDateTime(r.check_out), r.guests_count || 0, reportCap(r.status), reportPeso(r.total_amount)];
       })
     };
   }
@@ -3221,7 +3262,7 @@ function buildReportTable(key) {
     title: 'Feedback Report',
     headers: ['Guest', 'Rating', 'Category', 'Subject', 'Status', 'Submitted'],
     rows: (d.feedback_list || []).map(function (f) {
-      return [f.guest_name || '', f.rating || '', f.category || '', f.subject || '', f.status || '', String(f.submitted_at || '').slice(0, 10)];
+      return [f.guest_name || '', f.rating || '', reportCap(f.category), f.subject || '', reportCap(f.status), reportDateTime(String(f.submitted_at || '').slice(0, 10))];
     })
   };
 }
@@ -3232,7 +3273,8 @@ function downloadReportCsv(key) {
   t.rows.forEach(function (row) {
     lines.push(row.map(function (cell) { return '"' + String(cell).replace(/"/g, '""') + '"'; }).join(','));
   });
-  var blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  var blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  logReportExport();
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;

@@ -107,7 +107,9 @@ function detectLoginLocation(?string $ip): array
     if (!$ip) {
         return ['label' => 'Unknown', 'lat' => null, 'lng' => null];
     }
-    if (in_array($ip, ['127.0.0.1', '::1'], true) || strpos($ip, '192.168.') === 0 || strpos($ip, '10.') === 0) {
+    $isPrivate = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false
+        || (bool)preg_match('/^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./', $ip);
+    if (in_array($ip, ['127.0.0.1', '::1'], true) || $isPrivate) {
         // Localhost/LAN: the browser's own IP is private, so ask ip-api
         // about the server's PUBLIC IP instead (empty IP = caller's IP).
         // That gives the general area (city level) of the network.

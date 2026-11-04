@@ -953,7 +953,7 @@ body{
   color:var(--ink-soft,#777);
 }
 .summary-label, .summary-sub, .avail-sub, .setting-desc, .chart-axis-label,
-.notif-time, .modal-info-row, .profile-field span:first-child, .tab-btn{
+.notif-time, .profile-field span:first-child, .tab-btn{
   color:#ffffff;
 }
 .calendar-detail-item{
@@ -1217,3 +1217,7 @@ body{
 .pill.pay-st-refunded{background:var(--sand-dim); color:var(--ink-soft);}
 .pill.pay-src-website{background:var(--status-blue-bg); color:var(--status-blue);}
 .pill.pay-src-walk-in{background:var(--sand-dim); color:var(--ink-soft);}
+
+/* Reservation details: readable labels on the light modal */
+.modal-info-row{color:var(--ink-soft,#555);}
+.modal-info-row span:first-child{font-weight:600;color:var(--ink-soft,#555);}

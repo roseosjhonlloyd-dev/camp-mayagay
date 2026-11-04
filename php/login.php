@@ -32,7 +32,7 @@ if (!$is2faVerify && !$isResend2fa && ($identifier === '' || $password === '')) 
 require_once __DIR__ . '/login_helpers.php';
 
 $deviceInfo = detectDeviceInfo((string)($_SERVER['HTTP_USER_AGENT'] ?? ''));
-$loginLocation = detectLoginLocation($_SERVER['REMOTE_ADDR'] ?? null);
+$loginLocation = detectLoginLocation(clientIp());
 // Prefer the position the browser shared (with permission); on the 2FA
 // step reuse the one remembered from the password step.
 $clientLocation = resolveClientLocation($input);
@@ -133,7 +133,7 @@ try {
             exit;
         }
 
-        logSecurityActivity($pdo, $activityLoggingOn, (int)$user['id'], 'login', $_SERVER['REMOTE_ADDR'] ?? '', $deviceInfo, $loginLocation, 'success');
+        logSecurityActivity($pdo, $activityLoggingOn, (int)$user['id'], 'login', (clientIp() ?? ''), $deviceInfo, $loginLocation, 'success');
 
         session_regenerate_id(true);
         $_SESSION['user_id']       = $user['id'];
@@ -187,10 +187,10 @@ $stmt->execute([
     if (!$user || !password_verify($password, $user['password'])) {
         $logStmt->execute([
             'identifier' => $identifier,
-            'ip'         => $_SERVER['REMOTE_ADDR'] ?? null,
+            'ip'         => clientIp(),
             'success'    => 0,
         ]);
-        logSecurityActivity($pdo, $activityLoggingOn, $user['id'] ?? null, 'login attempt', $_SERVER['REMOTE_ADDR'] ?? '', $deviceInfo, $loginLocation, 'failed');
+        logSecurityActivity($pdo, $activityLoggingOn, $user['id'] ?? null, 'login attempt', (clientIp() ?? ''), $deviceInfo, $loginLocation, 'failed');
         http_response_code(401);
         echo json_encode(['success' => false, 'message' => 'Invalid username/email or password.']);
         exit;
@@ -204,7 +204,7 @@ $stmt->execute([
 
     $logStmt->execute([
         'identifier' => $identifier,
-        'ip'         => $_SERVER['REMOTE_ADDR'] ?? null,
+        'ip'         => clientIp(),
         'success'    => 1,
     ]);
 
@@ -232,7 +232,7 @@ $stmt->execute([
         exit;
     }
 
-    logSecurityActivity($pdo, $activityLoggingOn, $user['id'], 'login', $_SERVER['REMOTE_ADDR'] ?? '', $deviceInfo, $loginLocation, 'success');
+    logSecurityActivity($pdo, $activityLoggingOn, $user['id'], 'login', (clientIp() ?? ''), $deviceInfo, $loginLocation, 'success');
 
     session_regenerate_id(true);
 

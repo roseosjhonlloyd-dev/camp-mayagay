@@ -351,7 +351,7 @@ function logSecurity(PDO $pdo, ?int $userId, string $activity, string $status = 
     $stmt->execute([
         'user_id'  => $userId,
         'activity' => $activity,
-        'ip'       => $_SERVER['REMOTE_ADDR'] ?? null,
+        'ip'       => clientIp(),
         'status'   => $status,
     ]);
 }
@@ -1220,15 +1220,22 @@ try {
             if ($isAdmin) {
                 $amountPaid = max(0.0, min($total, (float)($input['amount_paid'] ?? 0)));
             } else {
-                $hasReceipt = is_array($input['data'] ?? null) && (
-                    trim((string)($input['data']['receiptImage'] ?? '')) !== '' ||
-                    trim((string)($input['data']['gcashRef'] ?? '')) !== ''
-                );
-                $amountPaid = $hasReceipt ? $total : 0.0;
+                // Online (guest): the receipt / GCash reference is only a claim.
+                // Payment stays unpaid until staff confirm the booking.
+                $amountPaid = 0.0;
             }
             $payStatus = paymentStatusFor($total, $amountPaid);
-            $code       = trim((string)($input['code'] ?? ('CMY-' . date('Y') . '-' . strtoupper(substr($cabinId, 0, 3)) . '-' . random_int(10, 99))));
+            // Reference number: the server always assigns the next free number for
+            // the prefix (e.g. CMY-2026-NIP-), so two bookings never share a code.
+            $clientCode = trim((string)($input['code'] ?? ''));
+            if (preg_match('/^(CMY-\d{4}-[A-Z0-9]{2,5})-\d+$/', $clientCode, $cm)) {
+                $codePrefix = $cm[1];
+            } else {
+                $codePrefix = 'CMY-' . date('Y') . '-' . strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $cabinId), 0, 3));
+            }
             $data       = $input['data'] ?? null;
+            $gcashRef   = is_array($data) ? trim((string)($data['gcashRef'] ?? '')) : '';
+            try { $pdo->query("SELECT GET_LOCK('cmy_reservation_code', 5)")->fetch(); } catch (PDOException $e) { /* best effort */ }
 
             if ($guestName === '' || $cabinId === '' || $checkIn === '' || $checkOut === '') {
                 http_response_code(422);
@@ -1261,6 +1268,14 @@ try {
             //    pending/confirmed reservation na overlapping ang petsa.
             $pdo->beginTransaction();
             try {
+                $seqStmt = $pdo->prepare('SELECT code FROM reservations WHERE code LIKE :p');
+                $seqStmt->execute(['p' => $codePrefix . '-%']);
+                $maxSeq = 0;
+                foreach ($seqStmt->fetchAll(PDO::FETCH_COLUMN) as $existingCode) {
+                    if (preg_match('/-(\d+)$/', (string)$existingCode, $sm)) { $maxSeq = max($maxSeq, (int)$sm[1]); }
+                }
+                $code = $codePrefix . '-' . str_pad((string)($maxSeq + 1), 2, '0', STR_PAD_LEFT);
+                if (is_array($data)) { $data['code'] = $code; }
                 $lockStmt = $pdo->prepare('SELECT accommodation_id FROM accommodations WHERE accommodation_id = :id FOR UPDATE');
                 $lockStmt->execute(['id' => $accommodationId]);
 
@@ -1326,7 +1341,7 @@ try {
                 $stmt->execute([
                     'reservation_id'   => $newId,
                     'payment_method'   => $payment,
-                    'reference_number' => $code,
+                    'reference_number' => $gcashRef !== '' ? $gcashRef : $code,
                     'amount'           => $amountPaid,
                     'payment_status'   => $payStatus,
                     'payment_date'     => $amountPaid > 0 ? date('Y-m-d H:i:s') : null,
@@ -1347,7 +1362,7 @@ try {
             } else {
                 addNotification($pdo, null, 'admin', 'booking', 'New booking received', $guestName . ' booked ' . $cabinName . '.', $newId);
                 addNotification($pdo, $user['id'], 'guest', 'confirmation', 'Reservation Confirmation', 'Your reservation has been received and is pending confirmation.', $newId);
-                addNotification($pdo, $user['id'], 'guest', 'payment', 'Payment Reminder', 'Your payment has been recorded.', $newId);
+                addNotification($pdo, $user['id'], 'guest', 'payment', 'Payment Received', 'We received your payment details. Camp Mayagay will verify them and confirm your booking.', $newId);
             }
 
             $stmt = $pdo->prepare(RESERVATION_SELECT . ' WHERE r.reservation_id = :id');
@@ -1651,7 +1666,16 @@ try {
                 $n['recipient']   = $n['recipient_email'];
                 return $n;
             }, $stmt->fetchAll());
-            echo json_encode(['success' => true, 'notifications' => $rows]);
+            $emailStats = null;
+            if (isStaffOrAdmin($user)) {
+                // Delivery counts cover every email the system sent (announcements,
+                // feedback replies, booking mails), not only the admin-audience rows.
+                $emailStats = ['sent' => 0, 'failed' => 0];
+                foreach ($pdo->query("SELECT email_status, COUNT(*) c FROM notifications WHERE email_status IN ('sent','failed') GROUP BY email_status")->fetchAll() as $es) {
+                    $emailStats[$es['email_status']] = (int)$es['c'];
+                }
+            }
+            echo json_encode(['success' => true, 'notifications' => $rows, 'email_stats' => $emailStats]);
             break;
 
         /** Admin composes a message from the "Add Message" button and sends
@@ -2034,16 +2058,21 @@ try {
                     'Response to your feedback',
                     $response !== '' ? $response : 'Camp Mayagay has responded to your feedback.'
                 );
+                $fbNotifId = (int)$pdo->lastInsertId();
 
                 if (!empty($fbRow['email'])) {
                     require_once __DIR__ . '/mailer.php';
                     $mailError = null;
-                    sendNotificationEmail(
+                    $mailOk = sendNotificationEmail(
                         $fbRow['email'],
                         'Response to your feedback: ' . ($fbRow['subject'] ?: 'Camp Mayagay'),
                         $response,
                         $mailError
                     );
+                    if ($fbNotifId > 0) {
+                        $pdo->prepare('UPDATE notifications SET recipient_email = :e, email_status = :s WHERE notification_id = :id')
+                            ->execute(['e' => $fbRow['email'], 's' => $mailOk ? 'sent' : 'failed', 'id' => $fbNotifId]);
+                    }
                 }
             }
 
@@ -2099,7 +2128,11 @@ try {
             );
             $stmt->execute(['uid' => $user['id'], 'type' => 'Detailed Summary', 'desc' => $description]);
 
-            addNotification($pdo, null, 'admin', 'announcement', 'Detailed Report Generated', $description);
+            // Only an explicit export creates a notification (input.export = true),
+            // so merely opening the Reports page no longer floods Notifications.
+            if (!empty($input['export'])) {
+                addNotification($pdo, null, 'admin', 'announcement', 'Detailed Report Generated', $description);
+            }
 
             echo json_encode(['success' => true]);
             break;
@@ -2145,18 +2178,24 @@ try {
         ------------------------------------------------------------ */
         case 'guests_list':
             requireModuleAccess($pdo, $user, 'guest_record');
+            // Registered guest accounts (even with no booking yet) + walk-in guests
+            // that only exist on reservations.
             $stmt = $pdo->query(
-                "SELECT
-                    COALESCE(r.user_id, 0)                AS user_id,
-                    r.guest_name                            AS guest_name,
-                    COALESCE(r.guest_email, '')             AS guest_email,
-                    COUNT(*)                                AS total_bookings,
-                    MAX(r.check_in_date)                    AS last_reservation,
-                    u.status                                AS account_status
-                 FROM reservations r
-                 LEFT JOIN users u ON u.user_id = r.user_id
-                 GROUP BY COALESCE(r.user_id, 0), r.guest_name, r.guest_email, u.status
-                 ORDER BY last_reservation DESC"
+                "SELECT u.user_id AS user_id,
+                        TRIM(CONCAT(u.firstname, ' ', u.lastname)) AS guest_name,
+                        u.email AS guest_email,
+                        u.status AS account_status,
+                        u.created_at AS registered_at,
+                        (SELECT COUNT(*) FROM reservations r WHERE r.user_id = u.user_id) AS total_bookings,
+                        (SELECT MAX(r.check_in_date) FROM reservations r WHERE r.user_id = u.user_id) AS last_reservation,
+                        (SELECT GROUP_CONCAT(r.code SEPARATOR ' ') FROM reservations r WHERE r.user_id = u.user_id) AS codes
+                 FROM users u WHERE u.role = 'guest'
+                 UNION ALL
+                 SELECT 0, r.guest_name, COALESCE(r.guest_email, ''), 'active', MIN(r.created_at),
+                        COUNT(*), MAX(r.check_in_date), GROUP_CONCAT(r.code SEPARATOR ' ')
+                 FROM reservations r WHERE r.user_id IS NULL
+                 GROUP BY r.guest_name, r.guest_email
+                 ORDER BY registered_at DESC"
             );
             $rows = $stmt->fetchAll();
             $guests = array_map(function ($g, $i) {
@@ -2167,6 +2206,8 @@ try {
                     'guest_email'      => $g['guest_email'],
                     'total_bookings'   => (int)$g['total_bookings'],
                     'last_reservation' => $g['last_reservation'],
+                    'registered_at'    => $g['registered_at'],
+                    'codes'            => (string)($g['codes'] ?? ''),
                     'status'           => $g['account_status'] === 'disabled' ? 'inactive' : 'active',
                 ];
             }, $rows, array_keys($rows));

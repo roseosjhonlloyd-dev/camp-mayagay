@@ -15,7 +15,7 @@ if (isLoggedIn()) {
     );
     $last->execute(['uid' => $_SESSION['user_id']]);
     $prev = $last->fetch() ?: [];
-    $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+    $ip = clientIp();
     $pdo->prepare(
         "INSERT INTO security_logs (user_id, activity, ip_address, device_info, location, location_lat, location_lng, logout_time, status)
          VALUES (:uid, 'logout', :ip, :device, :location, :lat, :lng, NOW(), 'success')"

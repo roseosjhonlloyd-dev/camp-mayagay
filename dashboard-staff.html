@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Staff Dashboard | Camp Mayagay</title>
-<link rel="stylesheet" href="assets/css/dashboard-admin.css?v=7">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="assets/css/dashboard-admin.css?v=8">
 </head>
 <body>
 
@@ -253,7 +254,7 @@
         </div>
         <table class="data-table">
           <thead>
-            <tr><th>User ID</th><th>Full Name</th><th>Email</th><th>Role</th><th>Status</th><th>Valid ID</th><th>Date Created</th><th>Action</th></tr>
+            <tr><th>User ID</th><th>Full Name</th><th>Email</th><th>Role</th><th>Status</th><th>Date Created</th><th>Valid ID</th><th>Action</th></tr>
           </thead>
           <tbody id="userTableBody">
             <tr><td colspan="8" class="empty-admin-note">Loading users...</td></tr>
@@ -427,19 +428,19 @@
       </div>
       <div class="summary-card">
         <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M7 12L10.5 15.5L17 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/></svg></div>
-        <div><p class="summary-label">Confirmed</p><p class="summary-number" id="statConfirmedReservations">0</p><p class="summary-sub">This month</p></div>
+        <div><p class="summary-label">Confirmed</p><p class="summary-number" id="statConfirmedReservations">0</p><p class="summary-sub">All time</p></div>
       </div>
       <div class="summary-card">
         <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7V12L15.5 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
-        <div><p class="summary-label">Pending</p><p class="summary-number" id="statPendingReservations">0</p><p class="summary-sub">This month</p></div>
+        <div><p class="summary-label">Pending</p><p class="summary-number" id="statPendingReservations">0</p><p class="summary-sub">Awaiting confirmation</p></div>
       </div>
       <div class="summary-card">
         <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M9 9L15 15M15 9L9 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
-        <div><p class="summary-label">Cancelled</p><p class="summary-number" id="statCancelledReservations">0</p><p class="summary-sub">This month</p></div>
+        <div><p class="summary-label">Cancelled</p><p class="summary-number" id="statCancelledReservations">0</p><p class="summary-sub">Cancelled / declined</p></div>
       </div>
       <div class="summary-card">
         <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7V17M9 9.5C9 8 10.3 7 12 7C13.7 7 15 8 15 9.5C15 11.5 12 11.5 12 11.5C12 11.5 9 11.5 9 14.5C9 16 10.3 17 12 17C13.7 17 15 16 15 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
-         <div><p class="summary-label">Total Revenue</p><p class="summary-number" id="statReservationRevenue" style="font-size:22px;">&#8369;0.00</p><p class="summary-sub">This month</p></div>
+         <div><p class="summary-label">Booked Revenue</p><p class="summary-number" id="statReservationRevenue" style="font-size:22px;">&#8369;0.00</p><p class="summary-sub">Confirmed bookings</p></div>
       </div>
     </div>
 
@@ -869,7 +870,7 @@
       </div>
       <div class="summary-card">
         <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M7 12L10.5 15.5L17 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/></svg></div>
-        <div><p class="summary-label">Confirmed Bookings</p><p class="summary-number" id="statConfirmedBookings">0</p><p class="summary-sub">This month</p></div>
+        <div><p class="summary-label">Confirmed Bookings</p><p class="summary-number" id="statConfirmedBookings">0</p><p class="summary-sub">All time</p></div>
       </div>
       <div class="summary-card">
         <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 10V7a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.6"/></svg></div>
@@ -923,19 +924,19 @@
     <div class="summary-grid">
       <div class="summary-card">
         <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M16.5 12c1.38 0 2.49-1.12 2.49-2.5S17.88 7 16.5 7C15.12 7 14 8.12 14 9.5s1.12 2.5 2.5 2.5zM9 12c1.93 0 3.5-1.57 3.5-3.5S10.93 5 9 5 5.5 6.57 5.5 8.5 7.07 12 9 12zm7.5 2c-1.83 0-5.5.92-5.5 2.75V18h11v-1.25c0-1.83-3.67-2.75-5.5-2.75zM9 14c-2.33 0-7 1.17-7 3.5V18h7.5v-1.25c0-.99.36-2.3 1.41-3.3A14.66 14.66 0 0 0 9 14z" fill="currentColor"/></svg></div>
-        <div><p class="summary-label">Total Guest</p><p class="summary-number" id="statTotalGuests">0</p><p class="summary-sub">Active Account</p></div>
+        <div><p class="summary-label">Total Guest</p><p class="summary-number" id="statTotalGuests">0</p><p class="summary-sub">Registered guests</p></div>
       </div>
       <div class="summary-card">
         <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.6"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
-        <div><p class="summary-label">Active Guest</p><p class="summary-number" id="statActiveGuests">0</p><p class="summary-sub">Full Access</p></div>
+        <div><p class="summary-label">Active Guest</p><p class="summary-number" id="statActiveGuests">0</p><p class="summary-sub">Enabled accounts</p></div>
       </div>
       <div class="summary-card">
         <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div><p class="summary-label">New This Month</p><p class="summary-number" id="statNewGuests">0</p><p class="summary-sub">Full Access</p></div>
+        <div><p class="summary-label">New This Month</p><p class="summary-number" id="statNewGuests">0</p><p class="summary-sub">Registered this month</p></div>
       </div>
       <div class="summary-card">
         <div class="summary-icon green"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M9 9L15 15M15 9L9 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
-        <div><p class="summary-label">Inactive Guest</p><p class="summary-number" id="statInactiveGuests">0</p><p class="summary-sub">Full Access</p></div>
+        <div><p class="summary-label">Inactive Guest</p><p class="summary-number" id="statInactiveGuests">0</p><p class="summary-sub">Disabled accounts</p></div>
       </div>
     </div>
 
@@ -949,7 +950,7 @@
       </div>
 
       <div class="filter-row">
-        <input type="text" id="guestSearchInput" placeholder="Search by name, email address...">
+        <input type="text" id="guestSearchInput" placeholder="Search by name, email, reference no...">
         <select id="guestStatusFilter">
           <option value="">All Status</option>
           <option value="active">Active</option>
@@ -1333,8 +1334,8 @@
           <div class="profile-settings-row">
             <div class="profile-avatar" id="settingsProfileAvatar">A</div>
             <div class="profile-fields">
-              <div class="profile-field"><span>Name:</span><strong id="settingsProfileName">Admin User</strong></div>
-              <div class="profile-field"><span>Email:</span><strong id="settingsProfileEmail">admin@campmayagay.com</strong></div>
+              <div class="profile-field"><span>Name:</span><strong id="settingsProfileName">Loading...</strong></div>
+              <div class="profile-field"><span>Email:</span><strong id="settingsProfileEmail">Loading...</strong></div>
               <div class="profile-field"><span>Role:</span><strong id="settingsProfileRole">Administrator</strong></div>
               <button class="btn-primary" id="editProfileBtn" type="button">Edit Profile</button>
             </div>
@@ -1504,7 +1505,7 @@
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="assets/js/dashboard-admin.js?v=18"></script>
+<script src="assets/js/dashboard-admin.js?v=19"></script>
 <script src="assets/js/dashboard-payments.js?v=2"></script>
 <script src="assets/js/dashboard-staff-permissions.js?v=5"></script>
 </body>
