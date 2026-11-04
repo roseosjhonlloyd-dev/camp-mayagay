@@ -334,8 +334,8 @@ function renderTodayDashboardStats() {
       if (String(r.check_in).slice(0, 10) === todayKey) checkinsToday++;
       if (String(r.check_out).slice(0, 10) === todayKey) checkoutsToday++;
     }
-    // Revenue counts fully paid bookings only (same as the Paid card in Payment Transactions).
-    if (r.payment_status === 'paid') totalRevenue += Number(r.total_amount) || 0;
+    // Revenue = money actually collected (same as Total Collected in Payment Transactions).
+    if (r.payment_status !== 'refunded') totalRevenue += Number(r.amount_paid) || 0;
   });
 
   var setTxt = function (id, val) { var e = document.getElementById(id); if (e) e.textContent = val; };
@@ -584,7 +584,7 @@ function renderStatTotals() {
     if (r.status === 'confirmed' || r.status === 'completed') confirmed++;
     if (r.status === 'pending') pending++;
     if (r.status === 'cancelled' || r.status === 'declined') cancelled++;
-    if (r.payment_status === 'paid') revenue += Number(r.total_amount) || 0;
+    if (r.payment_status !== 'refunded') revenue += Number(r.amount_paid) || 0;
   });
   var setTxt = function (id, val) { var e = document.getElementById(id); if (e) e.textContent = val; };
   setTxt('statConfirmedReservations', confirmed);
@@ -3095,8 +3095,8 @@ function computeReportsData(filters) {
   var scopedForAcc = filters.accommodationSlug ? scoped.filter(function (r) { return r.cabin_id === filters.accommodationSlug; }) : scoped;
 
   var totalRevenue = scopedForAcc.reduce(function (sum, r) {
-    if (r.payment_status !== 'paid') return sum;
-    return sum + (Number(r.total_amount) || 0);
+    if (r.payment_status === 'refunded') return sum;
+    return sum + (Number(r.amount_paid) || 0);
   }, 0);
 
   var statusBreakdown = {};
@@ -3169,7 +3169,7 @@ function renderReportsSummary(data) {
 
   gridEl.innerHTML =
     summaryCard('green', 'Total Reservations', data.total_reservations, 'In selected period') +
-    summaryCard('yellow', 'Revenue (Fully Paid)', peso(data.total_revenue), 'Fully paid bookings only') +
+    summaryCard('yellow', 'Revenue (Collected)', peso(data.total_revenue), 'Money received, excludes outstanding') +
     summaryCard('blue', 'Occupancy Rate', occupancyRate + '%', 'Estimated') +
     summaryCard('red', 'Guests', data.guests_total, 'In selected period') +
     summaryCard('green', 'Total Feedback', data.total_feedback, 'Based on ' + data.total_feedback + ' ratings');
