@@ -97,7 +97,7 @@ try {
 
         require_once __DIR__ . '/mailer.php';
         $mailError = null;
-        if (!sendVerificationEmail($pendingUser['email'], $code, $mailError)) {
+        if (!sendLoginCodeEmail($pendingUser['email'], $code, $mailError)) {
             error_log('2FA resend mail error: ' . $mailError);
         }
         exit;
@@ -226,7 +226,7 @@ $stmt->execute([
 
         require_once __DIR__ . '/mailer.php';
         $mailError = null;
-        if (!sendVerificationEmail($user['email'], $code, $mailError)) {
+        if (!sendLoginCodeEmail($user['email'], $code, $mailError)) {
             error_log('2FA mail error: ' . $mailError);
         }
         exit;

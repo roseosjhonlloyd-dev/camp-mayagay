@@ -190,6 +190,22 @@ function sendVerificationEmail(string $toEmail, string $code, ?string &$errorOut
 }
 
 /**
+ * Sends the one-time login code for admin / staff sign-in (2-step verification).
+ * Separate from the password-reset email so the wording is never mixed up.
+ */
+function sendLoginCodeEmail(string $toEmail, string $code, ?string &$errorOut = null): bool
+{
+    $html =
+        '<p>Someone is signing in to your Camp Mayagay admin/staff account.</p>' .
+        '<p>Your login verification code is:</p>' .
+        '<h2 style="letter-spacing:6px;">' . htmlspecialchars($code) . '</h2>' .
+        '<p>This code expires in 10 minutes. If this was not you, do not share this code and change your password.</p>';
+    $text = "Your Camp Mayagay login verification code is: {$code}\nThis code expires in 10 minutes. If this was not you, do not share this code.";
+
+    return sendMailMessage($toEmail, 'Camp Mayagay - Login Verification Code', $html, $text, $errorOut);
+}
+
+/**
  * Sends a general-purpose notification email (used by the admin
  * "Add Message" composer and reservation notifications).
  */

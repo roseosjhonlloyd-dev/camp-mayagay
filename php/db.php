@@ -65,7 +65,7 @@ function clientIp(): ?string
 function runLegacyFixes(PDO $pdo): void
 {
     try {
-        $done = $pdo->query("SELECT setting_key FROM system_settings WHERE setting_key IN ('fix_tz_manila_v1','fix_misc_nov4_v1','fix_res_code_unique_v1')")
+        $done = $pdo->query("SELECT setting_key FROM system_settings WHERE setting_key IN ('fix_tz_manila_v1','fix_misc_nov4_v1','fix_res_code_unique_v1','fix_2fa_on_v1')")
                     ->fetchAll(PDO::FETCH_COLUMN);
     } catch (Throwable $e) {
         return; // system_settings not ready yet
@@ -96,6 +96,16 @@ function runLegacyFixes(PDO $pdo): void
             $mark('fix_misc_nov4_v1');
         } catch (Throwable $e) {
             error_log('[camp-mayagay/db.php] misc fix failed: ' . $e->getMessage());
+        }
+    }
+
+    // 2b) Admin/staff login OTP must be ON (one time; admin can still switch it off in Account Security later).
+    if (!in_array('fix_2fa_on_v1', $done, true)) {
+        try {
+            $pdo->exec("INSERT INTO system_settings (setting_key, setting_value) VALUES ('two_factor_enabled', '1') ON DUPLICATE KEY UPDATE setting_value = '1'");
+            $mark('fix_2fa_on_v1');
+        } catch (Throwable $e) {
+            error_log('[camp-mayagay/db.php] 2fa default fix failed: ' . $e->getMessage());
         }
     }
 
