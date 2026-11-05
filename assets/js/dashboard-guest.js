@@ -503,12 +503,9 @@
     const ranked = CABINS.map((c, i) => ({ c, i }))
       .sort((x, y) => ((state.favCounts[y.c.id] || 0) - (state.favCounts[x.c.id] || 0)) || (x.i - y.i))
       .slice(0, 4).map(x => x.c);
-    grid.innerHTML = ranked.map((c, rank) => {
-      const n = state.favCounts[c.id] || 0;
-      const top = n > 0 && rank < 3;
+    grid.innerHTML = ranked.map(c => {
       return `
-      <div class="cabin-card${top ? ' top-fav' : ''}">
-        ${top ? `<span class="top-fav-badge">#${rank + 1} Favorite</span>` : ''}
+      <div class="cabin-card">
         <div class="cabin-art" style="background:${ART_BG[c.icon]}">${artContent(c)}</div>
         <div class="cabin-body">
           <p class="cabin-name">${c.name}</p>

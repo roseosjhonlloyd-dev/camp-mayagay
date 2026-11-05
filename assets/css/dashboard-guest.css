@@ -1463,6 +1463,4 @@ body.dark-mode .gm-icon-btn:hover{background:rgba(255,255,255,0.12);}
 
 /* Most-favorited accommodations are highlighted on Home */
 .cabin-card{position:relative;}
-.cabin-card.top-fav{box-shadow:0 0 0 2px #3d7a3a, 0 6px 18px rgba(61,122,58,.25);}
-.top-fav-badge{position:absolute;top:8px;left:8px;z-index:2;background:#2f5d3a;color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;}
 .accom-fav{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
