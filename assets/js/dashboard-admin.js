@@ -1742,9 +1742,9 @@ function renderFeedbackTable(list) {
     var isConcern = f.category === 'concern';
     var typeLabel = isConcern ? 'Concern' : 'Feedback';
     var statusLabel = f.status === 'open' ? 'Pending' : 'Resolved';
-    html += '<tr>';
+    html += '<tr' + (f.is_read ? '' : ' style="font-weight:700;"') + '>';
     html += '  <td>' + feedbackRefNo(f) + '</td>';
-    html += '  <td>' + f.guest_name + '</td>';
+    html += '  <td>' + (f.is_read ? '' : '<span class="pill status-failed" style="margin-right:6px;">New</span>') + f.guest_name + '</td>';
     html += '  <td><span class="pill ' + (isConcern ? 'role-guest' : 'role-admin') + '">' + typeLabel + '</span></td>';
     html += '  <td>' + f.subject + '</td>';
     html += '  <td>' + (f.accommodation_name || 'General / overall stay') + '</td>';
@@ -1781,6 +1781,10 @@ function openFeedbackResponseModal(id) {
     (f.accommodation_name ? ' <span style="color:var(--leaf-deep,#3f6b2e); font-weight:600;">(' + f.accommodation_name + ')</span>' : '') + '<br>' +
     '<span style="color:var(--ink-soft,#777);">' + f.message + '</span>';
   document.getElementById('feedbackResponseId').value = f.feedback_id;
+  if (!f.is_read) {
+    f.is_read = 1;
+    adminApiCall('feedback_mark_read', { ids: [f.feedback_id] }).then(function () { var st = document.getElementById('feedbackSearchInput'); if (st) st.dispatchEvent(new Event('input')); else renderFeedbackTable(lastFeedbackList); });
+  }
   document.getElementById('feedbackResponseText').value = f.response || '';
   modal.classList.remove('hidden');
 }
@@ -3693,3 +3697,13 @@ function initFeedbackTabs() {
 }
 
 document.addEventListener('DOMContentLoaded', initFeedbackTabs);
+document.addEventListener('DOMContentLoaded', function () {
+  var btn = document.getElementById('markAllFeedbackReadBtn');
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    adminApiCall('feedback_mark_read', {}).then(function (res) {
+      if (typeof showAdminToast === 'function') showAdminToast(res && res.success ? 'All feedback marked as read.' : 'Could not mark feedback as read.', !(res && res.success));
+      loadFeedback();
+    });
+  });
+});

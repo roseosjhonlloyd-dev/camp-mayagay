@@ -708,8 +708,10 @@ try {
             break;
 
         case 'users_list':
-            requireAdmin($user);
-            $stmt = $pdo->query('SELECT user_id, firstname, lastname, username, email, contact_number, role, status, created_at, valid_id_image, id_verification_status FROM users ORDER BY user_id ASC');
+            // Admin: all accounts. Staff: guest accounts only (needed to review guest valid IDs in Settings).
+            if (!isStaffOrAdmin($user)) deny('Admins only.', 403);
+            $usersWhere = $user['role'] === 'admin' ? '' : " WHERE role = 'guest'";
+            $stmt = $pdo->query('SELECT user_id, firstname, lastname, username, email, contact_number, role, status, created_at, valid_id_image, id_verification_status FROM users' . $usersWhere . ' ORDER BY user_id ASC');
             $rows = array_map(function ($u) {
                 return [
                     'id'             => (int)$u['user_id'],
@@ -731,8 +733,13 @@ try {
             break;
 
         case 'id_verify_review':
-            requireAdmin($user);
+            if (!isStaffOrAdmin($user)) deny('Admins only.', 403);
             $targetId = (int)($input['id'] ?? 0);
+            if ($user['role'] === 'staff') {
+                $roleChk = $pdo->prepare('SELECT role FROM users WHERE user_id = :id');
+                $roleChk->execute(['id' => $targetId]);
+                if ($roleChk->fetchColumn() !== 'guest') deny('Staff can only review guest IDs.', 403);
+            }
             $decision = (string)($input['status'] ?? '');
             if (!$targetId || !in_array($decision, ['verified', 'rejected'], true)) {
                 http_response_code(422);
@@ -1896,7 +1903,36 @@ try {
                 );
                 $stmt->execute(['uid' => $user['id']]);
             }
-            echo json_encode(['success' => true, 'feedback' => $stmt->fetchAll()]);
+            $fbRows = $stmt->fetchAll();
+            // Read/unread flag for admin/staff. Kept in system_settings (key
+            // 'feedback_read_ids') so no table or column had to change.
+            $readIds = [];
+            try {
+                $rs = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'feedback_read_ids'")->fetchColumn();
+                $decoded = $rs ? json_decode((string)$rs, true) : [];
+                $readIds = is_array($decoded) ? array_map('intval', $decoded) : [];
+            } catch (Throwable $e) { $readIds = []; }
+            foreach ($fbRows as &$fbr) { $fbr['is_read'] = in_array((int)$fbr['feedback_id'], $readIds, true) ? 1 : 0; }
+            unset($fbr);
+            echo json_encode(['success' => true, 'feedback' => $fbRows]);
+            break;
+
+        case 'feedback_mark_read':
+            requireModuleAccess($pdo, $user, 'feedback');
+            $ids = $input['ids'] ?? null;
+            $readIds = [];
+            $rs = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'feedback_read_ids'")->fetchColumn();
+            $decoded = $rs ? json_decode((string)$rs, true) : [];
+            if (is_array($decoded)) { $readIds = array_map('intval', $decoded); }
+            if (is_array($ids) && count($ids)) {
+                $readIds = array_values(array_unique(array_merge($readIds, array_map('intval', $ids))));
+            } else {
+                $readIds = array_map('intval', $pdo->query('SELECT feedback_id FROM feedback_concerns')->fetchAll(PDO::FETCH_COLUMN));
+            }
+            $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('feedback_read_ids', :v)
+                           ON DUPLICATE KEY UPDATE setting_value = :v2")
+                ->execute(['v' => json_encode($readIds), 'v2' => json_encode($readIds)]);
+            echo json_encode(['success' => true]);
             break;
 
         /** Admin/staff view of everything sent to guests: replies to their

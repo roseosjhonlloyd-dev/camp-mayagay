@@ -460,45 +460,67 @@
   state.selectedDate = today.toISOString().slice(0,10);
 
  
+  const HEART_PATH = 'M12 21s-7.5-4.7-10-9.3C.5 8.2 2.5 5 6 5c2 0 3.6 1.1 4.5 2.6.9-1.5 2.5-2.6 4.5-2.6 3.5 0 5.5 3.2 4 6.7C19.5 16.3 12 21 12 21z';
+  function favWrapHtml(c){
+    const on = state.favorites.has(c.id);
+    return `<span class="fav-wrap">
+      <span class="fav-count" title="Guests who favorited this">${state.favCounts[c.id] || 0}</span>
+      <button class="fav-btn ${on?'active':''}" data-fav="${c.id}" aria-label="Save ${c.name}" type="button">
+        <svg viewBox="0 0 24 24" fill="${on?'currentColor':'none'}" stroke="currentColor" stroke-width="1.6"><path d="${HEART_PATH}"/></svg>
+      </button>
+    </span>`;
+  }
+  function toggleFavorite(id){
+    const cabin = CABINS.find(c => c.id === id);
+    if (!cabin || !cabin.accId) return;
+    const wasFav = state.favorites.has(id);
+    wasFav ? state.favorites.delete(id) : state.favorites.add(id);
+    state.favCounts[id] = Math.max(0, (state.favCounts[id] || 0) + (wasFav ? -1 : 1));
+    refreshFavoriteViews();
+    apiCall('favorites_toggle', { accommodation_id: cabin.accId }).then(res => {
+      if (res && res.success) {
+        state.favCounts[id] = Number(res.count);
+        refreshFavoriteViews();
+      } else {
+        loadFavorites();
+      }
+    }).catch(() => loadFavorites());
+  }
+  function bindFavButtons(root){
+    root.querySelectorAll('[data-fav]').forEach(btn => {
+      btn.addEventListener('click', (e) => { e.stopPropagation(); toggleFavorite(btn.dataset.fav); });
+    });
+  }
+  function refreshFavoriteViews(){
+    renderHomeCards();
+    const accomGrid = document.getElementById('accomGrid');
+    if (accomGrid && accomGrid.children.length) renderAccomGrid();
+  }
+
   function renderHomeCards(){
     const grid = document.getElementById('homeCardGrid');
-    grid.innerHTML = CABINS.slice(0,4).map(c => `
-      <div class="cabin-card">
+    // Most favorited accommodations first (ties keep the original order); show the top 4.
+    const ranked = CABINS.map((c, i) => ({ c, i }))
+      .sort((x, y) => ((state.favCounts[y.c.id] || 0) - (state.favCounts[x.c.id] || 0)) || (x.i - y.i))
+      .slice(0, 4).map(x => x.c);
+    grid.innerHTML = ranked.map((c, rank) => {
+      const n = state.favCounts[c.id] || 0;
+      const top = n > 0 && rank < 3;
+      return `
+      <div class="cabin-card${top ? ' top-fav' : ''}">
+        ${top ? `<span class="top-fav-badge">#${rank + 1} Favorite</span>` : ''}
         <div class="cabin-art" style="background:${ART_BG[c.icon]}">${artContent(c)}</div>
         <div class="cabin-body">
           <p class="cabin-name">${c.name}</p>
           <p class="cabin-note">${c.note}</p>
           <div class="cabin-foot">
             <span class="cabin-price">${peso(c.price)}/ ${c.unit}</span>
-            <span class="fav-wrap">
-              <span class="fav-count" title="Guests who favorited this">${state.favCounts[c.id] || 0}</span>
-              <button class="fav-btn ${state.favorites.has(c.id)?'active':''}" data-fav="${c.id}" aria-label="Save ${c.name}">
-                <svg viewBox="0 0 24 24" fill="${state.favorites.has(c.id)?'currentColor':'none'}" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7.5-4.7-10-9.3C.5 8.2 2.5 5 6 5c2 0 3.6 1.1 4.5 2.6.9-1.5 2.5-2.6 4.5-2.6 3.5 0 5.5 3.2 4 6.7C19.5 16.3 12 21 12 21z"/></svg>
-              </button>
-            </span>
+            ${favWrapHtml(c)}
           </div>
         </div>
-      </div>
-    `).join('');
-    grid.querySelectorAll('[data-fav]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.dataset.fav;
-        const cabin = CABINS.find(c => c.id === id);
-        if (!cabin || !cabin.accId) return;
-        const wasFav = state.favorites.has(id);
-        wasFav ? state.favorites.delete(id) : state.favorites.add(id);
-        state.favCounts[id] = Math.max(0, (state.favCounts[id] || 0) + (wasFav ? -1 : 1));
-        renderHomeCards();
-        apiCall('favorites_toggle', { accommodation_id: cabin.accId }).then(res => {
-          if (res && res.success) {
-            state.favCounts[id] = Number(res.count);
-            renderHomeCards();
-          } else {
-            loadFavorites();
-          }
-        }).catch(() => loadFavorites());
-      });
-    });
+      </div>`;
+    }).join('');
+    bindFavButtons(grid);
     grid.querySelectorAll('[data-reviews]').forEach(btn => {
       btn.addEventListener('click', () => openAccReviews(Number(btn.dataset.reviews)));
     });
@@ -515,7 +537,7 @@
         const slug = idToSlug[Number(r.accommodation_id)];
         if (slug) state.favCounts[slug] = Number(r.total);
       });
-      renderHomeCards();
+      refreshFavoriteViews();
     }).catch(() => {});
   }
 
@@ -644,7 +666,7 @@
             <p class="accom-name">${c.name}</p>
             <p class="accom-note">${c.note}</p>
           </div>
-          <span class="accom-price">${peso(c.price)}/ ${c.unit}</span>
+          <div class="accom-fav"><span class="accom-price">${peso(c.price)}/ ${c.unit}</span>${favWrapHtml(c)}</div>
         </div>
         <div class="day-row">
           ${DAYS.map((d,i) => {
@@ -655,6 +677,7 @@
       </div>
     `).join('');
 
+    bindFavButtons(grid);
     grid.querySelectorAll('[data-reviews]').forEach(btn => {
       btn.addEventListener('click', () => openAccReviews(Number(btn.dataset.reviews)));
     });
