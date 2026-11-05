@@ -3599,7 +3599,7 @@ function renderSentMessages(keepPage) {
     var isReply = m.kind === 'reply';
     var emailMark = m.email_status === 'sent' ? '<span class="gm-row-flag ok" title="Sent to email">Emailed</span>'
                   : m.email_status === 'failed' ? '<span class="gm-row-flag bad" title="Email could not be delivered">Email failed</span>' : '';
-    html += '<div class="gm-row ' + (m.seen ? 'seen' : 'unseen') + '" data-sent-id="' + m.id + '" role="button" tabindex="0">';
+    html += '<div class="gm-row ' + (m.admin_read ? 'seen' : 'unseen') + '" data-sent-id="' + m.id + '" role="button" tabindex="0">';
     html += '  <span class="gm-row-to">' + adminEsc(m.guest_name) + '</span>';
     html += '  <span class="gm-row-line">';
     html += '    <span class="gm-chip ' + (isReply ? 'reply' : 'msg') + '">' + (isReply ? 'Reply' : 'Message') + '</span>';
@@ -3635,6 +3635,10 @@ function relativeAgo(raw) {
 function openSentMessage(id) {
   var m = sentMessagesList.filter(function (x) { return String(x.id) === String(id); })[0];
   if (!m) return;
+  if (!m.admin_read) {
+    m.admin_read = true;
+    adminApiCall('sent_messages_mark_read', { ids: [m.id] });
+  }
   var isReply = m.kind === 'reply';
   document.getElementById('sentDetailTitle').textContent = m.title || 'Message';
   var chip = document.getElementById('sentDetailChip');
@@ -3691,6 +3695,13 @@ function initFeedbackTabs() {
   if (nextBtn) nextBtn.addEventListener('click', function () { sentPage++; renderSentMessages(true); });
   var refresh = document.getElementById('refreshSentBtn');
   if (refresh) refresh.addEventListener('click', loadSentMessages);
+  var markAllSent = document.getElementById('markAllSentReadBtn');
+  if (markAllSent) markAllSent.addEventListener('click', function () {
+    adminApiCall('sent_messages_mark_read', {}).then(function (res) {
+      if (typeof showAdminToast === 'function') showAdminToast(res && res.success ? 'All messages marked as read.' : 'Could not mark messages as read.', !(res && res.success));
+      loadSentMessages();
+    });
+  });
   var backBtn = document.getElementById('sentDetailBack');
   if (backBtn) backBtn.addEventListener('click', closeSentMessage);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSentMessage(); });
