@@ -281,6 +281,46 @@ function requireModuleAccess(PDO $pdo, ?array $user, string $moduleKey): void
     }
 }
 
+/** Admin-side "read" state kept in system_settings (value column is only 60 chars,
+ *  so no id lists): one watermark key "<prefix>_upto" (everything up to that id is read)
+ *  plus one tiny key "<prefix>_<id>" per individually opened item. */
+function readStateLoad(PDO $pdo, string $prefix, ?string $legacyKey = null): array
+{
+    $state = ['upto' => 0, 'ids' => []];
+    try {
+        $stmt = $pdo->prepare('SELECT setting_key, setting_value FROM system_settings WHERE setting_key LIKE :p');
+        $stmt->execute(['p' => $prefix . '\\_%']);
+        foreach ($stmt->fetchAll() as $r) {
+            $suffix = substr((string)$r['setting_key'], strlen($prefix) + 1);
+            if ($suffix === 'upto') { $state['upto'] = (int)$r['setting_value']; }
+            elseif (ctype_digit($suffix)) { $state['ids'][(int)$suffix] = true; }
+        }
+        if ($legacyKey) {
+            $lv = $pdo->prepare('SELECT setting_value FROM system_settings WHERE setting_key = :k');
+            $lv->execute(['k' => $legacyKey]);
+            $dec = json_decode((string)$lv->fetchColumn(), true);
+            if (is_array($dec)) { foreach ($dec as $i) { $state['ids'][(int)$i] = true; } }
+        }
+    } catch (Throwable $e) { /* treat as nothing read */ }
+    return $state;
+}
+function readStateIsRead(array $state, int $id): bool
+{
+    return $id <= $state['upto'] || isset($state['ids'][$id]);
+}
+function readStateSet(PDO $pdo, string $prefix, ?array $ids, int $maxId): void
+{
+    $up = $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (:k, :v) ON DUPLICATE KEY UPDATE setting_value = :v2");
+    if (is_array($ids) && count($ids)) {
+        foreach ($ids as $i) {
+            $i = (int)$i;
+            if ($i > 0) { $up->execute(['k' => $prefix . '_' . $i, 'v' => '1', 'v2' => '1']); }
+        }
+    } else {
+        $up->execute(['k' => $prefix . '_upto', 'v' => (string)$maxId, 'v2' => (string)$maxId]);
+    }
+}
+
 /** Adds a notification row. $userId = null means "broadcast to admins".
  *  $recipientEmail/$emailStatus are only relevant for guest-facing
  *  messages that were also emailed out (see the "Add Message" composer). */
@@ -1904,34 +1944,17 @@ try {
                 $stmt->execute(['uid' => $user['id']]);
             }
             $fbRows = $stmt->fetchAll();
-            // Read/unread flag for admin/staff. Kept in system_settings (key
-            // 'feedback_read_ids') so no table or column had to change.
-            $readIds = [];
-            try {
-                $rs = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'feedback_read_ids'")->fetchColumn();
-                $decoded = $rs ? json_decode((string)$rs, true) : [];
-                $readIds = is_array($decoded) ? array_map('intval', $decoded) : [];
-            } catch (Throwable $e) { $readIds = []; }
-            foreach ($fbRows as &$fbr) { $fbr['is_read'] = in_array((int)$fbr['feedback_id'], $readIds, true) ? 1 : 0; }
+            // Read/unread flag for admin/staff (see readStateLoad): no table or column changed.
+            $fbState = readStateLoad($pdo, 'fb_read', 'feedback_read_ids');
+            foreach ($fbRows as &$fbr) { $fbr['is_read'] = readStateIsRead($fbState, (int)$fbr['feedback_id']) ? 1 : 0; }
             unset($fbr);
             echo json_encode(['success' => true, 'feedback' => $fbRows]);
             break;
 
         case 'feedback_mark_read':
             requireModuleAccess($pdo, $user, 'feedback');
-            $ids = $input['ids'] ?? null;
-            $readIds = [];
-            $rs = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'feedback_read_ids'")->fetchColumn();
-            $decoded = $rs ? json_decode((string)$rs, true) : [];
-            if (is_array($decoded)) { $readIds = array_map('intval', $decoded); }
-            if (is_array($ids) && count($ids)) {
-                $readIds = array_values(array_unique(array_merge($readIds, array_map('intval', $ids))));
-            } else {
-                $readIds = array_map('intval', $pdo->query('SELECT feedback_id FROM feedback_concerns')->fetchAll(PDO::FETCH_COLUMN));
-            }
-            $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('feedback_read_ids', :v)
-                           ON DUPLICATE KEY UPDATE setting_value = :v2")
-                ->execute(['v' => json_encode($readIds), 'v2' => json_encode($readIds)]);
+            $maxFb = (int)$pdo->query('SELECT COALESCE(MAX(feedback_id), 0) FROM feedback_concerns')->fetchColumn();
+            readStateSet($pdo, 'fb_read', is_array($input['ids'] ?? null) ? $input['ids'] : null, $maxFb);
             echo json_encode(['success' => true]);
             break;
 
@@ -1951,18 +1974,12 @@ try {
                  ORDER BY n.created_at DESC, n.notification_id DESC
                  LIMIT 300"
             );
-            // Admin-side read flag (kept in system_settings; the guest's own
-            // read status in notifications.status is left untouched).
-            $sentRead = [];
-            try {
-                $sv = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'sent_messages_read_ids'")->fetchColumn();
-                $dv = $sv ? json_decode((string)$sv, true) : [];
-                $sentRead = is_array($dv) ? array_map('intval', $dv) : [];
-            } catch (Throwable $e) { $sentRead = []; }
-            $rows = array_map(function ($n) use ($sentRead) {
+            // Admin-side read flag; the guest's own read status in notifications.status is untouched.
+            $sentState = readStateLoad($pdo, 'sent_read', 'sent_messages_read_ids');
+                        $rows = array_map(function ($n) use ($sentState) {
                 return [
                     'id'          => (int)$n['notification_id'],
-                    'admin_read'  => in_array((int)$n['notification_id'], $sentRead, true),
+                    'admin_read'  => readStateIsRead($sentState, (int)$n['notification_id']),
                     'guest_name'  => $n['guest_name'] ?: 'Guest',
                     'email'       => $n['recipient_email'] ?: ($n['user_email'] ?? ''),
                     'kind'        => $n['notification_type'] === 'feedback' ? 'reply' : 'message',
@@ -1978,18 +1995,8 @@ try {
 
         case 'sent_messages_mark_read':
             requireModuleAccess($pdo, $user, 'feedback');
-            $ids = $input['ids'] ?? null;
-            $sv = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'sent_messages_read_ids'")->fetchColumn();
-            $dv = $sv ? json_decode((string)$sv, true) : [];
-            $sentRead = is_array($dv) ? array_map('intval', $dv) : [];
-            if (is_array($ids) && count($ids)) {
-                $sentRead = array_values(array_unique(array_merge($sentRead, array_map('intval', $ids))));
-            } else {
-                $sentRead = array_map('intval', $pdo->query("SELECT notification_id FROM notifications WHERE audience = 'guest' AND notification_type IN ('announcement','feedback')")->fetchAll(PDO::FETCH_COLUMN));
-            }
-            $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('sent_messages_read_ids', :v)
-                           ON DUPLICATE KEY UPDATE setting_value = :v2")
-                ->execute(['v' => json_encode($sentRead), 'v2' => json_encode($sentRead)]);
+            $maxSent = (int)$pdo->query("SELECT COALESCE(MAX(notification_id), 0) FROM notifications WHERE audience = 'guest' AND notification_type IN ('announcement','feedback')")->fetchColumn();
+            readStateSet($pdo, 'sent_read', is_array($input['ids'] ?? null) ? $input['ids'] : null, $maxSent);
             echo json_encode(['success' => true]);
             break;
 
