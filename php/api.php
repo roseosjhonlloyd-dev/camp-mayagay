@@ -1951,9 +1951,18 @@ try {
                  ORDER BY n.created_at DESC, n.notification_id DESC
                  LIMIT 300"
             );
-            $rows = array_map(function ($n) {
+            // Admin-side read flag (kept in system_settings; the guest's own
+            // read status in notifications.status is left untouched).
+            $sentRead = [];
+            try {
+                $sv = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'sent_messages_read_ids'")->fetchColumn();
+                $dv = $sv ? json_decode((string)$sv, true) : [];
+                $sentRead = is_array($dv) ? array_map('intval', $dv) : [];
+            } catch (Throwable $e) { $sentRead = []; }
+            $rows = array_map(function ($n) use ($sentRead) {
                 return [
                     'id'          => (int)$n['notification_id'],
+                    'admin_read'  => in_array((int)$n['notification_id'], $sentRead, true),
                     'guest_name'  => $n['guest_name'] ?: 'Guest',
                     'email'       => $n['recipient_email'] ?: ($n['user_email'] ?? ''),
                     'kind'        => $n['notification_type'] === 'feedback' ? 'reply' : 'message',
@@ -1965,6 +1974,23 @@ try {
                 ];
             }, $stmt->fetchAll());
             echo json_encode(['success' => true, 'messages' => $rows]);
+            break;
+
+        case 'sent_messages_mark_read':
+            requireModuleAccess($pdo, $user, 'feedback');
+            $ids = $input['ids'] ?? null;
+            $sv = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'sent_messages_read_ids'")->fetchColumn();
+            $dv = $sv ? json_decode((string)$sv, true) : [];
+            $sentRead = is_array($dv) ? array_map('intval', $dv) : [];
+            if (is_array($ids) && count($ids)) {
+                $sentRead = array_values(array_unique(array_merge($sentRead, array_map('intval', $ids))));
+            } else {
+                $sentRead = array_map('intval', $pdo->query("SELECT notification_id FROM notifications WHERE audience = 'guest' AND notification_type IN ('announcement','feedback')")->fetchAll(PDO::FETCH_COLUMN));
+            }
+            $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('sent_messages_read_ids', :v)
+                           ON DUPLICATE KEY UPDATE setting_value = :v2")
+                ->execute(['v' => json_encode($sentRead), 'v2' => json_encode($sentRead)]);
+            echo json_encode(['success' => true]);
             break;
 
         case 'feedback_public_list':
