@@ -1,10 +1,4 @@
 <?php
-/**
- * test_mail.php
- * TEMPORARY debug file lang ito - para makita ang totoong SMTP error.
- * I-DELETE mo ito pagkatapos ng testing, huwag itong iwan sa server.
- */
-
 declare(strict_types=1);
 
 require_once __DIR__ . '/mailer.php';

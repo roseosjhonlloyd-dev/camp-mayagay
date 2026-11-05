@@ -1,10 +1,3 @@
-/**
- * dashboard-payments.js
- * "Payment Transactions" page (shared by dashboard-admin.html and dashboard-staff.html).
- * Lists every reservation with Total / Paid / Balance, grouped Paid / Partial / Unpaid,
- * lets staff record money received, and exports the list to Excel or PDF.
- * Depends on adminApiCall() and showAdminToast() from dashboard-admin.js.
- */
 (function () {
   var rows = [];
   var loaded = false;
@@ -60,7 +53,6 @@
   }
 
   function render() {
-    // Summary + tab counts use the search/source/date filters but ignore the tab.
     var base = filtered(true);
     var c = { paid: 0, partial: 0, unpaid: 0 };
     var paidAmt = 0, partialBal = 0, unpaidDue = 0, collected = 0, outstanding = 0;
@@ -112,7 +104,7 @@
     }).join('');
   }
 
-  /* ---------- Record payment modal ---------- */
+   /*  Record payment modal  */
   function openRecord(id) {
     var r = rows.filter(function (x) { return x.id === id; })[0];
     if (!r) return;
@@ -142,7 +134,7 @@
     });
   }
 
-  /* ---------- Export ---------- */
+    /* Export */
   function loadScript(src) {
     return new Promise(function (resolve, reject) {
       var s = document.createElement('script');

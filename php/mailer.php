@@ -1,20 +1,4 @@
 <?php
-/**
- * mailer.php
- * Sends transactional email through the Brevo HTTPS API (port 443).
- *
- * Bakit hindi na SMTP: naka-block ang outbound SMTP (ports 25/465/587)
- * sa Railway Hobby/Trial plan, kaya nagti-timeout ang Gmail SMTP.
- * Gumagana ang HTTPS API kahit sa free plan.
- *
- * Environment variables (set sa Railway -> web service -> Variables):
- *   BREVO_API_KEY   - API key galing sa Brevo (SMTP & API -> API Keys)
- *   MAIL_FROM       - sender email na na-verify mo sa Brevo (Senders & IP)
- *   MAIL_FROM_NAME  - optional, default "Camp Mayagay"
- *
- * Huwag ilagay ang API key sa code o sa GitHub.
- */
-
 declare(strict_types=1);
 
 require_once __DIR__ . '/../PHPMailer/src/Exception.php';
@@ -24,9 +8,7 @@ require_once __DIR__ . '/../PHPMailer/src/SMTP.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
 
-// MAIL_DRIVER: "smtp" (default, Gmail SMTP) or "brevo" (HTTPS API).
-// Gmail SMTP env vars: MAIL_USERNAME, MAIL_PASSWORD (App Password),
-// MAIL_FROM (optional, defaults to MAIL_USERNAME), MAIL_PORT (default 587).
+
 define('MAIL_DRIVER', strtolower(getenv('MAIL_DRIVER') ?: 'smtp'));
 define('MAIL_USERNAME', getenv('MAIL_USERNAME') ?: '');
 define('MAIL_PASSWORD', getenv('MAIL_PASSWORD') ?: '');
@@ -39,10 +21,7 @@ define('MAIL_FROM_NAME', getenv('MAIL_FROM_NAME') ?: 'Camp Mayagay');
 
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
-/**
- * Gmail SMTP sender (PHPMailer). NOTE: Railway blocks outbound SMTP on
- * non-Pro plans, so this times out there unless the plan allows SMTP.
- */
+
 function smtpSend(string $toEmail, string $subject, string $html, string $text, ?string &$errorOut = null): bool
 {
     if (MAIL_USERNAME === '' || MAIL_PASSWORD === '') {
@@ -173,10 +152,6 @@ function brevoSend(string $toEmail, string $subject, string $html, string $text,
     return false;
 }
 
-/**
- * Sends the 6-digit verification code to the given email address.
- * Same signature as before, so login.php / forgot-password.php are unchanged.
- */
 function sendVerificationEmail(string $toEmail, string $code, ?string &$errorOut = null): bool
 {
     $html =
@@ -189,10 +164,7 @@ function sendVerificationEmail(string $toEmail, string $code, ?string &$errorOut
     return sendMailMessage($toEmail, 'Camp Mayagay - Password Reset Code', $html, $text, $errorOut);
 }
 
-/**
- * Sends the one-time login code for admin / staff sign-in (2-step verification).
- * Separate from the password-reset email so the wording is never mixed up.
- */
+
 function sendLoginCodeEmail(string $toEmail, string $code, ?string &$errorOut = null): bool
 {
     $html =
@@ -205,10 +177,6 @@ function sendLoginCodeEmail(string $toEmail, string $code, ?string &$errorOut = 
     return sendMailMessage($toEmail, 'Camp Mayagay - Login Verification Code', $html, $text, $errorOut);
 }
 
-/**
- * Sends a general-purpose notification email (used by the admin
- * "Add Message" composer and reservation notifications).
- */
 function sendNotificationEmail(string $toEmail, string $subject, string $message, ?string &$errorOut = null): bool
 {
     $html =

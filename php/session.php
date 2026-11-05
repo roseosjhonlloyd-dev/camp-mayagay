@@ -12,14 +12,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-/**
- * Sends the JSON response to the browser right away, then lets the
- * script keep running afterward (e.g. to send a slow SMTP email)
- * without the browser waiting for that part. This is what makes the
- * 2FA code send and Verify/Reject notifications feel instant instead
- * of taking several seconds. Also releases the session file lock so
- * other requests from the same tab aren't blocked meanwhile.
- */
 function respondNow(array $payload): void
 {
     if (ob_get_level() === 0) {
@@ -46,9 +38,6 @@ function isLoggedIn(): bool
         return false;
     }
 
-    // Enforce the "Session Timeout" Account Security setting: auto
-    // logout after N minutes of inactivity. Falls back to 30 minutes
-    // if the setting can't be read (e.g. DB not reachable here).
     $timeoutMinutes = 30;
     if (isset($GLOBALS['pdo'])) {
         try {
@@ -82,10 +71,6 @@ function requireRole(string $role): void
     }
 }
 
-/**
- * Basic info about the logged-in user, straight from the session
- * (no DB hit). Returns null if nobody is logged in.
- */
 function currentUser(): ?array
 {
     if (!isLoggedIn()) {

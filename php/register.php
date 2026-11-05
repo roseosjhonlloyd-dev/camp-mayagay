@@ -32,7 +32,7 @@ $errors = [];
 
 $validIdMatches = [];
 if ($validIdImage === '') {
-    // Valid ID is optional at sign-up; the guest can upload it later in Settings.
+
 } elseif (!preg_match('/^data:image\/(jpeg|png);base64,(.+)$/', $validIdImage, $validIdMatches)) {
     $errors['valid_id'] = 'Please upload a JPEG or PNG image.';
 }
@@ -102,11 +102,6 @@ try {
     ]);
 
     $newUserId = (int)$pdo->lastInsertId();
-
-    // Save the valid ID photo the guest uploaded during sign-up, so it's
-    // ready for the admin to review (Security Management > User
-    // Management). Registration already failed above if this was
-    // missing, so it should always be present here.
     if (isset($validIdMatches[2])) {
         $idBinary = base64_decode($validIdMatches[2], true);
         if ($idBinary !== false && strlen($idBinary) <= 5 * 1024 * 1024) {
@@ -124,8 +119,6 @@ try {
         }
     }
 
-    // Record the sign-up itself as a security log entry, with device and
-    // approximate location, same as a login attempt.
     require_once __DIR__ . '/login_helpers.php';
     $signupLocation = detectLoginLocation(clientIp());
     $pdo->prepare(

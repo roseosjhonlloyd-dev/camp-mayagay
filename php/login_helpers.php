@@ -2,8 +2,7 @@
 
 declare(strict_types=1);
 
-/** Turns a raw User-Agent string into a short "OS/Browser" label,
- *  e.g. "Windows/Chrome", "Android/Chrome", "iPhone/Safari". */
+
 function detectDeviceInfo(string $userAgent): string
 {
     if ($userAgent === '') {
@@ -45,10 +44,7 @@ function detectDeviceInfo(string $userAgent): string
     return $os . '/' . $browser;
 }
 
-/** Validates a password against the "Password Policy" Account Security
- *  setting. When the policy is on, requires 8+ chars with at least one
- *  uppercase letter, one lowercase letter, and one number. Returns null
- *  when valid, or an error message string when invalid. */
+
 function validatePasswordPolicy(string $password, bool $policyEnabled): ?string
 {
     if (strlen($password) < 8) {
@@ -69,9 +65,6 @@ function validatePasswordPolicy(string $password, bool $policyEnabled): ?string
     return null;
 }
 
-/** Reads every row from system_settings into an assoc array with sane
- *  defaults, so callers never have to worry about a missing table/row
- *  (e.g. before the migration has been run). */
 function getSystemSettings(PDO $pdo): array
 {
     $defaults = [
@@ -92,16 +85,7 @@ function getSystemSettings(PDO $pdo): array
     return $defaults;
 }
 
-/** Best-effort IP -> city/region/coordinates lookup using the free
- *  ip-api.com service. Falls back gracefully (never throws) so login
- *  never breaks if the lookup fails or the server has no outbound
- *  internet access.
- *
- *  Returns ['label' => string, 'lat' => ?float, 'lng' => ?float].
- *  'lat'/'lng' are null whenever a real position can't be determined
- *  (e.g. on localhost/LAN, or if the lookup fails) - the admin UI
- *  shows "No location on file" for the map in that case instead of
- *  plotting a wrong point. */
+
 function detectLoginLocation(?string $ip): array
 {
     if (!$ip) {
@@ -110,9 +94,7 @@ function detectLoginLocation(?string $ip): array
     $isPrivate = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false
         || (bool)preg_match('/^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./', $ip);
     if (in_array($ip, ['127.0.0.1', '::1'], true) || $isPrivate) {
-        // Localhost/LAN: the browser's own IP is private, so ask ip-api
-        // about the server's PUBLIC IP instead (empty IP = caller's IP).
-        // That gives the general area (city level) of the network.
+
         $area = lookupIpArea('');
         if ($area) {
             $area['label'] = 'Local Network - ' . $area['label'];
@@ -126,8 +108,7 @@ function detectLoginLocation(?string $ip): array
     return $area ?: ['label' => 'IP ' . $ip, 'lat' => null, 'lng' => null];
 }
 
-/** ip-api lookup helper. Coordinates are rounded to 2 decimals (~1 km)
- *  so the pin only shows the general area, never an exact address. */
+
 function lookupIpArea(string $ip): ?array
 {
     $context = stream_context_create(['http' => ['timeout' => 2]]);
@@ -160,11 +141,6 @@ function lookupIpArea(string $ip): ?array
     ];
 }
 
-/** Uses the position the browser shared (GPS/Wi-Fi, with the user's
- *  permission) instead of the IP-based guess. Coordinates are rounded to
- *  2 decimals (~1 km) so only the general area is stored, never an exact
- *  address. The place name comes from OpenStreetMap's reverse lookup at
- *  city/barangay level. Returns null when no valid position was sent. */
 function resolveClientLocation(array $input): ?array
 {
     $lat = $input['client_lat'] ?? null;

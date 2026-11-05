@@ -38,9 +38,6 @@ var accessModules = [
 
 var ACCESS_MODULES_PER_PAGE = 6;
 var accessModulePage = 1;
-
-// Real login/signup activity, loaded from the security_logs table via
-// loadLoginActivity(). Populated on page load - see DOMContentLoaded below.
 var loginLogs = [];
 
 function computeLoginActivityStats() {
@@ -65,25 +62,15 @@ function computeLoginActivityStats() {
   return { totalToday: totalToday, successful: successful, failed: failed, suspicious: suspicious };
 }
 
-// Security Alerts are now generated live from the security_logs table
-// (loginLogs, loaded via loadLoginActivity()) instead of hardcoded text.
-// See generateSecurityAlerts() below.
 var securityAlerts = [];
-
-/** Builds the Security Alerts list purely from real login activity:
- *  - 3+ failed attempts by the same account (checked against the
- *    account's configured Login Attempt limit, default 5) -> alert.
- *  - Any failed login coming from a location -> flagged as suspicious.
- *  Returns newest-first, capped to the 6 most relevant alerts. */
 function generateSecurityAlerts() {
   if (!loginLogs || !loginLogs.length) return [];
 
   var attemptLimitSelect = document.getElementById('loginAttemptSelect');
   var attemptLimit = attemptLimitSelect ? parseInt(attemptLimitSelect.value, 10) : 5;
   if (!attemptLimit || isNaN(attemptLimit)) attemptLimit = 5;
-  var flagThreshold = Math.min(3, attemptLimit); // flag once at least 3 fails (or the limit itself, if lower)
+  var flagThreshold = Math.min(3, attemptLimit); 
 
-  // Sort newest first so the alerts reflect the most recent activity.
   var sorted = loginLogs.slice().sort(function (a, b) {
     var ta = a.login_time || a.created_at || '';
     var tb = b.login_time || b.created_at || '';
@@ -147,8 +134,7 @@ document.addEventListener('DOMContentLoaded', function () {
   renderSecurityAlerts();
   initLoginActivityFilters();
 
-  // Real data from the database - this is what makes every guest
-  // reservation/action show up here on the admin side.
+
   loadAllReservations();
   loadAccommodations();
   loadAdminNotifications();
@@ -178,10 +164,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var refreshBtn = document.getElementById('refreshReservationsBtn');
   if (refreshBtn) refreshBtn.addEventListener('click', loadAllReservations);
 
-  // Auto-update nang walang timer: kapag bumalik ka sa tab na ito
-  // (halimbawa galing sa ibang tab kung saan may na-book), awtomatikong
-  // kukunin ulit ang pinakabagong reservations at accommodations -
-  // hindi na kailangan pang mag-hard refresh (F5).
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') {
       loadAllReservations();
@@ -189,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
   window.addEventListener('focus', function () {
-      // Auto-refresh ng notifications: bawat 20 segundo at pag bumalik sa tab
+
   setInterval(function () {
     if (!document.hidden) loadAdminNotifications();
   }, 20000);
@@ -211,7 +193,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
-/* ---------------- SERVER API (real DB data, tied to guest accounts) ---------------- */
+     /* SERVER API */
 var sessionExpiredNoticeShown = false;
 function adminApiCall(action, body) {
   return fetch('php/api.php?action=' + action, {
@@ -221,11 +203,6 @@ function adminApiCall(action, body) {
     body: JSON.stringify(body || {})
   }).then(function (res) {
     if (res.status === 401) {
-      // Na-expire o nawala ang session (hal. session timeout setting,
-      // o na-clear ang PHP session sa server) - dati, tahimik na
-      // nag-eempty lang ang dashboard dito, kaya kailangang mag-logout/
-      // login ulit para "gumana" - ngayon malinaw na sasabihin agad at
-      // ide-redirect sa Login.
       if (!sessionExpiredNoticeShown) {
         sessionExpiredNoticeShown = true;
         showAdminToast('Your session has expired. Please log in again.', true);
@@ -234,17 +211,10 @@ function adminApiCall(action, body) {
     }
     return res.json();
   }).catch(function () {
-    // Network error / hindi JSON ang sumagot - magbalik ng normal na
-    // "failed" result sa halip na tahimik na "unhandled rejection" na
-    // nag-iiwan ng lumang data sa screen.
     return { success: false, message: 'Unable to connect to the server.' };
   });
 }
 
-/* ---------------------------------------------------------------------
-   Small toast so admin actions (Confirm / Decline / Delete / etc.) always
-   give visible feedback instead of failing silently.
---------------------------------------------------------------------- */
 var adminToastTimer = null;
 function showAdminToast(message, isError) {
   var el = document.getElementById('adminToast');
@@ -257,10 +227,6 @@ function showAdminToast(message, isError) {
   adminToastTimer = setTimeout(function () { el.classList.remove('show'); }, 3200);
 }
 
-/* ---- Currency preference (System Preferences panel) ----
-   Only changes the symbol/format money is displayed with across the
-   dashboard; it does not convert amounts. Saved locally so it sticks
-   between visits. */
 var CURRENCY_INFO = {
   PHP: { symbol: '\u20b1', locale: 'en-PH' },
   USD: { symbol: '$',      locale: 'en-US' },
@@ -297,16 +263,12 @@ function peso2(n) {
   return info.symbol + num.toLocaleString(info.locale, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits });
 }
 
-/* ---- Reservations (every booking a guest makes shows up here) ---- */
+  /* Reservations */
 var allReservations = [];
-var reservationsRequestSeq = 0; // ginagamit para huwag hayaang ma-overwrite ang bagong data ng lumang response
-
+var reservationsRequestSeq = 0; 
 function loadAllReservations() {
   var requestId = ++reservationsRequestSeq;
   adminApiCall('reservations_list', {}).then(function (res) {
-    // Kung may mas bagong request na (halimbawa nag-refresh ulit habang
-    // hinihintay pa ang unang sagot), huwag na gamitin ang huling
-    // datang ito - baka mas luma pa ito kaysa sa kasalukuyang laman.
     if (requestId !== reservationsRequestSeq) return;
     allReservations = (res && res.success && res.reservations) ? res.reservations : [];
     renderReservationTable();
@@ -319,8 +281,7 @@ function loadAllReservations() {
   });
 }
 
-/* ---- Dashboard Overview: totoong Check-ins Today / Check-out Today
-   (dating hardcoded "10" at "16" lang - hindi na demo, totoo na ngayon) ---- */
+/*  Dashboard Overview:  Check-ins Today / Check-out Today */
 function renderTodayDashboardStats() {
   var todayKey = toDateKey(new Date());
 
@@ -329,12 +290,12 @@ function renderTodayDashboardStats() {
   var totalRevenue = 0;
 
   allReservations.forEach(function (r) {
-    // Only confirmed / completed bookings count (same rule as the calendar).
+
     if (r.status === 'confirmed' || r.status === 'completed') {
       if (String(r.check_in).slice(0, 10) === todayKey) checkinsToday++;
       if (String(r.check_out).slice(0, 10) === todayKey) checkoutsToday++;
     }
-    // Revenue = money actually collected (same as Total Collected in Payment Transactions).
+
     if (r.payment_status !== 'refunded') totalRevenue += Number(r.amount_paid) || 0;
   });
 
@@ -595,7 +556,7 @@ function renderStatTotals() {
   renderAccommodationStats();
 }
 
-/* ---- Accommodations (real availability instead of hardcoded counts) ---- */
+   /* Accommodations  */
 var allAccommodations = [];
 var accommodationsRequestSeq = 0;
 
@@ -613,8 +574,7 @@ function loadAccommodations() {
   });
 }
 
-/* ---- Walk-in Reservation (staff/admin adds a reservation directly,
-   saved as "Confirmed" right away so it shows up on the calendar) ---- */
+  /* Walk-in Reservation  */
 function populateWalkInCabinOptions() {
   var select = document.getElementById('walkInCabin');
   if (!select) return;
@@ -637,8 +597,6 @@ function openWalkInModal() {
   if (errorBox) { errorBox.style.display = 'none'; errorBox.textContent = ''; }
   populateWalkInCabinOptions();
 
-  // Default check-in to whatever date is currently selected on the
-  // calendar, and check-out to the next day, so admin has less to type.
   var checkInInput = document.getElementById('walkInCheckIn');
   var checkOutInput = document.getElementById('walkInCheckOut');
   if (checkInInput && checkOutInput) {
@@ -676,8 +634,6 @@ function initWalkInModal() {
   });
   modal.addEventListener('click', function (e) { if (e.target === modal) closeWalkInModal(); });
 
-  // Auto-suggest the total (price/night x nights) whenever the accommodation
-  // or dates change - admin can still edit the amount before saving.
   function suggestTotal() {
     if (!cabinSelect || !cabinSelect.value || !checkInInput.value || !checkOutInput.value) return;
     var opt = cabinSelect.options[cabinSelect.selectedIndex];
@@ -739,7 +695,7 @@ function initWalkInModal() {
   });
 }
 
-/* ---- Reservation Calendar (Check-ins / Check-outs / Room Availability) ---- */
+/* Reservation Calendar (Check-ins / Check-outs / Room Availability)  */
 var calendarViewDate = new Date();      // buwan na ipinapakita sa calendar
 var calendarSelectedDate = new Date();  // aktwal na napiling araw
 var calendarDetailMode = 'date';        // 'date' = napiling araw lang, 'all' = lahat ng pending
@@ -782,11 +738,6 @@ function renderReservationCalendar() {
   var daysInMonth = new Date(year, month + 1, 0).getDate();
   var todayKey = toDateKey(new Date());
   var selectedKey = toDateKey(calendarSelectedDate);
-
-  // Mabilis na tignan kung anong mga araw sa buwang ito may check-in/check-out.
-  // Confirmed (o completed) na lang ang lumalabas sa calendar - hindi pa
-  // dapat makita rito ang mga "pending" na reservation na hindi pa
-  // na-approve ng staff/admin.
   var checkinDays = {};
   var checkoutDays = {};
   allReservations.forEach(function (r) {
@@ -842,7 +793,6 @@ function renderCalendarDayDetails() {
   label.textContent = (selectedKey === todayKey ? 'Today - ' : '') +
     calendarSelectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
-  // Simpleng function para ipakita ang petsa nang maikli (hal. "Sep 6, 2026")
   function shortDate(dateStr) {
     var d = new Date(String(dateStr).slice(0, 10) + 'T00:00');
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -851,8 +801,7 @@ function renderCalendarDayDetails() {
   var checkins, checkouts;
 
   if (calendarDetailMode === 'all') {
-    // LAHAT NG PENDING mode: lahat ng "pending" na reservation, hindi na
-    // naka-base sa napiling petsa sa calendar.
+
     checkins = allReservations
       .filter(function (r) { return r.status === 'pending' && r.check_in; })
       .sort(function (a, b) { return String(a.check_in).localeCompare(String(b.check_in)); });
@@ -868,8 +817,7 @@ function renderCalendarDayDetails() {
       return '<div class="calendar-detail-item all-mode"><span>' + r.guest_name + ' &middot; ' + r.cabin_name + '</span><span class="item-date">' + shortDate(r.check_out) + '</span></div>';
     }).join('') : '<p class="calendar-detail-empty">There are no pending check-outs at this time.</p>';
   } else {
-    // PINILING PETSA mode: base sa araw na kinlik sa calendar (dating gawi).
-    // Confirmed/completed lang - kapareho ng dots sa itaas.
+
     checkins = allReservations.filter(function (r) {
       return (r.status === 'confirmed' || r.status === 'completed') && String(r.check_in).slice(0, 10) === selectedKey;
     });
@@ -886,9 +834,6 @@ function renderCalendarDayDetails() {
     }).join('') : '<p class="calendar-detail-empty">There is no scheduled check-out today.</p>';
   }
 
-  // Room availability: laging naka-base sa napiling petsa sa calendar,
-  // kahit anong mode ang toggle (para may malinaw na sagot: available ba
-  // ang cabin sa araw na iyon).
   var occupiedAccommodationIds = {};
   allReservations.forEach(function (r) {
     if (r.status !== 'confirmed' && r.status !== 'completed') return;
@@ -1255,7 +1200,7 @@ function renderAccommodationStats() {
   setTxt('statAvgPrice', peso2(avgPrice));
 }
 
-/* ---- Guest Records (aggregated from reservations) ---- */
+  /* Guest Records  */
 var allGuests = [];
 
 function loadGuests() {
@@ -1393,7 +1338,7 @@ function closeGuestViewModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-/* ---- Notifications (booking/feedback/payment events from guests) ---- */
+  /*  Notifications */
 var allNotifications = [];
 
 function loadAdminNotifications() {
@@ -1568,7 +1513,7 @@ function renderNotificationStats() {
   }
 }
 
-/* ---- Add Message (compose + email a notification to any account or address) ---- */
+  /* Add Message  */
 function populateAddMessageRecipients() {
   var select = document.getElementById('addMessageRecipient');
   if (!select) return;
@@ -1580,8 +1525,6 @@ function populateAddMessageRecipients() {
   html += '<option value="all">All guests with a reservation (' + withEmail.length + ')</option>';
   html += '<option value="all_staff">All staff accounts (' + staffWithEmail.length + ')</option>';
 
-  // Lahat ng naka-rehistrong account sa database (guest, staff, admin) -
-  // hindi lang limitado sa mga may reservation.
   if (typeof users !== 'undefined' && users.length) {
     html += '<optgroup label="Registered Accounts">';
     users.forEach(function (u) {
@@ -1677,7 +1620,7 @@ function initAddMessageModal() {
   }
 }
 
-/* ---- Feedback & Concerns ---- */
+/*  Feedback & Concerns  */
 var lastFeedbackList = [];
 
 function loadFeedback() {
@@ -1692,9 +1635,6 @@ function loadFeedback() {
   });
 }
 
-/** Fills the Feedback & Concern "Accommodation" filter from the live
- *  accommodations list (allAccommodations, loaded once at page init) so a
- *  newly-added admin accommodation shows up here automatically. */
 function populateFeedbackAccommodationFilter() {
   var select = document.getElementById('feedbackAccommodationFilter');
   if (!select || !allAccommodations.length) return;
@@ -1918,7 +1858,6 @@ function renderFeedbackStars(list) {
   if (avgEl) avgEl.textContent = (rated ? (sum / rated).toFixed(1) : '0') + ' / 5';
 }
 
-/* ---- Generic donut chart renderer ---- */
 var DONUT_COLORS = ['#2e5d4b', '#f2a93b', '#7a5fd6', '#e05656', '#3fa9dc', '#7bbf6a'];
 
 function renderDonut(chartElId, legendElId, entries) {
@@ -1986,7 +1925,7 @@ function initSidebarNavigation() {
   });
 }
 
-/* ---------------- REPORTS PIN LOCK ---------------- */
+  /* REPORTS PIN LOCK */
 var reportsPinUnlocked = (sessionStorage.getItem('reportsPinUnlocked') === '1');
 var REPORTS_PIN_DEFAULT = '1234';
 
@@ -2080,7 +2019,7 @@ function goToView(viewName) {
   closeSidebar();
 }
 
-/* ---------------- MOBILE SIDEBAR (hamburger drawer) ---------------- */
+  /* MOBILE SIDEBAR */
 function openSidebar() {
   var sidebarEl = document.getElementById('sidebar');
   var backdrop = document.getElementById('sidebarBackdrop');
@@ -2143,10 +2082,7 @@ function initSecurityTabs() {
   }
 }
 
-/* ---- Account Security settings (2FA, activity logging, password
-   policy, session timeout, login attempt limit) - persisted server-side
-   in system_settings and enforced across login/register/password
-   change/session handling. ---- */
+  /* Account Security settings*/
 function applySecuritySettingsToUI(settings) {
   var toggle2fa = document.getElementById('toggle2fa');
   var toggleActivityLog = document.getElementById('toggleActivityLog');
@@ -2281,9 +2217,6 @@ function updateSecuritySummaryGrid(tabName) {
   }
 }
 
-/** Counts real reservations (by check-in date) per weekday of the current
- *  week (Mon-Sun), so "Reservations Overview" matches the actual data
- *  instead of showing fixed sample numbers. */
 function computeWeeklyReservationCounts() {
   var list = (typeof allReservations !== 'undefined' ? allReservations : []).filter(function (r) {
     var st = String(r.status || '').toLowerCase();
@@ -2753,8 +2686,6 @@ function permToggleBtn(moduleKey, role, allowed) {
   return '<button class="perm-toggle-btn" type="button" data-module="' + moduleKey + '" data-role="' + role + '" data-allowed="' + (allowed ? '1' : '0') + '">' + (allowed ? checkIcon : crossIcon) + '</button>';
 }
 
-/** Loads the live permission matrix from the database so the table
- *  reflects whatever was last saved (not just the hardcoded defaults). */
 function loadAccessModules() {
   adminApiCall('permissions_get', {}).then(function (res) {
     if (res && res.success && res.modules) {
@@ -2765,9 +2696,6 @@ function loadAccessModules() {
   });
 }
 
-/** Makes every check/x cell in the Role & Permission table clickable.
- *  Clicking toggles that module's access for that role and saves it
- *  to role_permissions right away. */
 function initAccessModuleToggle() {
   var table = document.getElementById('permissionTable');
   if (!table) return;
@@ -2831,9 +2759,6 @@ function initAccessModulePagination() {
   });
 }
 
-/** Loads real login/signup activity from the security_logs table
- *  (via php/api.php?action=security_logs_list) and refreshes the table
- *  and summary cards. Replaces the old hardcoded sample rows. */
 function loadLoginActivity() {
   var tbody = document.getElementById('loginActivityBody');
   adminApiCall('security_logs_list', {}).then(function (res) {
@@ -2852,7 +2777,7 @@ function loadLoginActivity() {
 
 function formatLoginTimestamp(raw) {
   if (!raw) return '-';
-  // MySQL DATETIME comes back as "YYYY-MM-DD HH:MM:SS"
+
   var datePart = raw.slice(0, 10);
   var timePart = raw.slice(11, 16);
   if (!datePart || datePart.length !== 10) return raw;
@@ -2902,7 +2827,7 @@ function renderLoginActivityTable() {
   });
 }
 
-/* ---- Login location map (view action on Login Activity) ---- */
+  /* Login location map (view action on Login Activity)  */
 function openLoginLocationModal(logId) {
   var log = loginLogs.filter(function (l) { return String(l.log_id) === String(logId); })[0];
   if (!log) return;
@@ -2919,8 +2844,7 @@ function openLoginLocationModal(logId) {
   var hasCoords = log.location_lat !== null && log.location_lat !== undefined &&
                   log.location_lng !== null && log.location_lng !== undefined;
   if (!hasCoords) {
-    // Older/local logins have no stored position: show the general area of
-    // this network's public IP instead (city level, not an exact address).
+
     mapFrame.style.display = 'none';
     mapEmpty.style.display = 'block';
     mapEmpty.textContent = 'Finding general area...';
@@ -2944,8 +2868,7 @@ function openLoginLocationModal(logId) {
 
 var loginLeafletMap = null;
 
-/* Draggable / zoomable map (Leaflet + OpenStreetMap tiles). Shows the
-   general area with a pin and a ~1 km circle - never an exact address. */
+/* Draggable / zoomable map  */
 function showLoginMap(mapFrame, mapEmpty, lat, lng) {
   mapEmpty.style.display = 'none';
   mapFrame.style.display = 'block';
@@ -3035,13 +2958,7 @@ function renderSecurityAlerts() {
   if (settingsAlertList) settingsAlertList.innerHTML = html;
 }
 
-/* ---------------------------------------------------------------------
-   REPORTS PAGE - powered by the Java reports service (java/src/ReportsServer.java).
-   That service is a SEPARATE server (default http://localhost:8081)
-   that reads the same reservation/feedback data through php/api.php
-   and builds the report. Start it first (see java/README.md), then
-   open this Reports page.
---------------------------------------------------------------------- */
+  /* REPORTS PAGE */
 var JAVA_REPORTS_BASE = 'http://localhost:8081'; // kept only for the optional Java service (java/README.md); no longer required.
 var reportsLoaded = false;
 
@@ -3049,8 +2966,6 @@ function peso(n) {
   return peso2(n);
 }
 
-/** Fills the "All Accommodations" report filter from the real
- *  accommodations table (used to be a static, empty dropdown). */
 function populateReportsAccommodationFilter() {
   var select = document.getElementById('reportsAccommodationFilter');
   if (!select) return;
@@ -3076,10 +2991,6 @@ function getReportsFilters() {
   };
 }
 
-/** Builds everything the Reports page shows directly from the real data
- *  already loaded on this page (reservations, accommodations, guests,
- *  feedback) - no separate server required, so ratings/numbers always
- *  reflect what's actually in the database. */
 function computeReportsData(filters) {
   filters = filters || {};
   var accObj = null;
@@ -3205,7 +3116,7 @@ function renderReportsSummary(data) {
   }
 }
 
-/* Logs a report + notification, called only when the admin actually exports. */
+  /* Logs a report + notification */
 function logReportExport() {
   var d = lastReportsData;
   if (!d) return;
@@ -3333,8 +3244,6 @@ function summaryCard(color, label, number, sub) {
     '</div>';
 }
 
-/** Fills the "last login" summary shown on the Settings page from the
- *  most recent successful entry in the real loginLogs data. */
 function refreshSettingsLastLogin() {
   var lastLoginEl = document.getElementById('settingsLastLogin');
   var deviceEl = document.getElementById('settingsLoginDevice');
@@ -3352,7 +3261,7 @@ function refreshSettingsLastLogin() {
   }
 }
 
-/* ---- Settings page ---- */
+  /* Settings page */
 function initSettingsPage() {
   var viewLoginBtn = document.getElementById('viewLoginActivityBtn');
   if (viewLoginBtn) {
@@ -3413,8 +3322,6 @@ function initSettingsPage() {
     systemPreferencesForm.addEventListener('submit', function (e) {
       e.preventDefault();
       if (currencySelect) setActiveCurrency(currencySelect.value);
-      // Re-render anything currently on screen that shows money so the
-      // new currency symbol/format is reflected immediately.
       loadAllReservations();
       loadAccommodations();
       if (reportsLoaded) loadReports();
@@ -3423,7 +3330,7 @@ function initSettingsPage() {
   }
 }
 
-/* ---- Feedback filters (client-side over the last loaded list) ---- */
+  /* Feedback */
 function initFeedbackFilters() {
   var searchInput = document.getElementById('feedbackSearchInput');
   var statusFilter = document.getElementById('feedbackStatusFilter');
@@ -3479,9 +3386,6 @@ document.addEventListener('DOMContentLoaded', function () {
   initDetailedReportActions();
 });
 
-/** Builds a CSV of the currently-filtered reservations straight from
- *  the live data already on the page and downloads it - no separate
- *  Java/export server required. */
 function downloadReportsCsv() {
   var filters = getReportsFilters();
   var accObj = null;
@@ -3521,7 +3425,7 @@ function downloadReportsCsv() {
 }
 
 
-/* ================= Feedback page: "Replies & Messages Sent" tab ================= */
+  /* Feedback page: "Replies & Messages Sent" tab*/
 var sentMessagesList = [];
 
 function adminEsc(s) {
@@ -3547,7 +3451,6 @@ function loadSentMessages() {
   });
 }
 
-// Today -> "3:45 PM", this year -> "Oct 12", older -> "10/12/25" (like Gmail)
 function sentShortDate(raw) {
   var d = new Date(String(raw || '').replace(' ', 'T'));
   if (isNaN(d.getTime())) return adminEsc(raw || '');

@@ -9,21 +9,9 @@
   const ART_BG = { hut:'#F1FEC8', glass:'#B2D5E5', tent:'#E5BDDF', house:'#D2C3F6' };
 
   const DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
-
-  // Dating hardcoded ang listahan ng cabins dito - kaya kahit magdagdag
-  // pa ang admin ng bagong accommodation sa Accommodations page, hindi
-  // ito lumalabas sa Guest side. Ngayon, kinukuha na ito mula sa totoong
-  // accommodations table (parehong pinagmumulan ng Admin dashboard).
   let CABINS = [];
-  // Raw accommodation rows (accommodation_id + accommodation_name) exactly
-  // as the database returns them - used to list ALL accommodations in the
-  // feedback form and the reviews filter, kahit wala pang reservation ang
-  // guest dito, at automatic na kasama ang bagong idinagdag ng admin.
   let ACCOMMODATIONS_RAW = [];
 
-  // Type -> icon/unit mapping, ginagamit lang kung walang sariling
-  // larawan ang isang accommodation (fallback), at para malaman kung
-  // "night", "tent", o "night room" ang tamang unit label.
   const TYPE_ICON = { nipa: 'hut', cabin: 'glass', 'tent area': 'tent', room: 'house' };
   const TYPE_UNIT = { nipa: 'night', cabin: 'night', 'tent area': 'tent', room: 'night room' };
 
@@ -80,8 +68,6 @@
     });
   }
 
-  // Totoong detalye ng naka-login na account - ginagamit para i-prefill
-  // ang booking form (advisor requirement: "check user details for booking").
   let sessionUser = null;
 
   function loadSession(){
@@ -93,10 +79,6 @@
       const nameEl = document.getElementById('profileDropdownName');
       if (nameEl) nameEl.textContent = fullName || 'Guest';
 
-      // Kung may naka-save na profile photo, ipakita yun sa halip na
-      // initials. Dati, palaging tina-text lang ang avatar dito kaya
-      // pag tinawag ulit ang loadSession() (hal. pagkatapos mag-save),
-      // na-o-overwrite agad pabalik yung photo na kakalagay lang.
       const savedPhoto = res.user.profile_image ? (res.user.profile_image + '?t=' + Date.now()) : null;
       const avatarBtn = document.getElementById('profileBtn');
       if (avatarBtn) {
@@ -218,8 +200,6 @@
     `).join('');
   }
 
-  /** Fills the "Which room are you rating?" select with the rooms this
-   *  guest has actually booked, newest stay first, deduplicated. */
   function populateFeedbackAccommodationSelect(){
     const select = document.getElementById('fbAccommodation');
     if (!select) return;
@@ -250,7 +230,7 @@
 
   function peso(n){ return '\u20b1' + n.toLocaleString(); }
 
-  // ---- Accommodation photo slider -----------------------------------
+  // Accommodation photo slider 
   const ACCOM_EXTRA_DIR = 'assets/images/accommodations/';
   const ACCOM_EXTRA_PHOTOS = {
     nipahut1:  ['Nipa1 inside.jfif'],
@@ -298,7 +278,7 @@
     imgs[(cur + delta + imgs.length) % imgs.length].classList.add('active');
     refreshSlider(art);
   }
-  // ---- Fullscreen photo viewer (click a photo) -----------------------
+  // Fullscreen photo viewer 
   function openAccomLightbox(art){
     const imgs = Array.prototype.slice.call(art.querySelectorAll('img.slide'));
     if (!imgs.length) return;
@@ -386,10 +366,6 @@
     }
     return ICONS[cabin.icon] || ICONS.hut;
   }
-
-  // Totoong reservations (accommodation + dates lang, walang guest info) -
-  // dating fake/random ang availability dito, ngayon galing na sa
-  // totoong database (advisor requirement: "no fake availability data").
   let realBookings = [];
 
   function toLocalDateKey(d){
@@ -405,10 +381,7 @@
       CABINS = rows
         .filter(a => a.status !== 'unavailable') // itago ang mga pansamantalang di-available na accommodation
         .map(mapAccommodationToCabin);
-      // Lahat ng accommodation (kahit unavailable), para sa "All guest
-      // reviews" filter at sa "Which room are you rating?" select -
-      // automatic na kasama dito ang bagong idinagdag ng admin dahil
-      // kinukuha ito mula sa live accommodations table.
+
       ACCOMMODATIONS_RAW = rows;
       populateAllFeedbackAccommodationFilter(rows);
       populateFeedbackAccommodationSelect();
@@ -596,8 +569,6 @@
     return '\u2605'.repeat(n) + '\u2606'.repeat(5 - n);
   }
 
-  // Reviews modal: ratings + comments ng mga dating nag-stay sa napiling
-  // accommodation.
   function openAccReviews(accId){
     const a = TRENDING.find(x => Number(x.accommodation_id) === accId)
            || CABINS.find(x => x.accId === accId);
@@ -724,13 +695,6 @@
     return h12 + ':' + String(m).padStart(2,'0') + ' ' + period;
   }
 
-  // Builds a "YYYY-MM-DD HH:mm:ss" string using the browser's LOCAL
-  // date/time (no UTC conversion). Using Date.toISOString() here was a
-  // bug: it converts to UTC first, which can push the stored date back
-  // (or forward) a full day for the Philippines timezone. That mismatch
-  // is why a booking made for e.g. Sept 6 could end up saved as Sept 5,
-  // so it never showed up under the right day on the admin's Reservation
-  // Calendar. Always build the date/time string from local fields instead.
   function toMysqlDateTime(d, timeStr){
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -743,8 +707,7 @@
   const extraQty = { person:0, blanket:0, pillow:0, nights:1, tents:1, heads:1 };
   const STEP_MAX = { person:5, blanket:5, pillow:5, tents:5, heads:20 };
   const STEP_MIN = { nights:1, tents:1, heads:1 };
-  // Tent Area pricing (per the camp owner): own tent 250/tent, rented tent 500/tent,
-  // plus 150 entrance per head.
+
   const TENT_OWN_PRICE = 250, TENT_RENT_PRICE = 500, ENTRANCE_PER_HEAD = 150;
   function isTentArea(cabin){ return !!cabin && /^tent area/i.test(cabin.name || ''); }
   const EXTRA_MAX = 5;
@@ -793,9 +756,7 @@
     const cabin = CABINS.find(c => c.id === cabinId);
     pendingBooking = { cabinId, dayIndex, cabin };
     document.getElementById('modalCabinSub').textContent = cabin.name + ' \u00b7 ' + DAYS[dayIndex] + ' \u00b7 ' + peso(cabin.price) + '/ ' + cabin.unit;
-    // I-prefill gamit ang totoong detalye ng account na naka-login -
-    // puwede pa ring i-edit ng guest kung kailangan (hal. ibang tao ang
-    // magbabakasyon gamit ang account nila).
+
     document.getElementById('guestName').value = sessionUser ? (sessionUser.firstname + ' ' + sessionUser.lastname).trim() : '';
     document.getElementById('guestPhone').value = sessionUser ? (sessionUser.contact_number || '') : '';
     document.getElementById('guestEmail').value = sessionUser ? (sessionUser.email || '') : '';
@@ -904,8 +865,6 @@
     document.getElementById('uploadFileName').textContent = file.name;
     updatePaymentConfirmState();
 
-    // Read the actual image so it's sent along with the booking and the
-    // admin dashboard can show the real receipt, not just the file name.
     var reader = new FileReader();
     reader.onload = function () {
       uploadedReceiptDataUrl = reader.result;
@@ -969,9 +928,6 @@
   function finalizeBooking(){
     if (!pendingBooking || !pendingBooking.paymentMethod) return;
 
-    // Iwas double-click at malinaw na ipapakita na "sinasave pa" -
-    // dati agad nagsasara ang modal kahit hindi pa tapos mag-save sa
-    // server, kaya minsan akala successful pero hindi pala na-save.
     const confirmBtn = document.getElementById('paymentConfirm');
     if (confirmBtn.disabled) return; // nagse-save pa, huwag hayaang mag-double click
     const originalBtnText = confirmBtn.textContent;
@@ -1011,11 +967,6 @@
       receiptFileName: paymentMethod === 'Bank Transfer' ? uploadedReceiptName : null
     };
 
-    // MUNA i-save sa server BAGO ipakita bilang successful. Wala munang
-    // pag-uupdate ng history/availability/thank-you modal hanggang
-    // matiyak na aktwal na na-save ito sa database - dito nagkakamali
-    // dati, dahil nagpapakita agad ng "success" kahit pa hindi pa
-    // sigurado kung na-save nga sa server.
     apiCall('reservations_create', {
       code: code,
       cabin_id: cabinId,
@@ -1244,9 +1195,6 @@
   const RATING_LABELS = { 1:'Poor', 2:'Fair', 3:'Good', 4:'Very Good', 5:'Excellent' };
   const STAR_PATH = 'M12 2.5l2.9 6 6.6.9-4.8 4.6 1.1 6.6L12 17.6 6.2 20.6l1.1-6.6L2.5 9.4l6.6-.9L12 2.5z';
 
-  // Buttons are built ONCE and only their classes/fill are updated, so
-  // hovering never replaces the element under the cursor (replacing it
-  // made the click get lost, so the chosen rating did not stay).
   function buildStars(){
     const row = document.getElementById('starRow');
     row.innerHTML = [1,2,3,4,5].map(n => `
@@ -1287,9 +1235,7 @@
     e.preventDefault();
     const message = document.getElementById('fbMessage').value.trim();
     if (!message) {
-      // Dati, tahimik lang itong tumitigil dito kapag walang message -
-      // kaya parang walang nangyayari pag pinindot ang Submit. Ngayon,
-      // may paalala na para malaman ng guest kung bakit hindi nag-submit.
+
       showToast('Please write your feedback or concern before submitting.');
       return;
     }
@@ -1388,7 +1334,6 @@
   }
   renderNotifications();
 
-  /* ---- Gmail-style helpers ---- */
   function escHtml(s){
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
@@ -1415,7 +1360,6 @@
     showToast('Notification deleted');
   }
 
-  /* Full message opens in the page (like opening an email), with a back arrow. */
   let openNotifId = null;
   let openNotifTitle = '';
   function openNotifDetail(n){
@@ -1490,7 +1434,7 @@
     document.getElementById('profileDropdown').classList.remove('open');
   });
 
-  /* ---------------- HERO SLIDER ---------------- */
+    /* HERO SLIDER  */
   function initHeroSlider(){
     const slides = document.querySelectorAll('.hero-slide');
     const dotsWrap = document.getElementById('heroDots');
@@ -1532,7 +1476,7 @@
     closeSidebar();
   }
 
-  /* ---------------- MOBILE SIDEBAR (hamburger drawer) ---------------- */
+    /*  MOBILE SIDEBAR  */
   const sidebarEl = document.getElementById('sidebar');
   const sidebarBackdrop = document.getElementById('sidebarBackdrop');
   const hamburgerBtn = document.getElementById('hamburgerBtn');
@@ -1623,10 +1567,6 @@
       address: document.getElementById('settingsLocation').value.trim()
     }).then(res => {
       if (res && res.success) {
-        // FIX: dati, wala talagang nag-se-save ng photo kahit saan kapag
-        // pinindot ang "Save changes" - dun nangyayari ang bug. Kaya dito
-        // natin i-persist sa localStorage ang napiling photo (kung meron)
-        // bago mag-loadSession(), para hindi na siya mawala pag-reload.
         if (pendingAvatarPhoto) {
           apiCall('profile_photo_update', { photo: pendingAvatarPhoto }).then(photoRes => {
             pendingAvatarPhoto = null;
@@ -1820,12 +1760,7 @@ dayPill.addEventListener('click', () => openNativePicker(dayInput));
     toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
   }
 
-  /* ---------------- WEATHER WIDGET (live, auto-updating) ----------------
-     Gumagamit ng Open-Meteo API (libre, walang kailangang API key) para
-     awtomatikong ma-update ang temperature/description sa sidebar, base
-     sa coordinates ng Barangay Sampaloc, Tanay, Rizal. Kung mabigo ang
-     fetch (hal. walang internet), mananatili na lang ang default text
-     na naka-hardcode sa HTML - hindi masisira ang page. */
+    /* WEATHER WIDGET*/
   function weatherCodeToText(code){
     const WEATHER_CODES = {
       0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
@@ -1843,7 +1778,6 @@ dayPill.addEventListener('click', () => openNativePicker(dayInput));
   }
 
   function loadWeather(){
-    // Approximate coordinates for Barangay Sampaloc, Tanay, Rizal.
     const lat = 14.5825;
     const lon = 121.3702;
     const url = 'https://api.open-meteo.com/v1/forecast'
@@ -1860,13 +1794,11 @@ dayPill.addEventListener('click', () => openNativePicker(dayInput));
         if (descEl) descEl.textContent = weatherCodeToText(data.current.weather_code);
       })
       .catch(() => {
-        // Tahimik na mananatili ang default na "28°C / Partly cloudy" na
-        // nasa HTML kung sakaling walang internet o nag-timeout ang API.
+
       });
   }
 
-  /* ---------------- ROLE PERMISSIONS (hides nav items the admin
-     turned off for the "guest" role in Security Management) ---------------- */
+    /* ROLE PERMISSIONS  */
   function applyMyPermissions(){
     apiCall('my_permissions', {}).then(res => {
       if (!res || !res.success || !res.permissions) return;
@@ -1919,11 +1851,7 @@ dayPill.addEventListener('click', () => openNativePicker(dayInput));
   applyMyPermissions();
   initHeroSlider();
 
-  /* Draggable "Need Help?" floating button - nagsa-snap sa kaliwa/kanang
-     gilid pag binitawan, hindi kasabay mag-scroll ang page habang
-     hinihila ito, at awtomatikong inaayos ang posisyon (hindi na
-     matatago sa likod ng bottom tab bar o lalabas sa screen) kahit
-     magbago ang laki ng window, hal. pagbukas/pagsara ng DevTools */
+
   (function initHelpWidgetDrag(){
     var widget = document.querySelector('.help-widget');
     var fab = document.querySelector('.help-widget-fab');

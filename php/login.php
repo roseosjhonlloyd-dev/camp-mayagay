@@ -46,9 +46,6 @@ $loginAttemptLimit = max(1, (int)$settings['login_attempt_limit']);
 $activityLoggingOn = $settings['activity_logging_enabled'] === '1';
 $twoFactorOn = $settings['two_factor_enabled'] === '1';
 
-/** Only writes to security_logs when Activity Logging is turned on.
- *  $location is the ['label' => ..., 'lat' => ..., 'lng' => ...] array
- *  returned by detectLoginLocation(). */
 function logSecurityActivity(PDO $pdo, bool $enabled, ?int $uid, string $activity, string $ip, string $device, array $location, string $status): void
 {
     if (!$enabled) return;
@@ -68,7 +65,7 @@ function logSecurityActivity(PDO $pdo, bool $enabled, ?int $uid, string $activit
 }
 
 try {
-    // Resend a fresh 2FA code for the login attempt already in progress.
+
     if (($input['action'] ?? '') === 'resend_2fa') {
         if (empty($_SESSION['pending_2fa_user_id'])) {
             http_response_code(400);
@@ -103,7 +100,6 @@ try {
         exit;
     }
 
-    // Handle the "code" step of a 2FA login (see below) before anything else.
     if (($input['action'] ?? '') === 'verify_2fa') {
         $code = trim((string)($input['code'] ?? ''));
         if (empty($_SESSION['pending_2fa_user_id']) || empty($_SESSION['pending_2fa_code'])) {
@@ -168,8 +164,6 @@ $stmt->execute([
 ]);
     $user = $stmt->fetch();
 
-    // Lock the account after too many failed attempts in the last 15
-    // minutes (per the "Login Attempt" setting in Account Security).
     $recentFailures = $pdo->prepare(
         'SELECT COUNT(*) FROM login_attempts WHERE identifier = :identifier AND success = 0 AND attempted_at > (NOW() - INTERVAL 15 MINUTE)'
     );

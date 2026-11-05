@@ -137,9 +137,7 @@
   .nav-divider{height:1px;background:rgba(244,241,230,0.14);margin:3px 0;}
   .settings-item{margin-bottom:0px;}
 
-  /* ================================
-     UNIQUE LOGOUT BUTTON
-  ================================ */
+  /* LOGOUT BUTTON */
   .sidebar-logout {
       margin-top: 18px;
       padding-top: 18px;

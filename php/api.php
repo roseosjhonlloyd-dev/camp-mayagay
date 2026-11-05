@@ -1,29 +1,7 @@
 <?php
-/**
- * api.php
- * Single JSON endpoint used by dashboard-guest.js and dashboard-admin.js.
- * Talks to the ERD schema in database/erd_schema.sql:
- *   users -> accommodations -> reservations -> payments -> notifications
- *   users -> feedback_concerns / reports / security_logs
- *
- * Responses are shaped to keep field names the existing front-end
- * already expects (id, cabin_id, cabin_name, check_in, check_out,
- * guests_count, status ...) even though the underlying DB columns now
- * follow the ERD (reservation_id, accommodation_id, check_in_date,
- * check_out_date, number_of_guests, reservation_status ...).
- *
- * Usage: POST php/api.php?action=... (see the switch below).
- * Every response is JSON: { success: bool, ... }
- */
-
 declare(strict_types=1);
 
-// XAMPP's default php.ini shows warnings/notices directly in the output,
-// which breaks the JSON this endpoint promises (fetch().json() then fails
-// with a generic network-looking error on the front-end, e.g. "Could not
-// send feedback"). Keep errors out of the response body but still log them,
-// and turn any fatal error into a proper JSON error instead of an HTML
-// error page.
+
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
@@ -68,18 +46,12 @@ function requireAdmin(?array $user): void
     if (!$user || $user['role'] !== 'admin') deny('Admins only.', 403);
 }
 
-/** True for Admin and Staff. Staff share the admin dashboard data (all
- *  reservations, admin notifications, all feedback); what each staff
- *  account may actually open is still controlled by requireModuleAccess()
- *  (Security Management > Roles & Permissions). */
 function isStaffOrAdmin(?array $user): bool
 {
     return $user !== null && in_array($user['role'], ['admin', 'staff'], true);
 }
 
-/* ------------------------------------------------------------
-   ROLE-BASED ACCESS CONTROL (Security Management > Roles & Permissions)
------------------------------------------------------------- */
+/*  ROLE-BASED ACCESS CONTROL (Security Management > Roles & Permissions) */
 const ACCESS_MODULES = [
     'dashboard'      => 'Dashboard',
     'reservation'    => 'Reservation',
@@ -106,9 +78,6 @@ const DEFAULT_ACCESS_MATRIX = [
     'settings'      => ['admin' => true,  'staff' => false, 'guest' => false],
 ];
 
-/** Seeds any module/role row that doesn't exist yet in role_permissions,
- *  using DEFAULT_ACCESS_MATRIX. Safe to call every time - it never
- *  overwrites a row an admin already edited. */
 function ensureFavoritesTable(PDO $pdo): void
 {
     $pdo->exec(
@@ -132,8 +101,6 @@ function ensureAmenitiesColumn(PDO $pdo): void
     $done = true;
 }
 
-/** Adds reservations.amount_paid (how much the guest has actually paid).
- *  Existing rows already marked 'paid' are backfilled to their full total. */
 function ensureAmountPaidColumn(PDO $pdo): void
 {
     static $done = false;
@@ -146,7 +113,7 @@ function ensureAmountPaidColumn(PDO $pdo): void
     $done = true;
 }
 
-/** unpaid / partial / paid from the amounts. */
+
 function paymentStatusFor(float $total, float $paid): string
 {
     if ($paid <= 0) return 'unpaid';
@@ -154,9 +121,7 @@ function paymentStatusFor(float $total, float $paid): string
     return 'paid';
 }
 
-/** Photos that ship with the code (committed to GitHub under assets/images/accommodations),
- *  so they survive every Railway deploy. Matched by accommodation NAME (not slug),
- *  because new accommodations added from the admin get their own slug. */
+
 const BUNDLED_ACCOMMODATION_PHOTOS = [
     'nipahut1'   => 'assets/images/accommodations/nipa1.jpg',
     'nipahut2'   => 'assets/images/accommodations/nipa2.jpg',
@@ -169,7 +134,6 @@ const BUNDLED_ACCOMMODATION_PHOTOS = [
     'bighouse2'  => 'assets/images/accommodations/big2.jpg',
 ];
 
-/** "Big House 2 ( 2nd floor )" -> the bundled photo path, or null. */
 function bundledPhotoForName(string $name): ?string
 {
     $n = preg_replace('/[^a-z0-9]/', '', strtolower($name));
@@ -181,8 +145,6 @@ function bundledPhotoForName(string $name): ?string
     return null;
 }
 
-/** One time only: point the accommodations at the bundled photos (replaces the old pictures).
- *  Remembered in system_settings so later admin uploads are never overwritten. */
 function applyBundledAccommodationPhotos(PDO $pdo): void
 {
     static $done = false;
@@ -201,7 +163,7 @@ function applyBundledAccommodationPhotos(PDO $pdo): void
         }
         $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('accom_photos_v3', '1')")->execute();
     } catch (PDOException $e) {
-        // non-fatal: the list below still works with whatever image is saved
+
     }
 }
 
@@ -239,8 +201,7 @@ function ensureRolePermissionsSeeded(PDO $pdo): void
     }
 }
 
-/** Full access-module matrix for the admin table, e.g.
- *  [ ['module_key'=>'dashboard','module'=>'Dashboard','admin'=>true,'staff'=>true,'guest'=>false], ... ] */
+
 function getAccessModuleMatrix(PDO $pdo): array
 {
     ensureRolePermissionsSeeded($pdo);
@@ -267,10 +228,6 @@ function getPermissionsForRole(PDO $pdo, string $role): array
     return $out;
 }
 
-/** Blocks the request if the logged-in user's role does not have
- *  access to $moduleKey. Admins always pass - full system access is
- *  guaranteed for admin (see the guard in permissions_update below),
- *  so only Staff and Guest are actually restricted by this. */
 function requireModuleAccess(PDO $pdo, ?array $user, string $moduleKey): void
 {
     if (!$user) deny();
@@ -281,9 +238,6 @@ function requireModuleAccess(PDO $pdo, ?array $user, string $moduleKey): void
     }
 }
 
-/** Admin-side "read" state kept in system_settings (value column is only 60 chars,
- *  so no id lists): one watermark key "<prefix>_upto" (everything up to that id is read)
- *  plus one tiny key "<prefix>_<id>" per individually opened item. */
 function readStateLoad(PDO $pdo, string $prefix, ?string $legacyKey = null): array
 {
     $state = ['upto' => 0, 'ids' => []];
@@ -321,9 +275,6 @@ function readStateSet(PDO $pdo, string $prefix, ?array $ids, int $maxId): void
     }
 }
 
-/** Adds a notification row. $userId = null means "broadcast to admins".
- *  $recipientEmail/$emailStatus are only relevant for guest-facing
- *  messages that were also emailed out (see the "Add Message" composer). */
 function addNotification(PDO $pdo, ?int $userId, string $audience, string $type, string $title, string $desc, ?int $reservationId = null, ?string $recipientEmail = null, string $emailStatus = 'not_applicable'): int
 {
     $stmt = $pdo->prepare(
@@ -343,9 +294,6 @@ function addNotification(PDO $pdo, ?int $userId, string $audience, string $type,
     return (int)$pdo->lastInsertId();
 }
 
-/** Logs an entry to security_logs. */
-/** Decodes a base64 data-URL image and saves it under assets/uploads/accommodations.
- *  Returns the relative path on success, or null (with $error set) on failure. */
 function saveAccommodationImage(string $dataUrl, int $accommodationHint, ?string &$error): ?string
 {
     if (!preg_match('/^data:image\/(jpeg|png|webp);base64,(.+)$/', $dataUrl, $matches)) {
@@ -396,8 +344,6 @@ function logSecurity(PDO $pdo, ?int $userId, string $activity, string $status = 
     ]);
 }
 
-/** Reshapes a reservation (joined with accommodations) into the
- *  legacy field names dashboard-guest.js / dashboard-admin.js expect. */
 function reservationRow(array $r): array
 {
     return [
@@ -427,9 +373,6 @@ function reservationRow(array $r): array
     ];
 }
 
-/** True when another active reservation (pending/confirmed/completed) already
- *  occupies this accommodation during [$checkIn, $checkOut). $excludeId skips
- *  the reservation being edited. */
 function reservationOverlaps(PDO $pdo, int $accommodationId, string $checkIn, string $checkOut, int $excludeId = 0): bool
 {
     $stmt = $pdo->prepare(
@@ -451,14 +394,11 @@ const RESERVATION_SELECT = 'SELECT r.*, a.slug, a.accommodation_name FROM reserv
 try {
     switch ($action) {
 
-        /* ------------------------------------------------------------ */
         case 'session':
             echo json_encode(['success' => true, 'user' => $user]);
             break;
 
-        /* ------------------------------------------------------------
-           PROFILE / SETTINGS
-        ------------------------------------------------------------ */
+         /* PROFILE / SETTINGS */
         case 'profile_update':
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'settings');
@@ -484,14 +424,7 @@ try {
             echo json_encode(['success' => true, 'user' => currentUser()]);
             break;
 
-        /* ------------------------------------------------------------
-           PROFILE PHOTO: guest picks a photo (sent as a base64 data
-           URL), we save it as a real file under assets/uploads/avatars
-           and remember only the file path in the database - this is
-           what actually fixes the photo not saving / not following the
-           right account, since it's now tied to the user's row instead
-           of the browser's localStorage.
-        ------------------------------------------------------------ */
+
         case 'profile_photo_update':
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'settings');
@@ -552,11 +485,6 @@ try {
             echo json_encode(['success' => true, 'profile_image' => $relativePath, 'user' => currentUser()]);
             break;
 
-        /* ------------------------------------------------------------
-           VALID ID UPLOAD: guest submits a photo of a government ID
-           from Settings. Saved server-side (not localStorage) and
-           marked 'pending' so it's ready for future admin review.
-        ------------------------------------------------------------ */
         case 'valid_id_upload':
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'settings');
@@ -618,11 +546,6 @@ try {
             echo json_encode(['success' => true, 'valid_id_image' => $relativePath, 'user' => currentUser()]);
             break;
 
-        /* ------------------------------------------------------------
-           CHANGE PASSWORD: guest confirms their current password, then
-           sets a new one. Uses password_verify() against the stored
-           hash - never compares plain text.
-        ------------------------------------------------------------ */
         case 'change_password':
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'settings');
@@ -664,12 +587,8 @@ try {
             echo json_encode(['success' => true, 'message' => 'Password updated successfully.']);
             break;
 
-        /* ------------------------------------------------------------
-           USER MANAGEMENT (admin only)
-        ------------------------------------------------------------ */
-        /* ------------------------------------------------------------
-           ACCOUNT SECURITY SETTINGS (admin only)
-        ------------------------------------------------------------ */
+        /* USER MANAGEMENT  */
+        /*  ACCOUNT SECURITY SETTINGS */
         case 'security_settings_get':
             requireAdmin($user);
             echo json_encode(['success' => true, 'settings' => getSystemSettings($pdo)]);
@@ -701,9 +620,7 @@ try {
             echo json_encode(['success' => true, 'settings' => getSystemSettings($pdo)]);
             break;
 
-        /* ------------------------------------------------------------
-           ROLE & PERMISSION MATRIX (admin edits; every role reads its own)
-        ------------------------------------------------------------ */
+        /* ROLE & PERMISSION */
         case 'permissions_get':
             requireAdmin($user);
             echo json_encode(['success' => true, 'modules' => getAccessModuleMatrix($pdo)]);
@@ -721,9 +638,6 @@ try {
                 break;
             }
 
-            // Safety guard: admin must always keep full system access
-            // per the project spec, so this toggle only meaningfully
-            // restricts the Staff and Guest columns.
             if ($role === 'admin' && $allowed === 0) {
                 http_response_code(422);
                 echo json_encode(['success' => false, 'message' => 'Admin must always have full access to every module.']);
@@ -949,9 +863,7 @@ try {
             echo json_encode(['success' => true]);
             break;
 
-        /* ------------------------------------------------------------
-           ACCOMMODATIONS
-        ------------------------------------------------------------ */
+        /*ACCOMMODATIONS*/
         case 'accommodations_list':
             if ($user) requireModuleAccess($pdo, $user, 'accommodation');
             ensureAmenitiesColumn($pdo);
@@ -974,9 +886,6 @@ try {
             break;
 
         case 'accommodations_trending':
-            // Trending = ONLY accommodations na may kahit isang rating na
-            // (hindi na fixed list). Ranked by average rating, tapos by dami
-            // ng ratings, tapos by dami ng bookings.
             requireLogin($user);
             $stmt = $pdo->query(
                 "SELECT a.accommodation_id, a.accommodation_name, a.slug, a.type, a.price, a.capacity, a.image,
@@ -1041,8 +950,6 @@ try {
             break;
 
         case 'accommodation_reviews':
-            // Lahat ng ratings/comments ng mga dating nag-stay sa ISANG
-            // accommodation (para sa reviews modal ng Trending cards).
             requireLogin($user);
             $accId = (int)($input['accommodation_id'] ?? 0);
             if ($accId <= 0) { http_response_code(422); echo json_encode(['success' => false, 'message' => 'Accommodation is required.']); break; }
@@ -1199,9 +1106,7 @@ try {
             echo json_encode(['success' => true]);
             break;
 
-        /* ------------------------------------------------------------
-           RESERVATIONS
-        ------------------------------------------------------------ */
+         /*RESERVATIONS*/
         case 'reservations_list':
             ensureAmountPaidColumn($pdo);
             requireLogin($user);
@@ -1217,10 +1122,6 @@ try {
             echo json_encode(['success' => true, 'reservations' => array_map('reservationRow', $rows)]);
             break;
 
-        // Real accommodation availability, used by the Guest booking grid.
-        // Only returns accommodation + dates (no guest name/contact info),
-        // so any logged-in guest can safely use it to see which cabins are
-        // actually free - no more fake/random availability.
         case 'availability_list':
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'reservation');
@@ -1244,10 +1145,6 @@ try {
         case 'reservations_create':
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'reservation');
-            // Staff and admin both manage the front-desk / reservation panel,
-            // so both are allowed to record a reservation as already
-            // confirmed (walk-in guests), unlike a regular guest self-booking
-            // through the public site, which always starts as 'pending'.
             $isAdmin = in_array($user['role'], ['admin', 'staff'], true);
 
             $guestName  = trim((string)($input['guest_name'] ?? ($user['firstname'] . ' ' . $user['lastname'])));
@@ -1262,18 +1159,12 @@ try {
             $total      = (float)($input['total_amount'] ?? 0);
             $status     = $isAdmin ? (string)($input['status'] ?? 'confirmed') : 'pending';
             ensureAmountPaidColumn($pdo);
-            // Walk-in (admin/staff): the amount actually received is typed in.
-            // Online (guest): depends on the receipt/reference they submitted.
             if ($isAdmin) {
                 $amountPaid = max(0.0, min($total, (float)($input['amount_paid'] ?? 0)));
             } else {
-                // Online (guest): the receipt / GCash reference is only a claim.
-                // Payment stays unpaid until staff confirm the booking.
                 $amountPaid = 0.0;
             }
             $payStatus = paymentStatusFor($total, $amountPaid);
-            // Reference number: the server always assigns the next free number for
-            // the prefix (e.g. CMY-2026-NIP-), so two bookings never share a code.
             $clientCode = trim((string)($input['code'] ?? ''));
             if (preg_match('/^(CMY-\d{4}-[A-Z0-9]{2,5})-\d+$/', $clientCode, $cm)) {
                 $codePrefix = $cm[1];
@@ -1290,8 +1181,6 @@ try {
                 break;
             }
 
-            // Resolve (or create) the accommodation row from the slug
-            // the front-end already uses (nipa1, glass, tent, ...).
             $stmt = $pdo->prepare('SELECT accommodation_id FROM accommodations WHERE slug = :slug');
             $stmt->execute(['slug' => $cabinId]);
             $accommodationId = $stmt->fetchColumn();
@@ -1304,15 +1193,6 @@ try {
             }
 
             $userIdForRow = $isAdmin ? (isset($input['user_id']) ? (int)$input['user_id'] : null) : $user['id'];
-
-            // ---- Double-booking guard ---------------------------------
-            // 1) I-lock muna ang row ng accommodation na ito (FOR UPDATE).
-            //    Kung dalawang booking request ang dumating para sa parehong
-            //    cabin nang halos sabay-sabay, hihintayin ng pangalawa na
-            //    matapos muna ang una - hindi na sila pareho makakakuha ng
-            //    "available" nang sabay.
-            // 2) Pagkatapos lang ma-lock, i-che-check kung may existing
-            //    pending/confirmed reservation na overlapping ang petsa.
             $pdo->beginTransaction();
             try {
                 $seqStmt = $pdo->prepare('SELECT code FROM reservations WHERE code LIKE :p');
@@ -1380,7 +1260,6 @@ try {
                 ]);
                 $newId = (int)$pdo->lastInsertId();
 
-                // A reservation always gets a matching payments row (per the ERD).
                 $stmt = $pdo->prepare(
                     'INSERT INTO payments (reservation_id, payment_method, reference_number, amount, payment_status, payment_date)
                      VALUES (:reservation_id, :payment_method, :reference_number, :amount, :payment_status, :payment_date)'
@@ -1427,8 +1306,7 @@ try {
                 echo json_encode(['success' => false, 'message' => 'Invalid id or status.']);
                 break;
             }
-            // Bringing a declined/cancelled booking back (or re-activating any)
-            // must not double-book the accommodation.
+
             if (in_array($status, ['pending', 'confirmed', 'completed'], true)) {
                 $cur = $pdo->prepare('SELECT accommodation_id, check_in_date, check_out_date FROM reservations WHERE reservation_id = :id');
                 $cur->execute(['id' => $id]);
@@ -1440,8 +1318,7 @@ try {
             $pdo->prepare('UPDATE reservations SET reservation_status = :status WHERE reservation_id = :id')
                 ->execute(['status' => $status, 'id' => $id]);
 
-            // Payment status is no longer flipped to 'paid' just because a booking
-            // is confirmed - it follows the amount actually paid (see payments_record).
+
             if ($status === 'declined' || $status === 'cancelled') {
                 $pdo->prepare("UPDATE payments SET payment_status = 'refunded' WHERE reservation_id = :id")
                     ->execute(['id' => $id]);
@@ -1587,9 +1464,7 @@ try {
             echo json_encode(['success' => true]);
             break;
 
-        /* ------------------------------------------------------------
-           PAYMENTS
-        ------------------------------------------------------------ */
+         /*PAYMENTS*/
         case 'payments_list':
             requireLogin($user);
             if (!isStaffOrAdmin($user)) deny('Admins and staff only.', 403);
@@ -1632,9 +1507,6 @@ try {
             echo json_encode(['success' => true, 'payments' => $rows]);
             break;
 
-        /** Staff/admin records money received for a reservation.
-         *  Input: id + either `add_amount` (adds to what was paid),
-         *  `amount_paid` (sets the total paid), or `mark_paid` = true (pays the balance in full). */
         case 'payments_record':
             requireLogin($user);
             if (!isStaffOrAdmin($user)) deny('Admins and staff only.', 403);
@@ -1693,9 +1565,7 @@ try {
             ]);
             break;
 
-        /* ------------------------------------------------------------
-           NOTIFICATIONS
-        ------------------------------------------------------------ */
+        /* NOTIFICATIONS */
         case 'notifications_list':
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'notifications');
@@ -1725,11 +1595,6 @@ try {
             echo json_encode(['success' => true, 'notifications' => $rows, 'email_stats' => $emailStats]);
             break;
 
-        /** Admin composes a message from the "Add Message" button and sends
-         *  it to all guests with a reservation, all staff accounts, a
-         *  specific registered account, a specific reservation, or a custom
-         *  email address. Creates a notification row for each recipient and
-         *  emails them via mailer.php. */
         case 'notifications_send':
             requireModuleAccess($pdo, $user, 'notifications');
             $title = trim((string)($input['title'] ?? ''));
@@ -1824,9 +1689,6 @@ try {
             }
             break;
 
-        /** Guest writes a message to the admin ("Contact Us" / Reply).
-         *  Shows up in the admin's Notifications; the admin answers with
-         *  "Add Message", which lands in the guest's Notifications (and email). */
         case 'guest_message_send':
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'feedback');
@@ -1920,9 +1782,7 @@ try {
             echo json_encode(['success' => true]);
             break;
 
-        /* ------------------------------------------------------------
-           FEEDBACK / CONCERNS
-        ------------------------------------------------------------ */
+         /*FEEDBACK / CONCERNS*/
         case 'feedback_list':
             requireLogin($user);
             $seeAllFeedback = $user['role'] === 'admin'
@@ -1944,7 +1804,6 @@ try {
                 $stmt->execute(['uid' => $user['id']]);
             }
             $fbRows = $stmt->fetchAll();
-            // Read/unread flag for admin/staff (see readStateLoad): no table or column changed.
             $fbState = readStateLoad($pdo, 'fb_read', 'feedback_read_ids');
             foreach ($fbRows as &$fbr) { $fbr['is_read'] = readStateIsRead($fbState, (int)$fbr['feedback_id']) ? 1 : 0; }
             unset($fbr);
@@ -1958,8 +1817,6 @@ try {
             echo json_encode(['success' => true]);
             break;
 
-        /** Admin/staff view of everything sent to guests: replies to their
-         *  feedback and messages from the "Add Message" composer. */
         case 'sent_messages_list':
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'feedback');
@@ -1974,7 +1831,7 @@ try {
                  ORDER BY n.created_at DESC, n.notification_id DESC
                  LIMIT 300"
             );
-            // Admin-side read flag; the guest's own read status in notifications.status is untouched.
+
             $sentState = readStateLoad($pdo, 'sent_read', 'sent_messages_read_ids');
                         $rows = array_map(function ($n) use ($sentState) {
                 return [
@@ -2001,11 +1858,7 @@ try {
             break;
 
         case 'feedback_public_list':
-            // Public-facing reviews feed - any logged-in guest/staff/admin can
-            // see what OTHER guests said about their stay. Only approved
-            // "feedback" entries are shown here (not private "concern"
-            // reports), and the guest's name is shortened to first name +
-            // last initial for privacy.
+
             requireLogin($user);
             $stmt = $pdo->query(
                 "SELECT fc.feedback_id, fc.rating, fc.message, fc.submitted_at, fc.guest_name,
@@ -2052,11 +1905,7 @@ try {
                     $accommodationName = null;
                 }
             }
-            // Ito ang pangunahing pag-save ng feedback - dapat gumana ito
-            // kahit mabigo ang notification sa ibaba, kaya hiwalay ito sa
-            // try/catch ng addNotification() (hindi dapat ma-block ang
-            // pag-save ng feedback dahil lang sa hindi pag-send ng
-            // notification sa admin).
+
             $stmt = $pdo->prepare(
                 'INSERT INTO feedback_concerns (user_id, accommodation_id, guest_name, subject, message, category, rating)
                  VALUES (:uid, :accommodation_id, :name, :subject, :message, :category, :rating)'
@@ -2074,10 +1923,7 @@ try {
                 $notifMessage = $guestName . ' left a ' . $rating . '-star review' . ($accommodationName ? ' for ' . $accommodationName : '') . '.';
                 addNotification($pdo, null, 'admin', 'feedback', 'New feedback received', $notifMessage);
             } catch (\Throwable $e) {
-                // Huwag hayaang mabigo ang feedback save kung may problema
-                // lang sa notifications table (hal. hindi pa na-import ang
-                // migration na nagdaragdag ng recipient_email/email_status
-                // na column) - naka-save na ang feedback bago pa man dito.
+
                 error_log('[camp-mayagay/api.php] feedback_create addNotification failed: ' . $e->getMessage());
                 try {
                     // Ayusin ang table kung lumang bersyon (ENUM) ang notification_type, tapos ulitin
@@ -2106,9 +1952,6 @@ try {
             $pdo->prepare("UPDATE feedback_concerns SET response = :response, status = 'closed' WHERE feedback_id = :id")
                 ->execute(['response' => $response, 'id' => $id]);
 
-            // Tell the guest a response has arrived - without this, the
-            // reply only ever sat in the database and the guest had no
-            // way of knowing it exists.
             $fbStmt = $pdo->prepare(
                 'SELECT fc.user_id, fc.subject, u.email
                  FROM feedback_concerns fc
@@ -2155,9 +1998,7 @@ try {
             echo json_encode(['success' => true]);
             break;
 
-        /* ------------------------------------------------------------
-           REPORTS
-        ------------------------------------------------------------ */
+         /*REPORTS*/
         case 'reports_list':
             requireModuleAccess($pdo, $user, 'reports');
             $stmt = $pdo->query('SELECT * FROM reports ORDER BY created_at DESC');
@@ -2176,9 +2017,6 @@ try {
             echo json_encode(['success' => true, 'report_id' => (int)$pdo->lastInsertId()]);
             break;
 
-        /** Logged automatically whenever the Reports page finishes
-         *  building the Detailed Reports summary, so there's a saved
-         *  history AND an admin notification for every report generated. */
         case 'reports_generate':
             requireModuleAccess($pdo, $user, 'reports');
             $totalReservations  = (int)($input['total_reservations'] ?? 0);
@@ -2197,8 +2035,6 @@ try {
             );
             $stmt->execute(['uid' => $user['id'], 'type' => 'Detailed Summary', 'desc' => $description]);
 
-            // Only an explicit export creates a notification (input.export = true),
-            // so merely opening the Reports page no longer floods Notifications.
             if (!empty($input['export'])) {
                 addNotification($pdo, null, 'admin', 'announcement', 'Detailed Report Generated', $description);
             }
@@ -2206,9 +2042,7 @@ try {
             echo json_encode(['success' => true]);
             break;
 
-        /* ------------------------------------------------------------
-           SECURITY LOGS
-        ------------------------------------------------------------ */
+         /*SECURITY LOGS */
         case 'security_logs_list':
             requireAdmin($user);
             $stmt = $pdo->query(
@@ -2242,9 +2076,7 @@ try {
             echo json_encode(['success' => true, 'logs' => $logs]);
             break;
 
-        /* ------------------------------------------------------------
-           GUEST RECORDS (aggregated from reservations + users)
-        ------------------------------------------------------------ */
+         /*GUEST RECORDS*/
         case 'guests_list':
             requireModuleAccess($pdo, $user, 'guest_record');
             // Registered guest accounts (even with no booking yet) + walk-in guests

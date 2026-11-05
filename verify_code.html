@@ -69,9 +69,6 @@
     });
     if (boxes[0]) boxes[0].focus();
 
-    // Show which email the code was sent to, remembered from
-    // forgot-password.html. Falls back to generic text if not present
-    // (e.g. the guest refreshed straight to this page).
     const rememberedEmail = sessionStorage.getItem('resetEmail');
     if (rememberedEmail) {
       document.getElementById('verifySubtitle').textContent =

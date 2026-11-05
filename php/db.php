@@ -1,8 +1,6 @@
 <?php
 declare(strict_types=1);
 
-// Camp Mayagay runs on Philippine time. Without this, Railway (UTC) shows
-// login times 8 hours behind.
 date_default_timezone_set('Asia/Manila');
 
 $DB_HOST = getenv('DB_HOST') ?: 'localhost';
@@ -36,9 +34,6 @@ try {
     error_log('[camp-mayagay/db.php] could not set time zone: ' . $e->getMessage());
 }
 
-/** Real client IP. Behind Railway's proxy REMOTE_ADDR is an internal address
- *  (100.64.x.x); the visitor's address is the first public entry of
- *  X-Forwarded-For. Returns null if nothing usable is found. */
 function clientIp(): ?string
 {
     $isPublic = function (string $ip): bool {
@@ -61,7 +56,6 @@ function clientIp(): ?string
     return $remote !== '' ? $remote : null;
 }
 
-/** One-time data fixes, each remembered in system_settings so it runs once. */
 function runLegacyFixes(PDO $pdo): void
 {
     try {
@@ -87,7 +81,6 @@ function runLegacyFixes(PDO $pdo): void
         }
     }
 
-    // 2) Typo in saved notifications and the repeated "Detailed Report Generated" notices.
     if (!in_array('fix_misc_nov4_v1', $done, true)) {
         try {
             $pdo->exec("UPDATE notifications SET title = REPLACE(title, 'Annoucement', 'Announcement'), message = REPLACE(message, 'Annoucement', 'Announcement') WHERE title LIKE '%Annoucement%' OR message LIKE '%Annoucement%'");
@@ -99,7 +92,6 @@ function runLegacyFixes(PDO $pdo): void
         }
     }
 
-    // 2b) Admin/staff login OTP must be ON (one time; admin can still switch it off in Account Security later).
     if (!in_array('fix_2fa_on_v1', $done, true)) {
         try {
             $pdo->exec("INSERT INTO system_settings (setting_key, setting_value) VALUES ('two_factor_enabled', '1') ON DUPLICATE KEY UPDATE setting_value = '1'");
@@ -109,7 +101,6 @@ function runLegacyFixes(PDO $pdo): void
         }
     }
 
-    // 3) Make reservation codes unique: renumber duplicates, then add a UNIQUE index.
     if (!in_array('fix_res_code_unique_v1', $done, true)) {
         try {
             $rows = $pdo->query('SELECT reservation_id, code FROM reservations ORDER BY reservation_id')->fetchAll();

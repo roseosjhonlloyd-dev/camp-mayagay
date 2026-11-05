@@ -300,9 +300,9 @@ function initRegisterForm() {
     }
 
     var idFile = validIdInput && validIdInput.files && validIdInput.files[0];
-    // Valid ID is optional - only validate it when a file was chosen.
+    // Valid ID is optional 
     if (!idFile) {
-      // no file: allowed
+
     } else if (!/image\/(jpeg|png)/.test(idFile.type)) {
       setFieldError('valid_id', 'Please upload a JPEG or PNG file.'); hasError = true;
     } else if (idFile.size > 5 * 1024 * 1024) {

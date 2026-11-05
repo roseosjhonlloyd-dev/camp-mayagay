@@ -1,18 +1,4 @@
 <?php
-/**
- * forgot-password.php
- * Handles the whole Forgot Password flow for guests:
- *   1. send_code      - guest enters their email, we email a 6-digit code
- *   2. resend_code     - guest asks for a new code
- *   3. verify_code      - guest enters the code they received
- *   4. reset_password  - guest sets a new password
- *
- * The code + a short expiry are kept in the PHP session (not the
- * database) so nothing needs to be cleaned up later.
- *
- * Usage: POST php/forgot-password.php?action=... Every response is JSON.
- */
-
 declare(strict_types=1);
 
 // Keep PHP warnings/notices out of the JSON body (same reasoning as api.php).
@@ -42,9 +28,6 @@ function sendJson(array $data, int $code = 200): void
 try {
     switch ($action) {
 
-        /* ------------------------------------------------------------
-           STEP 1: guest enters their email -> we generate + email a code
-        ------------------------------------------------------------ */
         case 'send_code':
             $email = trim((string)($input['email'] ?? ''));
 
@@ -56,9 +39,6 @@ try {
             $stmt->execute(['email' => $email]);
             $user = $stmt->fetch();
 
-            // Whether or not the email is registered, we reply with the
-            // same generic message - this stops guests from using this
-            // form to find out which emails have an account.
             if ($user) {
                 $code = (string)random_int(100000, 999999);
 
@@ -79,9 +59,6 @@ try {
             ]);
             break;
 
-        /* ------------------------------------------------------------
-           STEP 1b: guest asks for a new code (reuses the same session)
-        ------------------------------------------------------------ */
         case 'resend_code':
             $email = (string)($_SESSION['reset_email'] ?? '');
             if ($email === '') {
@@ -101,9 +78,6 @@ try {
             sendJson(['success' => true, 'message' => 'A new code has been sent.']);
             break;
 
-        /* ------------------------------------------------------------
-           STEP 2: guest enters the 6-digit code
-        ------------------------------------------------------------ */
         case 'verify_code':
             $code = trim((string)($input['code'] ?? ''));
 
@@ -121,9 +95,7 @@ try {
             sendJson(['success' => true, 'message' => 'Code verified.']);
             break;
 
-        /* ------------------------------------------------------------
-           STEP 3: guest sets a new password
-        ------------------------------------------------------------ */
+
         case 'reset_password':
             if (empty($_SESSION['reset_verified']) || empty($_SESSION['reset_email'])) {
                 sendJson(['success' => false, 'message' => 'Please verify your code first.'], 422);
@@ -146,8 +118,6 @@ try {
                 'email'    => $_SESSION['reset_email'],
             ]);
 
-            // Clear the temporary reset session values so the same code
-            // can't be reused and a stranger can't reopen this step later.
             unset(
                 $_SESSION['reset_email'],
                 $_SESSION['reset_code'],
