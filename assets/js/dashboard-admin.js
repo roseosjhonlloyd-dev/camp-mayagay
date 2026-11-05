@@ -388,7 +388,7 @@ function renderReservationTable() {
   filtered.forEach(function (r) {
     var statusLabel = r.cancel_requested ? 'Cancel requested' : (r.status.charAt(0).toUpperCase() + r.status.slice(1));
     var pillClass = r.cancel_requested ? 'pending' : r.status;
-    html += '<tr>';
+    html += '<tr title="' + reservationTimeTip(r).replace(/"/g, '&quot;') + '">';
     html += '  <td>' + r.code + '</td>';
     html += '  <td>' + r.guest_name + '</td>';
     html += '  <td>' + r.cabin_name + '</td>';
@@ -545,6 +545,18 @@ function initReservationModal() {
   });
 }
 
+/* Hover text: exact check-in / check-out date and time of a reservation. */
+function reservationTimeTip(r) {
+  function full(v) {
+    if (!v) return '-';
+    var d = new Date(String(v).replace(' ', 'T'));
+    if (isNaN(d.getTime())) return String(v);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ', ' +
+           d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  }
+  return 'Check-in: ' + full(r.check_in) + '  |  Check-out: ' + full(r.check_out);
+}
+
 function formatDateTime(v) {
   if (!v) return '-';
   var d = new Date(v.replace(' ', 'T'));
@@ -563,7 +575,7 @@ function renderRecentReservationsFromDb() {
   var html = '';
   recent.forEach(function (r) {
     var statusLabel = r.status.charAt(0).toUpperCase() + r.status.slice(1);
-    html += '<tr>';
+    html += '<tr title="' + reservationTimeTip(r).replace(/"/g, '&quot;') + '">';
     html += '  <td>' + r.guest_name + '</td>';
     html += '  <td>' + formatDateTime(r.check_in) + '</td>';
     html += '  <td>' + formatDateTime(r.check_out) + '</td>';
@@ -861,11 +873,11 @@ function renderCalendarDayDetails() {
       .sort(function (a, b) { return String(a.check_out).localeCompare(String(b.check_out)); });
 
     checkinList.innerHTML = checkins.length ? checkins.map(function (r) {
-      return '<div class="calendar-detail-item all-mode"><span>' + r.guest_name + ' &middot; ' + r.cabin_name + '</span><span class="item-date">' + shortDate(r.check_in) + '</span></div>';
+      return '<div class="calendar-detail-item all-mode" title="' + reservationTimeTip(r).replace(/"/g, '&quot;') + '"><span>' + r.guest_name + ' &middot; ' + r.cabin_name + '</span><span class="item-date">' + shortDate(r.check_in) + '</span></div>';
     }).join('') : '<p class="calendar-detail-empty">No pending check-ins at this time.</p>';
 
     checkoutList.innerHTML = checkouts.length ? checkouts.map(function (r) {
-      return '<div class="calendar-detail-item all-mode"><span>' + r.guest_name + ' &middot; ' + r.cabin_name + '</span><span class="item-date">' + shortDate(r.check_out) + '</span></div>';
+      return '<div class="calendar-detail-item all-mode" title="' + reservationTimeTip(r).replace(/"/g, '&quot;') + '"><span>' + r.guest_name + ' &middot; ' + r.cabin_name + '</span><span class="item-date">' + shortDate(r.check_out) + '</span></div>';
     }).join('') : '<p class="calendar-detail-empty">There are no pending check-outs at this time.</p>';
   } else {
     // PINILING PETSA mode: base sa araw na kinlik sa calendar (dating gawi).
@@ -2517,14 +2529,6 @@ function renderUserTable() {
     html += '  <td><span class="pill role-' + u.role + '">' + roleLabel + '</span></td>';
     html += '  <td><span class="pill status-' + (u.status === 'active' ? 'active' : 'inactive') + '">' + statusLabel + '</span></td>';
     html += '  <td>' + (u.created_at || '-') + '</td>';
-    var idStatus = u.id_verification_status || 'not_submitted';
-    var idLabels = { not_submitted: 'None', pending: 'Pending', verified: 'Verified', rejected: 'Rejected' };
-    html += '  <td>';
-    html += '    <span class="pill id-' + idStatus.replace('_', '-') + '">' + (idLabels[idStatus] || 'None') + '</span>';
-    if (u.valid_id_image) {
-      html += ' <button class="row-action-btn" data-view-id="' + u.id + '" data-id-status="' + idStatus + '" title="View ID" type="button" style="vertical-align:middle;"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12C4 7 8 4.5 12 4.5S20 7 22 12C20 17 16 19.5 12 19.5S4 17 2 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.6"/></svg></button>';
-    }
-    html += '  </td>';
     html += '  <td>';
     html += '    <div class="row-actions">';
     html += '      <button class="row-action-btn" data-edit-id="' + u.id + '" title="Edit" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20L4.6 16.7L16 5.3C16.6 4.7 17.6 4.7 18.2 5.3L18.7 5.8C19.3 6.4 19.3 7.4 18.7 8L7.3 19.4L4 20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>';

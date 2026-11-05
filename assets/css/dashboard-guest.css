@@ -1464,3 +1464,22 @@ body.dark-mode .gm-icon-btn:hover{background:rgba(255,255,255,0.12);}
 /* Most-favorited accommodations are highlighted on Home */
 .cabin-card{position:relative;}
 .accom-fav{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+
+/* Book now, details modal, availability line, quick dates, large text, guide */
+.book-now-btn{margin-top:10px;width:100%;padding:9px 12px;border:0;border-radius:10px;background:#2f5d3a;color:#fff;font-weight:700;cursor:pointer;}
+.book-now-btn:hover{background:#3d7a3a;}
+.accom-avail-line{font-size:12px;margin:4px 0 0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.av-dot{display:inline-block;width:9px;height:9px;border-radius:50%;}
+.av-dot.ok{background:#3d7a3a;}
+.av-dot.no{background:#c0392b;margin-left:6px;}
+.quick-dates{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:13px;}
+.quick-dates button{padding:7px 14px;border-radius:999px;border:1.5px solid #2f5d3a;background:transparent;color:inherit;font-weight:600;cursor:pointer;}
+.quick-dates button:hover{background:#2f5d3a;color:#fff;}
+.acc-details-art{height:280px;border-radius:12px;margin-bottom:14px;}
+.acc-details-info h3{margin:0 0 4px;}
+.acc-details-price{font-weight:700;margin:6px 0 0;}
+.acc-details-book{margin-top:16px;width:100%;}
+.guide-steps{padding-left:22px;line-height:1.7;font-size:16px;}
+.guide-steps li{margin-bottom:10px;}
+.guide-tip{font-size:15px;opacity:.85;}
+body.large-text{zoom:1.15;}

@@ -514,14 +514,81 @@
             <span class="cabin-price">${peso(c.price)}/ ${c.unit}</span>
             ${favWrapHtml(c)}
           </div>
+          <button class="book-now-btn" type="button" data-booknow="${c.id}">Book now</button>
         </div>
       </div>`;
     }).join('');
     bindFavButtons(grid);
+    grid.querySelectorAll('[data-booknow]').forEach(btn => {
+      btn.addEventListener('click', (e) => { e.stopPropagation(); bookNow(btn.dataset.booknow); });
+    });
+    grid.querySelectorAll('.cabin-card').forEach((card, i) => {
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', () => openAccDetails(ranked[i].id));
+    });
     grid.querySelectorAll('[data-reviews]').forEach(btn => {
       btn.addEventListener('click', () => openAccReviews(Number(btn.dataset.reviews)));
     });
   }
+
+  /* First open day in the current availability view, or -1 if none. */
+  function firstAvailableDay(cabinId){
+    for (let i = 0; i < DAYS.length; i++){
+      if (state.availability[availKey(cabinId, i)]) return i;
+    }
+    return -1;
+  }
+  /* "Book now": go straight to the booking form for this accommodation. */
+  function bookNow(cabinId){
+    closeAccDetails();
+    const day = firstAvailableDay(cabinId);
+    if (day < 0){
+      showToast('No open day this week. Pick another date.');
+      goToView('accommodation');
+      return;
+    }
+    openBookingModal(cabinId, day);
+  }
+
+  /* Details of an accommodation (photos, amenities, price, open days). */
+  function openAccDetails(cabinId){
+    const c = CABINS.find(x => x.id === cabinId);
+    if (!c) return;
+    const days = DAYS.map((d, i) => {
+      const ok = state.availability[availKey(c.id, i)];
+      return `<button type="button" class="day-pill ${ok ? 'avail' : 'booked'}" data-detail-day="${i}" ${ok ? '' : 'disabled'}>${d}</button>`;
+    }).join('');
+    const body = document.getElementById('accDetailsBody');
+    body.innerHTML = `
+      <div class="accom-art acc-details-art" style="background:${ART_BG[c.icon]}">${accomSlider(c)}</div>
+      <div class="acc-details-info">
+        <h3>${c.name}</h3>
+        <p class="accom-note">${c.note || ''}</p>
+        <p class="acc-details-price">${peso(c.price)}/ ${c.unit}</p>
+        <p class="ro-label" style="margin:12px 0 6px;">Amenities</p>
+        <div class="amenity-list">${(c.amenities || []).map(a => `<span class="amenity-chip">${a}</span>`).join('')}</div>
+        <p class="ro-label" style="margin:14px 0 6px;">This week</p>
+        <div class="day-row">${days}</div>
+        <button class="btn-primary acc-details-book" type="button" data-booknow="${c.id}">Book now</button>
+      </div>`;
+    initAccomSliders(body);
+    body.querySelectorAll('.accom-art').forEach(refreshSlider);
+    body.querySelector('[data-booknow]').addEventListener('click', () => bookNow(c.id));
+    body.querySelectorAll('[data-detail-day]').forEach(btn => {
+      btn.addEventListener('click', () => { closeAccDetails(); openBookingModal(c.id, Number(btn.dataset.detailDay)); });
+    });
+    document.getElementById('accDetailsModal').classList.add('open');
+  }
+  function closeAccDetails(){
+    const m = document.getElementById('accDetailsModal');
+    if (m) m.classList.remove('open');
+  }
+  (function(){
+    const x = document.getElementById('accDetailsCloseX');
+    if (x) x.addEventListener('click', closeAccDetails);
+    const m = document.getElementById('accDetailsModal');
+    if (m) m.addEventListener('click', (e) => { if (e.target.id === 'accDetailsModal') closeAccDetails(); });
+  })();
 
   function loadFavorites(){
     return apiCall('favorites_list', {}).then(res => {
@@ -651,6 +718,11 @@
   const ACCOM_PAGE_SIZE = 6;
   let accomPage = 0;
 
+  function availSummaryHtml(c){
+    let a = 0;
+    DAYS.forEach((d, i) => { if (state.availability[availKey(c.id, i)]) a++; });
+    return `<p class="accom-avail-line"><span class="av-dot ok"></span>Available: ${a} day${a === 1 ? '' : 's'} <span class="av-dot no"></span>Booked: ${DAYS.length - a} day${DAYS.length - a === 1 ? '' : 's'}</p>`;
+  }
   function renderAccomGrid(){
     const grid = document.getElementById('accomGrid');
     const pageItems = CABINS.slice(accomPage * ACCOM_PAGE_SIZE, accomPage * ACCOM_PAGE_SIZE + ACCOM_PAGE_SIZE);
@@ -662,6 +734,7 @@
           <div>
             <p class="accom-name">${c.name}</p>
             <p class="accom-note">${c.note}</p>
+            ${availSummaryHtml(c)}
           </div>
           <div class="accom-fav"><span class="accom-price">${peso(c.price)}/ ${c.unit}</span>${favWrapHtml(c)}</div>
         </div>
@@ -1081,7 +1154,7 @@
     el.innerHTML = state.reservations.map(r => `
       <div class="resv-card">
         <div class="resv-top">
-          <span class="resv-dates">${r.checkInLabel} - ${r.checkOutLabel}</span>
+          <span class="resv-dates" title="Check-in: ${r.checkInLabel}  |  Check-out: ${r.checkOutLabel}">${r.checkInLabel} - ${r.checkOutLabel}</span>
           <span class="resv-pay">PAYMENT METHOD: ${r.paymentMethod.toUpperCase()}</span>
         </div>
         <div class="resv-body">
@@ -1803,11 +1876,47 @@ dayPill.addEventListener('click', () => openNativePicker(dayInput));
   }
   monthInput.addEventListener('change', applyDateFilter);
   dayInput.addEventListener('change', applyDateFilter);
+  document.querySelectorAll('[data-quick]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const d = new Date();
+      if (btn.dataset.quick === 'tomorrow') d.setDate(d.getDate() + 1);
+      if (btn.dataset.quick === 'weekend') d.setDate(d.getDate() + ((6 - d.getDay() + 7) % 7));
+      dayInput.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      applyDateFilter();
+    });
+  });
   document.getElementById('clearDateBtn').addEventListener('click', () => {
     monthInput.value = '';
     dayInput.value = '';
     applyDateFilter();
   });
+
+  /* Larger text switch and step-by-step guide, for older guests. */
+  (function(){
+    const btn = document.getElementById('textSizeBtn');
+    function apply(on){
+      document.body.classList.toggle('large-text', on);
+      if (btn) btn.textContent = on ? 'A-' : 'A+';
+    }
+    let saved = false;
+    try { saved = localStorage.getItem('cmy_large_text') === '1'; } catch (e) {}
+    apply(saved);
+    if (btn) btn.addEventListener('click', () => {
+      const on = !document.body.classList.contains('large-text');
+      apply(on);
+      try { localStorage.setItem('cmy_large_text', on ? '1' : '0'); } catch (e) {}
+    });
+    const guide = document.getElementById('guideModal');
+    function openGuide(){ guide.classList.add('open'); }
+    function closeGuide(){ guide.classList.remove('open'); }
+    ['helpGuideBtn', 'heroGuideBtn'].forEach(id => {
+      const b = document.getElementById(id);
+      if (b) b.addEventListener('click', openGuide);
+    });
+    const gx = document.getElementById('guideCloseX');
+    if (gx) gx.addEventListener('click', closeGuide);
+    guide.addEventListener('click', (e) => { if (e.target.id === 'guideModal') closeGuide(); });
+  })();
 
   let pendingAvatarPhoto = null; 
 
