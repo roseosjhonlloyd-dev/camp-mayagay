@@ -778,6 +778,16 @@
     grid.querySelectorAll('.day-pill.avail').forEach(btn => {
       btn.addEventListener('click', () => openBookingModal(btn.dataset.cabin, Number(btn.dataset.day)));
     });
+    // Click a card (photo, name, price) to open its details popup, same as on Home.
+    // Hearts, photo arrows, day pills and review buttons keep their own behavior.
+    grid.querySelectorAll('.accom-card').forEach((card, i) => {
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.fav-wrap, .slide-btn, .day-pill, [data-reviews]')) return;
+        e.stopPropagation(); // photos open inside the popup instead of the grid's fullscreen viewer
+        openAccDetails(pageItems[i].id);
+      });
+    });
 
     updatePaginationButtons();
   }
