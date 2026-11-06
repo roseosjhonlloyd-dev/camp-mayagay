@@ -1221,3 +1221,14 @@ body{
 /* Reservation details: readable labels on the light modal */
 .modal-info-row{color:var(--ink-soft,#555);}
 .modal-info-row span:first-child{font-weight:600;color:var(--ink-soft,#555);}
+
+/* Receipt zoom viewer */
+.proof-receipt-img{cursor:zoom-in;}
+.proof-hint{font-size:11px;opacity:.7;margin:-4px 0 8px;}
+.proof-refno{font-size:13px;}
+.image-viewer{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.88);display:flex;flex-direction:column;}
+.iv-bar{display:flex;gap:8px;justify-content:center;padding:10px;}
+.iv-bar button{min-width:44px;height:40px;padding:0 14px;border-radius:8px;border:0;background:#fff;color:#111;font-size:20px;font-weight:700;cursor:pointer;}
+.iv-stage{flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;}
+.iv-stage.grabbing{cursor:grabbing;}
+.iv-stage img{max-width:92vw;max-height:80vh;user-select:none;-webkit-user-drag:none;transform-origin:center center;}

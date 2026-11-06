@@ -512,24 +512,69 @@ function openReservationModal(id) {
 
   if (receiptImage) {
     proof.innerHTML =
-      '<img src="' + receiptImage + '" alt="Payment receipt" class="proof-receipt-img">' +
+      '<img src="' + receiptImage + '" alt="Payment receipt" class="proof-receipt-img" title="Click to zoom">' +
+      '<p class="proof-hint">Click the receipt to zoom and drag it.</p>' +
       '<p class="proof-amount">' + peso2(r.total_amount) + '</p>' +
       '<p><strong>' + (r.payment_method || 'No payment method on file') + '</strong></p>' +
+      '<p class="proof-refno">' + (r.payment_method === 'GCash' ? 'GCash Reference No.: ' : 'Payment Reference No.: ') + '<strong>' + (gcashRef || 'Not provided') + '</strong></p>' +
       '<p>Guest: ' + r.guest_name + '</p>' +
-      '<p>Reference: ' + r.code + '</p>' +
+      '<p>Booking Code: ' + r.code + '</p>' +
       '<p>Status: ' + (r.payment_status || 'unpaid') + '</p>';
+    var proofImg = proof.querySelector('.proof-receipt-img');
+    if (proofImg) proofImg.addEventListener('click', function () { openImageViewer(receiptImage); });
   } else {
     proof.innerHTML =
       '<p class="proof-amount">' + peso2(r.total_amount) + '</p>' +
       '<p><strong>' + (r.payment_method || 'No payment method on file') + '</strong></p>' +
-      (gcashRef ? '<p>GCash Reference No.: ' + gcashRef + '</p>' : '') +
+      '<p class="proof-refno">' + (r.payment_method === 'GCash' ? 'GCash Reference No.: ' : 'Payment Reference No.: ') + '<strong>' + (gcashRef || 'Not provided') + '</strong></p>' +
       '<p>Guest: ' + r.guest_name + '</p>' +
-      '<p>Reference: ' + r.code + '</p>' +
+      '<p>Booking Code: ' + r.code + '</p>' +
       '<p>Status: ' + (r.payment_status || 'unpaid') + '</p>' +
       (r.payment_method === 'Bank Transfer' ? '<p class="proof-missing">No receipt image was uploaded for this reservation.</p>' : '');
   }
 
   modal.classList.remove('hidden');
+}
+
+/* Full-screen receipt viewer: mouse wheel / + - buttons to zoom, drag to move. */
+function openImageViewer(src) {
+  var old = document.getElementById('imageViewer');
+  if (old) old.remove();
+  var scale = 1, x = 0, y = 0, dragging = false, sx = 0, sy = 0;
+  var wrap = document.createElement('div');
+  wrap.id = 'imageViewer';
+  wrap.className = 'image-viewer';
+  wrap.innerHTML =
+    '<div class="iv-bar">' +
+    '<button type="button" data-iv="out" aria-label="Zoom out">&minus;</button>' +
+    '<button type="button" data-iv="in" aria-label="Zoom in">+</button>' +
+    '<button type="button" data-iv="reset">Reset</button>' +
+    '<button type="button" data-iv="close" aria-label="Close">&times;</button>' +
+    '</div>' +
+    '<div class="iv-stage"><img alt="Payment receipt" draggable="false"></div>';
+  document.body.appendChild(wrap);
+  var img = wrap.querySelector('img');
+  var stage = wrap.querySelector('.iv-stage');
+  img.src = src;
+  function apply() { img.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + scale + ')'; }
+  function zoom(f) { scale = Math.min(8, Math.max(0.5, scale * f)); apply(); }
+  function close() { wrap.remove(); document.removeEventListener('keydown', onKey); }
+  function onKey(e) { if (e.key === 'Escape') close(); }
+  document.addEventListener('keydown', onKey);
+  wrap.querySelector('.iv-bar').addEventListener('click', function (e) {
+    var a = e.target.getAttribute('data-iv');
+    if (a === 'in') zoom(1.25);
+    else if (a === 'out') zoom(0.8);
+    else if (a === 'reset') { scale = 1; x = 0; y = 0; apply(); }
+    else if (a === 'close') close();
+  });
+  stage.addEventListener('wheel', function (e) { e.preventDefault(); zoom(e.deltaY < 0 ? 1.15 : 0.87); }, { passive: false });
+  stage.addEventListener('dblclick', function () { scale = scale > 1 ? 1 : 2.5; if (scale === 1) { x = 0; y = 0; } apply(); });
+  stage.addEventListener('pointerdown', function (e) { dragging = true; sx = e.clientX - x; sy = e.clientY - y; stage.setPointerCapture(e.pointerId); stage.classList.add('grabbing'); });
+  stage.addEventListener('pointermove', function (e) { if (!dragging) return; x = e.clientX - sx; y = e.clientY - sy; apply(); });
+  ['pointerup', 'pointercancel'].forEach(function (ev) {
+    stage.addEventListener(ev, function () { dragging = false; stage.classList.remove('grabbing'); });
+  });
 }
 
 function initReservationModal() {
