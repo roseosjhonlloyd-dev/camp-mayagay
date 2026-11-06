@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Guest Dashboard | Camp Mayagay</title>
 
-<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=28">
+<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=29">
 </head>
 <body>
 
@@ -175,20 +175,19 @@
         <span class="booked"><i></i>Booked</span>
       </div>
       <div class="date-picker">
-        <label>Enter date</label>
-        <div class="pill-input" id="monthPill"><span id="monthLabel">Month</span>
+        <label for="typedDate">Enter date</label>
+        <div class="pill-input" id="monthPill" style="display:none;"><span id="monthLabel">Month</span>
           <input type="month" id="monthInput">
         </div>
-        <div class="pill-input" id="dayPill"><span id="dayLabel">Day</span>
-          <input type="date" id="dayInput">
+        <div class="pill-input" id="dayPill" style="display:none;"><span id="dayLabel">Day</span></div>
+        <div class="date-type-row">
+          <input type="text" id="typedDate" inputmode="numeric" placeholder="YYYY-MM-DD" maxlength="10" autocomplete="off">
+          <span class="cal-open-btn" title="Open calendar">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>
+            <input type="date" id="dayInput" aria-label="Open calendar">
+          </span>
+          <button class="pill-clear" id="clearDateBtn" type="button">Clear</button>
         </div>
-        <button class="pill-clear" id="clearDateBtn" type="button">Clear</button>
-      </div>
-      <div class="quick-dates" aria-label="Quick date choices">
-        <span>Quick pick:</span>
-        <button type="button" data-quick="today">Today</button>
-        <button type="button" data-quick="tomorrow">Tomorrow</button>
-        <button type="button" data-quick="weekend">This weekend</button>
       </div>
     </div>
     <p class="filter-note" id="filterNote">Showing this week's availability. Pick a month and day to preview that week instead.</p>
@@ -514,6 +513,13 @@
       </div>
       <div class="cal-dow"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
       <div class="cal-grid" id="calGrid"></div>
+      <div class="type-date-row">
+        <label for="typedBookDate">Or type a date <small>(optional)</small></label>
+        <div class="type-date-inner">
+          <input type="text" id="typedBookDate" inputmode="numeric" placeholder="YYYY-MM-DD" maxlength="10" autocomplete="off">
+          <button type="button" id="typedBookAdd">Add date</button>
+        </div>
+      </div>
       <div class="cal-legend"><span><i class="lg ok"></i>Available</span><span><i class="lg sel"></i>Selected</span><span><i class="lg no"></i>Booked</span></div>
       <div class="weekday-quick"><span>Every:</span>
         <button type="button" data-wd="1">Mon</button><button type="button" data-wd="2">Tue</button><button type="button" data-wd="3">Wed</button><button type="button" data-wd="4">Thu</button><button type="button" data-wd="5">Fri</button><button type="button" data-wd="6">Sat</button><button type="button" data-wd="0">Sun</button>
@@ -770,7 +776,7 @@
   <a class="auth-switch" href="php/logout.php">Log out</a>
 </div>
 
-<script src="assets/js/dashboard-guest.js?v=32"></script>
+<script src="assets/js/dashboard-guest.js?v=33"></script>
 <script>
   (function () {
     var okBtn = document.getElementById('passwordOkBtn');

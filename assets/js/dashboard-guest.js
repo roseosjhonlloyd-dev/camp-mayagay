@@ -151,7 +151,9 @@
           paymentMethod: saved.paymentMethod || row.payment_method || '',
           checkInLabel: saved.checkInLabel || row.check_in,
           checkOutLabel: saved.checkOutLabel || row.check_out,
-          lineItems: saved.lineItems || [{ label: row.cabin_name, price: Number(row.total_amount) }]
+          lineItems: saved.lineItems || [{ label: row.cabin_name, price: Number(row.total_amount) }],
+          amountPaid: Number(row.amount_paid) || 0,
+          payStatus: row.payment_status || 'unpaid'
         });
       });
       renderHistory();
@@ -944,6 +946,21 @@
       if (note) note.textContent = left <= 0 ? 'out of stock' : (left < STEP_LIMIT ? 'only ' + left + ' left' : 'max ' + STEP_LIMIT);
     });
   }
+  const typedBookDate = document.getElementById('typedBookDate');
+  typedBookDate.addEventListener('input', () => autoFormatDate(typedBookDate));
+  function addTypedBookDate(){
+    const v = typedBookDate.value.trim();
+    if (!validDateKey(v)){ showToast('Please enter a valid date (YYYY-MM-DD)'); return; }
+    const st = dayChoiceState(v);
+    if (st === 'past'){ showToast('That date has already passed'); return; }
+    if (st === 'booked'){ showToast('That date is already booked'); return; }
+    bk.dates.add(v);
+    const d = keyToDate(v); bk.y = d.getFullYear(); bk.m = d.getMonth();
+    typedBookDate.value = '';
+    afterDaysChanged();
+  }
+  document.getElementById('typedBookAdd').addEventListener('click', addTypedBookDate);
+  typedBookDate.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ e.preventDefault(); addTypedBookDate(); } });
   document.getElementById('calPrev').addEventListener('click', () => { bk.m--; if (bk.m < 0){ bk.m = 11; bk.y--; } renderCalendar(); });
   document.getElementById('calNext').addEventListener('click', () => { bk.m++; if (bk.m > 11){ bk.m = 0; bk.y++; } renderCalendar(); });
   document.querySelectorAll('[data-wd]').forEach(btn => {
@@ -1286,6 +1303,15 @@
     goToView('history');
   });
 
+  /* "Fully paid" when settled, otherwise the remaining balance. */
+  function paymentBalanceHtml(r){
+    const total = Number(r.total) || 0;
+    const paid = Number(r.amountPaid) || 0;
+    if (r.payStatus === 'refunded') return '<span class="resv-balance refunded">Refunded</span>';
+    if (r.payStatus === 'paid' || (total > 0 && paid >= total)) return '<span class="resv-balance paid">Fully paid</span>';
+    return '<span class="resv-balance due">Remaining balance: ' + peso(Math.max(0, total - paid)) + '</span>';
+  }
+
   function renderHistory(){
     const el = document.getElementById('historyList');
     if (state.reservations.length === 0){
@@ -1301,6 +1327,7 @@
         <div class="resv-top">
           <span class="resv-dates" title="Check-in: ${r.checkInLabel}  |  Check-out: ${r.checkOutLabel}">${r.checkInLabel} - ${r.checkOutLabel}</span>
           <span class="resv-pay">PAYMENT METHOD: ${r.paymentMethod.toUpperCase()}</span>
+          ${paymentBalanceHtml(r)}
         </div>
         <div class="resv-body">
           <div class="resv-panel">
@@ -2004,6 +2031,7 @@ dayPill.addEventListener('click', () => openNativePicker(dayInput));
     state.availability = buildAvailability();
     renderAccomGrid();
 
+    if (typedDate) typedDate.value = dayInput.value;
     monthLabel.textContent = monthInput.value
       ? new Date(monthInput.value + '-01').toLocaleDateString(undefined,{month:'short', year:'numeric'})
       : 'Month';
@@ -2021,14 +2049,26 @@ dayPill.addEventListener('click', () => openNativePicker(dayInput));
   }
   monthInput.addEventListener('change', applyDateFilter);
   dayInput.addEventListener('change', applyDateFilter);
-  document.querySelectorAll('[data-quick]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const d = new Date();
-      if (btn.dataset.quick === 'tomorrow') d.setDate(d.getDate() + 1);
-      if (btn.dataset.quick === 'weekend') d.setDate(d.getDate() + ((6 - d.getDay() + 7) % 7));
-      dayInput.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-      applyDateFilter();
-    });
+  /* Typed date for the availability filter (YYYY-MM-DD, auto-formatted). */
+  function autoFormatDate(el){
+    const d = el.value.replace(/\D/g, '').slice(0, 8);
+    let out = d.slice(0, 4);
+    if (d.length > 4) out += '-' + d.slice(4, 6);
+    if (d.length > 6) out += '-' + d.slice(6, 8);
+    el.value = out;
+  }
+  function validDateKey(v){
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+    const d = new Date(v + 'T00:00');
+    return !isNaN(d.getTime()) && keyOf(d.getFullYear(), d.getMonth(), d.getDate()) === v;
+  }
+  const typedDate = document.getElementById('typedDate');
+  typedDate.addEventListener('input', () => {
+    autoFormatDate(typedDate);
+    if (typedDate.value.length === 10){
+      if (validDateKey(typedDate.value)){ dayInput.value = typedDate.value; applyDateFilter(); }
+      else showToast('Please enter a valid date (YYYY-MM-DD)');
+    }
   });
   document.getElementById('clearDateBtn').addEventListener('click', () => {
     monthInput.value = '';
