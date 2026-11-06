@@ -588,9 +588,9 @@
         <p class="acc-details-price">${peso(c.price)}/ ${c.unit}</p>
         <p class="ro-label" style="margin:12px 0 6px;">Amenities</p>
         <div class="amenity-list">${(c.amenities || []).map(a => `<span class="amenity-chip">${a}</span>`).join('')}</div>
-        ${simple ? '' : `<p class="ro-label" style="margin:14px 0 6px;">Check-in and check-out</p>
+        <p class="ro-label" style="margin:14px 0 6px;">Check-in and check-out</p>
         <div class="amenity-list"><span class="amenity-chip">Check-in: 2:00 PM</span><span class="amenity-chip">Check-out: 12:00 NN</span></div>
-        <p class="ro-label" style="margin:14px 0 6px;">This week</p>
+        ${simple ? '' : `<p class="ro-label" style="margin:14px 0 6px;">This week</p>
         <div class="day-row">${days}</div>
         <button class="btn-primary acc-details-book" type="button" data-booknow="${c.id}">Book now</button>`}
       </div>`;
@@ -2098,7 +2098,7 @@ dayPill.addEventListener('click', () => openNativePicker(dayInput));
     const guide = document.getElementById('guideModal');
     function openGuide(){ guide.classList.add('open'); }
     function closeGuide(){ guide.classList.remove('open'); }
-    ['helpGuideBtn', 'heroGuideBtn'].forEach(id => {
+    ['helpGuideBtn'].forEach(id => {
       const b = document.getElementById(id);
       if (b) b.addEventListener('click', openGuide);
     });
