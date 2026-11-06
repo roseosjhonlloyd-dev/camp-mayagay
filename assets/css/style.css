@@ -505,19 +505,28 @@ body.modal-open { overflow: hidden; }
 }
 .verify-modal-text strong { color: var(--color-white); font-weight: 600; }
 
-.otp-row { display: flex; justify-content: center; gap: 8px; }
+.verify-modal-error { text-align: center; margin: 10px 0 0; }
 
-/* higher specificity so the mobile input padding rule below can't override it */
-.otp-row input.otp-box {
-  width: 46px;
-  padding: 12px 0;
-  text-align: center;
-  font-size: 1.35rem;
-  font-weight: 600;
+.verify-waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.10);
+  color: var(--color-white);
+  font-size: 0.9rem;
+  font-weight: 500;
 }
-
-.verify-modal-error { text-align: center; margin: 10px 0 4px; }
-.verify-modal-confirm { margin-top: 10px; padding: 13px; font-size: 1.05rem; }
+.verify-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--color-white);
+  border-radius: 50%;
+  animation: verifySpin 0.8s linear infinite;
+}
+@keyframes verifySpin { to { transform: rotate(360deg); } }
 
 .verify-modal-resend { margin-top: 16px; font-size: 0.85rem; color: var(--text-muted); }
 .verify-modal-resend .resend-code-btn { font-size: 0.85rem; }
@@ -527,8 +536,6 @@ body.modal-open { overflow: hidden; }
 
 @media (max-width: 380px) {
   .verify-modal-card { padding: 30px 18px 22px; }
-  .otp-row { gap: 6px; }
-  .otp-row input.otp-box { width: 40px; }
 }
 
 .verify-hint { text-align: center; margin-top: 10px; font-size: 0.8rem; color: var(--text-muted); }

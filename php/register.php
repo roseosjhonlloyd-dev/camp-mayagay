@@ -71,7 +71,7 @@ if (!empty($errors)) {
     exit;
 }
 
-// The email must have been confirmed with the code sent by signup_email.php.
+// The email must have been confirmed with the link sent by signup_email.php.
 // Checked here on the server too, so it can't be skipped by editing the page.
 if (strtolower($email) !== (string)($_SESSION['signup_verified_email'] ?? '')) {
     http_response_code(403);
@@ -116,13 +116,19 @@ try {
 
     $newUserId = (int)$pdo->lastInsertId();
 
-    // The email was already confirmed with a code before this point, so the
-    // account is created as verified. Clear the flag so it can't be reused.
+    // The email was already confirmed with the emailed link before this point,
+    // so the account is created as verified. Clear the flags so they can't be reused.
+    try {
+        if (!empty($_SESSION['signup_pending_id'])) {
+            $pdo->prepare('DELETE FROM signup_email_verifications WHERE pending_id = :p')
+                ->execute(['p' => (string)$_SESSION['signup_pending_id']]);
+        }
+    } catch (PDOException $e) {
+        // not critical - expired rows are cleaned up on the next request
+    }
     unset(
         $_SESSION['signup_email'],
-        $_SESSION['signup_code_hash'],
-        $_SESSION['signup_expires'],
-        $_SESSION['signup_attempts'],
+        $_SESSION['signup_pending_id'],
         $_SESSION['signup_sent_at'],
         $_SESSION['signup_verified_email']
     );

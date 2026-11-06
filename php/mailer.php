@@ -206,19 +206,20 @@ function sendLoginCodeEmail(string $toEmail, string $code, ?string &$errorOut = 
 }
 
 /**
- * Code emailed while the guest is filling in the Sign Up form, so the email
- * is confirmed before the account is created.
+ * Email with a "Verify my email" button, sent while the guest is filling in
+ * the Sign Up form so the email is confirmed before the account is created.
  */
-function sendSignupCodeEmail(string $toEmail, string $code, ?string &$errorOut = null): bool
+function sendSignupLinkEmail(string $toEmail, string $link, ?string &$errorOut = null): bool
 {
     $html =
         '<p>Welcome to Camp Mayagay!</p>' .
-        '<p>Use this code to verify your email address on the Sign Up page:</p>' .
-        '<h2 style="letter-spacing:6px;">' . htmlspecialchars($code) . '</h2>' .
-        '<p>This code expires in 10 minutes. If you did not try to sign up, you can ignore this email.</p>';
-    $text = "Your Camp Mayagay sign-up verification code is: {$code}\nThis code expires in 10 minutes. If you did not try to sign up, ignore this email.";
+        '<p>Please confirm that this is your email address to continue creating your account.</p>' .
+        '<p style="margin:24px 0;"><a href="' . htmlspecialchars($link) . '" style="background:#2f5d3a;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold;">Verify my email</a></p>' .
+        '<p>Or copy this link into your browser:<br>' . htmlspecialchars($link) . '</p>' .
+        '<p>This link expires in 30 minutes. If you did not try to sign up, you can ignore this email.</p>';
+    $text = "Welcome to Camp Mayagay!\n\nVerify your email by opening this link:\n{$link}\n\nThis link expires in 30 minutes. If you did not try to sign up, ignore this email.";
 
-    return sendMailMessage($toEmail, 'Camp Mayagay - Verify your email', $html, $text, $errorOut);
+    return sendMailMessage($toEmail, 'Camp Mayagay - Verify my email', $html, $text, $errorOut);
 }
 
 /**
