@@ -1232,3 +1232,6 @@ body{
 .iv-stage{flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;}
 .iv-stage.grabbing{cursor:grabbing;}
 .iv-stage img{max-width:92vw;max-height:80vh;user-select:none;-webkit-user-drag:none;transform-origin:center center;}
+
+.modal-info-row.ref-highlight{background:rgba(255,213,0,.16);border-radius:6px;padding-left:6px;padding-right:6px;font-size:14px;}
+.modal-info-row.ref-highlight strong{font-size:15px;letter-spacing:.3px;}

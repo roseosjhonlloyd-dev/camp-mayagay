@@ -492,7 +492,7 @@ function openReservationModal(id) {
   var statusLabel = r.cancel_requested ? 'Cancel requested' : (r.status.charAt(0).toUpperCase() + r.status.slice(1));
   var pillClass = r.cancel_requested ? 'pending' : r.status;
   info.innerHTML =
-    '<div class="modal-info-row"><span>Reference No.</span><span>' + r.code + '</span></div>' +
+    '<div class="modal-info-row"><span>Booking Code</span><span>' + r.code + '</span></div>' +
     '<div class="modal-info-row"><span>Guest Name</span><span>' + r.guest_name + '</span></div>' +
     '<div class="modal-info-row"><span>Contact Number</span><span>' + (r.guest_phone || '-') + '</span></div>' +
     '<div class="modal-info-row"><span>Email Address</span><span>' + (r.guest_email || '-') + '</span></div>' +
@@ -505,7 +505,9 @@ function openReservationModal(id) {
     (r.cancel_requested ? '<div class="modal-info-row"><span>Cancellation Reason</span><span>' + (r.cancel_reason || '-') + '</span></div>' : '') +
     '<div class="modal-info-row"><span>Payment Method</span><span>' + (r.payment_method || '-') + '</span></div>' +
     '<div class="modal-info-row"><span>Payment Status</span><span>' + (r.payment_status ? r.payment_status.charAt(0).toUpperCase() + r.payment_status.slice(1) : '-') + '</span></div>' +
-    '<div class="modal-info-row"><span>Date Created</span><span>' + formatDateTime(r.created_at) + '</span></div>';
+    '<div class="modal-info-row"><span>Date Created</span><span>' + formatDateTime(r.created_at) + '</span></div>' +
+    '<div class="modal-info-row ref-highlight"><span>' + (r.payment_method === 'GCash' ? 'GCash Reference No.' : 'Payment Reference No.') + '</span><span><strong>' +
+      ((r.data && r.data.gcashRef) ? r.data.gcashRef : 'Not provided') + '</strong></span></div>';
 
   var receiptImage = (r.data && r.data.receiptImage) ? r.data.receiptImage : null;
   var gcashRef = (r.data && r.data.gcashRef) ? r.data.gcashRef : null;
@@ -516,7 +518,6 @@ function openReservationModal(id) {
       '<p class="proof-hint">Click the receipt to zoom and drag it.</p>' +
       '<p class="proof-amount">' + peso2(r.total_amount) + '</p>' +
       '<p><strong>' + (r.payment_method || 'No payment method on file') + '</strong></p>' +
-      '<p class="proof-refno">' + (r.payment_method === 'GCash' ? 'GCash Reference No.: ' : 'Payment Reference No.: ') + '<strong>' + (gcashRef || 'Not provided') + '</strong></p>' +
       '<p>Guest: ' + r.guest_name + '</p>' +
       '<p>Booking Code: ' + r.code + '</p>' +
       '<p>Status: ' + (r.payment_status || 'unpaid') + '</p>';
@@ -526,7 +527,6 @@ function openReservationModal(id) {
     proof.innerHTML =
       '<p class="proof-amount">' + peso2(r.total_amount) + '</p>' +
       '<p><strong>' + (r.payment_method || 'No payment method on file') + '</strong></p>' +
-      '<p class="proof-refno">' + (r.payment_method === 'GCash' ? 'GCash Reference No.: ' : 'Payment Reference No.: ') + '<strong>' + (gcashRef || 'Not provided') + '</strong></p>' +
       '<p>Guest: ' + r.guest_name + '</p>' +
       '<p>Booking Code: ' + r.code + '</p>' +
       '<p>Status: ' + (r.payment_status || 'unpaid') + '</p>' +
