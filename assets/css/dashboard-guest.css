@@ -1531,3 +1531,6 @@ body.dark-mode .cal-day.sel{background:#3d7a3a;}
 .amenity-list{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
 .amenity-list .amenity-chip{display:inline-block;white-space:nowrap;margin:0;}
 .cancel-closed{display:block;font-size:12px;opacity:.75;margin-top:8px;}
+
+.day-pill.past{background:#9aa39a;opacity:.55;cursor:not-allowed;}
+.day-pill.past:hover{transform:none;filter:none;}
