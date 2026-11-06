@@ -427,6 +427,49 @@ function reservationRow(array $r): array
     ];
 }
 
+/** Daily stock of the borrowable add-ons. Defaults can be overridden with
+ *  system_settings keys stock_blankets / stock_pillows (no schema change). */
+function addonStockLimits(PDO $pdo): array
+{
+    $limits = ['blankets' => 30, 'pillows' => 30];
+    try {
+        $st = $pdo->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('stock_blankets','stock_pillows')");
+        $st->execute();
+        foreach ($st->fetchAll() as $row) {
+            $k = substr((string)$row['setting_key'], 6);
+            if (isset($limits[$k]) && is_numeric($row['setting_value'])) { $limits[$k] = max(0, (int)$row['setting_value']); }
+        }
+    } catch (PDOException $e) { /* keep defaults */ }
+    return $limits;
+}
+
+/** Add-on units already reserved per night: ['YYYY-MM-DD' => ['blankets'=>n,'pillows'=>n]]. */
+function addonUsedByNight(PDO $pdo, string $from, string $to): array
+{
+    $used = [];
+    $st = $pdo->prepare(
+        "SELECT check_in_date, check_out_date, data FROM reservations
+         WHERE reservation_status IN ('pending','confirmed','completed')
+           AND check_out_date > :from AND check_in_date < :to"
+    );
+    $st->execute(['from' => $from . ' 00:00:00', 'to' => $to . ' 23:59:59']);
+    foreach ($st->fetchAll() as $r) {
+        $d = $r['data'] ? json_decode((string)$r['data'], true) : null;
+        $b = is_array($d) ? max(0, (int)($d['blankets'] ?? 0)) : 0;
+        $p = is_array($d) ? max(0, (int)($d['pillows'] ?? 0)) : 0;
+        if ($b === 0 && $p === 0) { continue; }
+        $day = new DateTime(substr((string)$r['check_in_date'], 0, 10));
+        $end = new DateTime(substr((string)$r['check_out_date'], 0, 10));
+        for ($i = 0; $day < $end && $i < 120; $i++, $day->modify('+1 day')) {
+            $k = $day->format('Y-m-d');
+            if (!isset($used[$k])) { $used[$k] = ['blankets' => 0, 'pillows' => 0]; }
+            $used[$k]['blankets'] += $b;
+            $used[$k]['pillows']  += $p;
+        }
+    }
+    return $used;
+}
+
 /** True when another active reservation (pending/confirmed/completed) already
  *  occupies this accommodation during [$checkIn, $checkOut). $excludeId skips
  *  the reservation being edited. */
@@ -1241,6 +1284,23 @@ try {
             echo json_encode(['success' => true, 'bookings' => $bookings]);
             break;
 
+        case 'inventory_list':
+            requireLogin($user);
+            requireModuleAccess($pdo, $user, 'reservation');
+            $from = date('Y-m-d');
+            $to   = date('Y-m-d', strtotime('+400 days'));
+            $limits = addonStockLimits($pdo);
+            $used = addonUsedByNight($pdo, $from, $to);
+            $remaining = [];
+            foreach ($used as $day => $u) {
+                $remaining[$day] = [
+                    'blankets' => max(0, $limits['blankets'] - $u['blankets']),
+                    'pillows'  => max(0, $limits['pillows'] - $u['pillows']),
+                ];
+            }
+            echo json_encode(['success' => true, 'limits' => $limits, 'remaining' => $remaining]);
+            break;
+
         case 'reservations_create':
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'reservation');
@@ -1325,6 +1385,27 @@ try {
                 if (is_array($data)) { $data['code'] = $code; }
                 $lockStmt = $pdo->prepare('SELECT accommodation_id FROM accommodations WHERE accommodation_id = :id FOR UPDATE');
                 $lockStmt->execute(['id' => $accommodationId]);
+
+                // ---- Add-on stock (blankets / pillows) per night ----------
+                $wantB = is_array($data) ? max(0, (int)($data['blankets'] ?? 0)) : 0;
+                $wantP = is_array($data) ? max(0, (int)($data['pillows'] ?? 0)) : 0;
+                if ($wantB > 0 || $wantP > 0) {
+                    $limits = addonStockLimits($pdo);
+                    $dFrom = substr($checkIn, 0, 10);
+                    $dTo   = substr($checkOut, 0, 10);
+                    $usedMap = addonUsedByNight($pdo, $dFrom, $dTo);
+                    $day = new DateTime($dFrom);
+                    $endDay = new DateTime($dTo);
+                    for ($i = 0; $day < $endDay && $i < 120; $i++, $day->modify('+1 day')) {
+                        $u = $usedMap[$day->format('Y-m-d')] ?? ['blankets' => 0, 'pillows' => 0];
+                        if ($u['blankets'] + $wantB > $limits['blankets'] || $u['pillows'] + $wantP > $limits['pillows']) {
+                            $pdo->rollBack();
+                            http_response_code(409);
+                            echo json_encode(['success' => false, 'message' => 'Not enough blankets/pillows left on ' . $day->format('M j, Y') . '. Please lower the quantity.']);
+                            break 2;
+                        }
+                    }
+                }
 
                 $overlapStmt = $pdo->prepare(
                     "SELECT reservation_id FROM reservations

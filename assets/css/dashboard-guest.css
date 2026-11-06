@@ -1483,3 +1483,33 @@ body.dark-mode .gm-icon-btn:hover{background:rgba(255,255,255,0.12);}
 .guide-steps li{margin-bottom:10px;}
 .guide-tip{font-size:15px;opacity:.85;}
 body.large-text{zoom:1.15;}
+
+/* Day picker calendar, stock notes, payment option cards */
+.day-picker{margin-top:14px;padding:12px;border:1px solid rgba(0,0,0,.12);border-radius:12px;}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin:6px 0;}
+.cal-nav{width:40px;height:40px;border-radius:50%;border:1.5px solid #2f5d3a;background:transparent;color:inherit;font-size:22px;cursor:pointer;line-height:1;}
+.cal-nav:disabled{opacity:.35;cursor:not-allowed;}
+.cal-dow,.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;}
+.cal-dow span{font-size:12px;font-weight:700;opacity:.7;padding:4px 0;}
+.cal-day{height:42px;border-radius:10px;border:1.5px solid transparent;font-size:15px;font-weight:600;cursor:pointer;background:rgba(61,122,58,.12);color:inherit;}
+.cal-day.sel{background:#2f5d3a;color:#fff;border-color:#2f5d3a;}
+.cal-day.booked{background:rgba(192,57,43,.18);color:#c0392b;text-decoration:line-through;cursor:not-allowed;}
+.cal-day.past{background:transparent;opacity:.3;cursor:not-allowed;}
+.cal-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;margin-top:8px;}
+.cal-legend .lg{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px;}
+.lg.ok{background:rgba(61,122,58,.35);} .lg.sel{background:#2f5d3a;} .lg.no{background:rgba(192,57,43,.55);}
+.weekday-quick{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;font-size:13px;}
+.weekday-quick button{padding:7px 12px;border-radius:999px;border:1.5px solid #2f5d3a;background:transparent;color:inherit;font-weight:600;cursor:pointer;}
+.weekday-quick button:hover{background:#2f5d3a;color:#fff;}
+.selected-days{font-size:13px;font-weight:600;margin:10px 0 0;}
+.stock-note{font-size:11px;font-weight:600;opacity:.7;margin-left:6px;}
+.pay-options{display:grid;gap:10px;margin-top:8px;}
+.pay-option{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px;border:2px solid rgba(0,0,0,.15);border-radius:12px;background:transparent;color:inherit;cursor:pointer;}
+.pay-option.active{border-color:#2f5d3a;background:rgba(61,122,58,.1);}
+.pay-option .po-text{flex:1;display:flex;flex-direction:column;} .pay-option small{opacity:.7;}
+.pay-option .po-dot{width:20px;height:20px;border-radius:50%;border:2px solid #2f5d3a;}
+.pay-option.active .po-dot{background:radial-gradient(#2f5d3a 55%,transparent 60%);}
+.pay-logo.bank{background:#c8102e;color:#fff;}
+.pay-panel{margin-top:12px;}
+body.dark-mode .cal-day{background:rgba(255,255,255,.08);}
+body.dark-mode .cal-day.sel{background:#3d7a3a;}

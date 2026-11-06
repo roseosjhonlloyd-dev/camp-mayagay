@@ -435,6 +435,22 @@
     }).catch(() => {});
   }
 
+  /* Blanket / pillow stock per night (server keeps the daily limits). */
+  let inventory = { limits: { blankets: 30, pillows: 30 }, remaining: {} };
+  function loadInventory(){
+    return apiCall('inventory_list', {}).then(res => {
+      if (res && res.success) inventory = { limits: res.limits || inventory.limits, remaining: res.remaining || {} };
+    }).catch(() => {});
+  }
+  function stockLeft(dateKey, item){
+    const r = inventory.remaining[dateKey];
+    return r && typeof r[item] === 'number' ? r[item] : inventory.limits[item];
+  }
+  function isBookedOn(cabinId, dayKey){
+    return realBookings.some(b => b.slug === cabinId &&
+      String(b.check_in).slice(0, 10) <= dayKey && dayKey < String(b.check_out).slice(0, 10));
+  }
+
   function isAvailable(cabinId, dayIndex){
     const dayKey = toLocalDateKey(getDateForDay(dayIndex));
     return !realBookings.some(b => {
@@ -534,6 +550,8 @@
   /* First open day in the current availability view, or -1 if none. */
   function firstAvailableDay(cabinId){
     for (let i = 0; i < DAYS.length; i++){
+      const dt = getDateForDay(i);
+      if (keyOf(dt.getFullYear(), dt.getMonth(), dt.getDate()) < todayKey()) continue;
       if (state.availability[availKey(cabinId, i)]) return i;
     }
     return -1;
@@ -815,6 +833,7 @@
   let pendingBooking = null;
   const extraQty = { person:0, blanket:0, pillow:0, nights:1, tents:1, heads:1 };
   const STEP_MAX = { person:5, blanket:5, pillow:5, tents:5, heads:20 };
+  const STEP_LIMIT = 5; // most blankets / pillows / extra persons per booking day
   const STEP_MIN = { nights:1, tents:1, heads:1 };
   // Tent Area pricing (per the camp owner): own tent 250/tent, rented tent 500/tent,
   // plus 150 entrance per head.
@@ -830,7 +849,6 @@
     document.getElementById('qtyPerson').textContent = 0;
     document.getElementById('qtyBlanket').textContent = 0;
     document.getElementById('qtyPillow').textContent = 0;
-    document.getElementById('qtyNights').textContent = 1;
     document.getElementById('chkPerson').checked = false;
     document.getElementById('chkBlanket').checked = false;
     document.getElementById('chkPillow').checked = false;
@@ -843,7 +861,7 @@
         const min = STEP_MIN[key] || 0;
         const next = extraQty[key] + delta;
         const max = STEP_MAX[key];
-        if (max !== undefined && next > max){ showToast('Maximum of ' + max + ' only'); return; }
+        if (max !== undefined && next > max){ showToast(max === 0 ? 'Out of stock for your selected day(s)' : 'Maximum of ' + max + ' only'); return; }
         extraQty[key] = Math.max(min, next);
         const cap = key.charAt(0).toUpperCase() + key.slice(1);
         document.getElementById('qty' + cap).textContent = extraQty[key];
@@ -862,6 +880,88 @@
     });
   });
 
+  /* ---------- Day picker (calendar, multi-select) ---------- */
+  const bk = { dates: new Set(), y: 0, m: 0 };
+  function pad2(n){ return String(n).padStart(2, '0'); }
+  function keyOf(y, m, d){ return y + '-' + pad2(m + 1) + '-' + pad2(d); }
+  function keyToDate(k){ return new Date(k + 'T00:00'); }
+  function todayKey(){ const t = new Date(); return keyOf(t.getFullYear(), t.getMonth(), t.getDate()); }
+  function dayChoiceState(key){
+    if (key < todayKey()) return 'past';
+    if (pendingBooking && isBookedOn(pendingBooking.cabinId, key)) return 'booked';
+    return 'ok';
+  }
+  function renderCalendar(){
+    const grid = document.getElementById('calGrid');
+    document.getElementById('calTitle').textContent =
+      new Date(bk.y, bk.m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const lead = (new Date(bk.y, bk.m, 1).getDay() + 6) % 7;
+    const dim = new Date(bk.y, bk.m + 1, 0).getDate();
+    let html = '';
+    for (let i = 0; i < lead; i++) html += '<span class="cal-blank"></span>';
+    for (let d = 1; d <= dim; d++){
+      const key = keyOf(bk.y, bk.m, d);
+      const st = dayChoiceState(key);
+      const sel = bk.dates.has(key);
+      const cls = 'cal-day ' + (sel ? 'sel' : st);
+      html += '<button type="button" class="' + cls + '" data-day="' + key + '"' + (st !== 'ok' ? ' disabled' : '') +
+        ' aria-pressed="' + sel + '">' + d + '</button>';
+    }
+    grid.innerHTML = html;
+    grid.querySelectorAll('[data-day]').forEach(b => b.addEventListener('click', () => toggleDay(b.dataset.day)));
+    const prevBtn = document.getElementById('calPrev');
+    const now = new Date();
+    prevBtn.disabled = (bk.y === now.getFullYear() && bk.m <= now.getMonth()) || bk.y < now.getFullYear();
+  }
+  function toggleDay(key){
+    if (bk.dates.has(key)) bk.dates.delete(key); else bk.dates.add(key);
+    afterDaysChanged();
+  }
+  function afterDaysChanged(){
+    renderCalendar();
+    const list = Array.from(bk.dates).sort();
+    document.getElementById('selectedDays').textContent = list.length
+      ? list.length + ' day' + (list.length > 1 ? 's' : '') + ' selected: ' +
+        list.map(k => keyToDate(k).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })).join(', ')
+      : 'No day selected yet.';
+    updateStockLimits();
+  }
+  /* Blankets / pillows: max = smaller of 5 and what is left on every chosen night. */
+  function updateStockLimits(){
+    const list = Array.from(bk.dates);
+    [['blanket', 'blankets'], ['pillow', 'pillows']].forEach(pair => {
+      const key = pair[0], item = pair[1], cap = key.charAt(0).toUpperCase() + key.slice(1);
+      let left = inventory.limits[item];
+      list.forEach(k => { left = Math.min(left, stockLeft(k, item)); });
+      STEP_MAX[key] = Math.min(STEP_LIMIT, left);
+      if (extraQty[key] > STEP_MAX[key]){
+        extraQty[key] = STEP_MAX[key];
+        document.getElementById('qty' + cap).textContent = extraQty[key];
+        const chk = document.getElementById('chk' + cap);
+        if (chk) chk.checked = extraQty[key] > 0;
+      }
+      const note = document.getElementById('note' + key);
+      if (note) note.textContent = left <= 0 ? 'out of stock' : (left < STEP_LIMIT ? 'only ' + left + ' left' : 'max ' + STEP_LIMIT);
+    });
+  }
+  document.getElementById('calPrev').addEventListener('click', () => { bk.m--; if (bk.m < 0){ bk.m = 11; bk.y--; } renderCalendar(); });
+  document.getElementById('calNext').addEventListener('click', () => { bk.m++; if (bk.m > 11){ bk.m = 0; bk.y++; } renderCalendar(); });
+  document.querySelectorAll('[data-wd]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const wd = Number(btn.dataset.wd);
+      const dim = new Date(bk.y, bk.m + 1, 0).getDate();
+      const keys = [];
+      for (let d = 1; d <= dim; d++){
+        const k = keyOf(bk.y, bk.m, d);
+        if (keyToDate(k).getDay() === wd && dayChoiceState(k) === 'ok') keys.push(k);
+      }
+      if (!keys.length){ showToast('No open day for that weekday this month'); return; }
+      const allOn = keys.every(k => bk.dates.has(k));
+      keys.forEach(k => { if (allOn) bk.dates.delete(k); else bk.dates.add(k); });
+      afterDaysChanged();
+    });
+  });
+
   function openBookingModal(cabinId, dayIndex){
     const cabin = CABINS.find(c => c.id === cabinId);
     pendingBooking = { cabinId, dayIndex, cabin };
@@ -873,6 +973,14 @@
     document.getElementById('guestPhone').value = sessionUser ? (sessionUser.contact_number || '') : '';
     document.getElementById('guestEmail').value = sessionUser ? (sessionUser.email || '') : '';
     resetSteppers();
+    // Calendar: start on the day the guest clicked (if still open).
+    bk.dates = new Set();
+    const startDate = getDateForDay(dayIndex);
+    bk.y = startDate.getFullYear(); bk.m = startDate.getMonth();
+    const startKey = keyOf(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    if (dayChoiceState(startKey) === 'ok') bk.dates.add(startKey);
+    else { const n = new Date(); bk.y = n.getFullYear(); bk.m = n.getMonth(); }
+    afterDaysChanged();
     const tentMode = isTentArea(cabin);
     document.getElementById('tentBox').style.display = tentMode ? '' : 'none';
     document.getElementById('personRow').style.display = tentMode ? 'none' : '';
@@ -903,10 +1011,12 @@
     const phone = document.getElementById('guestPhone').value.trim();
     const email = document.getElementById('guestEmail').value.trim();
     if (!name || !phone || !email){ showToast('Please fill in guest name, contact number and email'); return; }
+    if (!bk.dates.size){ showToast('Please pick at least one day on the calendar'); return; }
     pendingBooking.guest = { name, phone, email };
     pendingBooking.checkIn = '14:00';
     pendingBooking.checkOut = '12:00';
-    pendingBooking.nights = document.getElementById('qtyNights') ? extraQty.nights : 1;
+    pendingBooking.nights = 1; // each picked day is its own 1-night reservation
+    pendingBooking.dates = Array.from(bk.dates).sort();
     pendingBooking.tent = isTentArea(pendingBooking.cabin) ? { rent: document.getElementById('tentRent').checked, tents: extraQty.tents, heads: extraQty.heads } : null;
     pendingBooking.persons = document.getElementById('chkPerson').checked ? extraQty.person : 0;
     pendingBooking.blankets = document.getElementById('chkBlanket').checked ? extraQty.blanket : 0;
@@ -931,9 +1041,12 @@
     document.getElementById('tncCheck').checked = false;
     updateBankDisplay();
     const { total } = computeCharges(pendingBooking.cabin, pendingBooking.persons, pendingBooking.blankets, pendingBooking.pillows, pendingBooking.nights, pendingBooking.tent);
-    document.getElementById('paymentTotalAmount').textContent = peso(total);
+    const days = (pendingBooking.dates || []).length || 1;
+    const grand = total * days;
+    document.getElementById('paymentTotalAmount').textContent = peso(grand) + (days > 1 ? ' (' + days + ' days x ' + peso(total) + ')' : '');
     const downEl = document.getElementById('paymentDownAmount');
-    if (downEl) downEl.textContent = peso(Math.ceil(total / 2));
+    if (downEl) downEl.textContent = peso(Math.ceil(grand / 2));
+    setPayChoice(null);
     pendingBooking.paymentMethod = null;
     pendingBooking.gcashRef = '';
     updatePaymentConfirmState();
@@ -954,12 +1067,33 @@
     if (pendingBooking) pendingBooking.bank = document.getElementById('bankSelect').value;
   }
   document.getElementById('bankSelect').addEventListener('change', updateBankDisplay);
+  /* Shopee-style: tap an option, then only that option's fields appear. */
+  let payChoice = null;
+  function setPayChoice(choice){
+    payChoice = choice;
+    document.querySelectorAll('.pay-option').forEach(b => {
+      const on = b.dataset.pay === choice;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    document.getElementById('panelGcash').style.display = choice === 'GCash' ? '' : 'none';
+    document.getElementById('panelBank').style.display = choice === 'Bank Transfer' ? '' : 'none';
+    document.getElementById('receiptBlock').style.display = choice ? '' : 'none';
+    const qr = document.querySelector('.qr-box');
+    if (qr) qr.style.display = choice === 'GCash' ? '' : 'none';
+    const t = document.getElementById('receiptTitle');
+    if (t) t.textContent = choice === 'Bank Transfer' ? 'Upload deposit slip (required)' : 'Upload GCash screenshot (optional)';
+    updatePaymentConfirmState();
+  }
+  document.querySelectorAll('.pay-option').forEach(b => b.addEventListener('click', () => setPayChoice(b.dataset.pay)));
   function updatePaymentConfirmState(){
     const ref = document.getElementById('gcashRef').value.trim();
     const tncOk = document.getElementById('tncCheck').checked;
-    const ready = (!!ref || !!uploadedReceiptName) && tncOk;
-    document.getElementById('paymentConfirm').disabled = !ready;
-    if (pendingBooking) pendingBooking.paymentMethod = ref ? 'GCash' : (uploadedReceiptName ? 'Bank Transfer' : null);
+    let ready = false;
+    if (payChoice === 'GCash') ready = !!ref;
+    else if (payChoice === 'Bank Transfer') ready = !!uploadedReceiptName;
+    document.getElementById('paymentConfirm').disabled = !(ready && tncOk);
+    if (pendingBooking) pendingBooking.paymentMethod = payChoice;
   }
   document.getElementById('tncCheck').addEventListener('change', updatePaymentConfirmState);
   document.getElementById('gcashRef').addEventListener('input', () => {
@@ -1042,97 +1176,108 @@
   function finalizeBooking(){
     if (!pendingBooking || !pendingBooking.paymentMethod) return;
 
-    // Iwas double-click at malinaw na ipapakita na "sinasave pa" -
-    // dati agad nagsasara ang modal kahit hindi pa tapos mag-save sa
-    // server, kaya minsan akala successful pero hindi pala na-save.
+    // Iwas double-click at malinaw na "sinasave pa".
     const confirmBtn = document.getElementById('paymentConfirm');
-    if (confirmBtn.disabled) return; // nagse-save pa, huwag hayaang mag-double click
+    if (confirmBtn.disabled) return;
     const originalBtnText = confirmBtn.textContent;
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Sinasave ang booking...';
 
-    const { cabinId, dayIndex, cabin, guest, checkIn: checkInTime, checkOut: checkOutTime, persons, blankets, pillows, paymentMethod, nights, tent } = pendingBooking;
-
-    const checkInDate = getDateForDay(dayIndex);
-    const checkOutDate = new Date(checkInDate);
-    checkOutDate.setDate(checkInDate.getDate() + Math.max(1, Number(nights) || 1));
-
+    const pb = pendingBooking;
+    const { cabinId, cabin, guest, checkIn: checkInTime, checkOut: checkOutTime, persons, blankets, pillows, paymentMethod, tent } = pb;
+    const nights = 1;
+    const dates = (pb.dates && pb.dates.length) ? pb.dates : [keyOf(...(function(){ const d = getDateForDay(pb.dayIndex); return [d.getFullYear(), d.getMonth(), d.getDate()]; })())];
     const { baseRate, extraGuestsCharge, totalAccommodation, addons, addonsTotal, total } = computeCharges(cabin, persons, blankets, pillows, nights, tent);
 
     const lineItems = [
-      { label: cabin.name + ' - ' + cabin.note + ' (' + Math.max(1, Number(nights) || 1) + ' night' + (Math.max(1, Number(nights) || 1) > 1 ? 's' : '') + ')', price: baseRate },
+      { label: cabin.name + ' - ' + cabin.note + ' (1 night)', price: baseRate },
     ];
     if (tent){
-      lineItems[0].label = cabin.name + ' - ' + tent.tents + ' ' + (tent.rent ? 'rented' : 'own') + ' tent' + (tent.tents > 1 ? 's' : '') + ' @ \u20b1' + (tent.rent ? TENT_RENT_PRICE : TENT_OWN_PRICE) + ' (' + Math.max(1, Number(nights) || 1) + ' night' + (Math.max(1, Number(nights) || 1) > 1 ? 's' : '') + ')';
-      lineItems.push({ label: 'Entrance fee: ' + tent.heads + ' guest' + (tent.heads > 1 ? 's' : '') + ' @ \u20b1' + ENTRANCE_PER_HEAD, price: extraGuestsCharge });
+      lineItems[0].label = cabin.name + ' - ' + tent.tents + ' ' + (tent.rent ? 'rented' : 'own') + ' tent' + (tent.tents > 1 ? 's' : '') + ' @ ₱' + (tent.rent ? TENT_RENT_PRICE : TENT_OWN_PRICE) + ' (1 night)';
+      lineItems.push({ label: 'Entrance fee: ' + tent.heads + ' guest' + (tent.heads > 1 ? 's' : '') + ' @ ₱' + ENTRANCE_PER_HEAD, price: extraGuestsCharge });
     } else if (persons > 0) lineItems.push({ label: persons + ' Extra Person' + (persons > 1 ? 's' : ''), price: extraGuestsCharge });
     lineItems.push(...addons);
 
-    state.reservationSeq += 1;
-    const code = 'CMY-' + checkInDate.getFullYear() + '-' + cabin.code + '-' + String(state.reservationSeq).padStart(2, '0');
+    // One reservation per picked day (own code and payment record); the
+    // form is filled only once. Saved one after another so the server can
+    // assign unique codes and re-check availability / stock each time.
+    const saved = [];
+    let failMsg = '';
+    function saveOne(dateKey){
+      const checkInDate = keyToDate(dateKey);
+      const checkOutDate = new Date(checkInDate);
+      checkOutDate.setDate(checkInDate.getDate() + nights);
+      state.reservationSeq += 1;
+      const code = 'CMY-' + checkInDate.getFullYear() + '-' + cabin.code + '-' + String(state.reservationSeq).padStart(2, '0');
+      const reservation = {
+        id: 'r' + Date.now(),
+        code,
+        cabinId, dayIndex: pb.dayIndex, cabin: cabin.name, icon: cabin.icon, capacity: cabin.note,
+        checkInLabel: fmtDate(checkInDate) + ' · ' + fmtTime(checkInTime),
+        checkOutLabel: fmtDate(checkOutDate) + ' · ' + fmtTime(checkOutTime),
+        guest, paymentMethod, lineItems, total, status: 'Pending',
+        guestsCount: tent ? tent.heads : 1 + persons, baseRate, extraGuestsCharge, totalAccommodation, addons, addonsTotal,
+        blankets, pillows,
+        gcashRef: pb.gcashRef || '',
+        receiptImage: uploadedReceiptDataUrl || null,
+        receiptFileName: uploadedReceiptName || null
+      };
+      return apiCall('reservations_create', {
+        code: code,
+        cabin_id: cabinId,
+        cabin_name: cabin.name,
+        check_in: toMysqlDateTime(checkInDate, checkInTime),
+        check_out: toMysqlDateTime(checkOutDate, checkOutTime),
+        guests_count: reservation.guestsCount,
+        guest_name: guest.name,
+        guest_email: guest.email,
+        guest_phone: guest.phone,
+        payment_method: paymentMethod,
+        total_amount: total,
+        data: reservation
+      }).then(res => {
+        if (!res || !res.success || !res.reservation){
+          failMsg = (res && res.message) ? res.message : 'Hindi na-save ang booking. Pakisubukan ulit.';
+          return false;
+        }
+        reservation.id = 'r' + res.reservation.id;
+        reservation.dbId = res.reservation.id;
+        if (res.reservation.code) reservation.code = res.reservation.code;
+        realBookings.push({ slug: cabinId, check_in: dateKey, check_out: keyOf(checkOutDate.getFullYear(), checkOutDate.getMonth(), checkOutDate.getDate()) });
+        state.reservations.unshift(reservation);
+        saved.push(reservation);
+        return true;
+      });
+    }
 
-    const reservation = {
-      id: 'r' + Date.now(),
-      code,
-      cabinId, dayIndex, cabin: cabin.name, icon: cabin.icon, capacity: cabin.note,
-      checkInLabel: fmtDate(checkInDate) + ' \u00b7 ' + fmtTime(checkInTime),
-      checkOutLabel: fmtDate(checkOutDate) + ' \u00b7 ' + fmtTime(checkOutTime),
-      guest, paymentMethod, lineItems, total, status: 'Pending',
-      guestsCount: tent ? tent.heads : 1 + persons, baseRate, extraGuestsCharge, totalAccommodation, addons, addonsTotal,
-      gcashRef: pendingBooking.gcashRef || '',
-      receiptImage: paymentMethod === 'Bank Transfer' ? uploadedReceiptDataUrl : null,
-      receiptFileName: paymentMethod === 'Bank Transfer' ? uploadedReceiptName : null
-    };
-
-    // MUNA i-save sa server BAGO ipakita bilang successful. Wala munang
-    // pag-uupdate ng history/availability/thank-you modal hanggang
-    // matiyak na aktwal na na-save ito sa database - dito nagkakamali
-    // dati, dahil nagpapakita agad ng "success" kahit pa hindi pa
-    // sigurado kung na-save nga sa server.
-    apiCall('reservations_create', {
-      code: code,
-      cabin_id: cabinId,
-      cabin_name: cabin.name,
-      check_in: toMysqlDateTime(checkInDate, checkInTime),
-      check_out: toMysqlDateTime(checkOutDate, checkOutTime),
-      guests_count: reservation.guestsCount,
-      guest_name: guest.name,
-      guest_email: guest.email,
-      guest_phone: guest.phone,
-      payment_method: paymentMethod,
-      total_amount: total,
-      data: reservation
-    }).then(res => {
+    dates.reduce((chain, dk) => chain.then(ok => ok ? saveOne(dk) : false), Promise.resolve(true)).then(() => {
       confirmBtn.disabled = false;
       confirmBtn.textContent = originalBtnText;
-
-      if (!res || !res.success || !res.reservation) {
-        // HINDI na-save sa server - huwag ipakita bilang successful.
-        showToast((res && res.message) ? res.message : 'Hindi na-save ang booking. Pakisubukan ulit.');
+      if (!saved.length){
+        showToast(failMsg || 'Hindi na-save ang booking. Pakisubukan ulit.');
         return;
       }
-
-      // Successful na - ngayon lang natin gagawin ang mga sumusunod.
-      reservation.id = 'r' + res.reservation.id;
-      reservation.dbId = res.reservation.id;
-      // The server assigns the final unique reference number.
-      if (res.reservation.code) reservation.code = res.reservation.code;
-      state.availability[availKey(cabinId, dayIndex)] = false;
-      state.reservations.unshift(reservation);
-
+      state.availability = buildAvailability();
+      loadInventory();
       renderAccomGrid();
+      renderHomeCards();
       renderHistory();
       renderNotifications();
       loadNotifications();
       closePaymentModal();
 
-      document.getElementById('thankyouSummary').textContent =
-        cabin.name + ', ' + reservation.checkInLabel + ' \u2013 ' + reservation.checkOutLabel + ' \u00b7 Ref ' + reservation.code + ' \u00b7 via ' + paymentMethod + '. Status: Pending until Camp Mayagay confirms your payment.';
+      const first = saved[0];
+      let msg = cabin.name + ', ' + saved.map(r => r.checkInLabel.split(' · ')[0]).join('; ') +
+        ' · Ref ' + saved.map(r => r.code).join(', ') + ' · via ' + paymentMethod +
+        '. Status: Pending until Camp Mayagay confirms your payment.';
+      if (saved.length < dates.length) msg += ' Hindi na-save ang ' + (dates.length - saved.length) + ' na araw: ' + failMsg;
+      document.getElementById('thankyouSummary').textContent = msg;
       document.getElementById('thankyouModal').classList.add('open');
       pendingBooking = null;
     }).catch(() => {
       confirmBtn.disabled = false;
       confirmBtn.textContent = originalBtnText;
+      if (saved.length){ state.availability = buildAvailability(); renderAccomGrid(); renderHistory(); }
       showToast('Hindi maka-konekta sa server. Pakisubukan ulit.');
     });
   }
@@ -2007,7 +2152,7 @@ dayPill.addEventListener('click', () => openNativePicker(dayInput));
   loadAccommodationsForGuest().then(() => {
     renderHomeCards();
     loadFavorites();
-    return loadAvailability();
+    return Promise.all([loadAvailability(), loadInventory()]);
   }).then(() => {
     state.availability = buildAvailability();
     renderAccomGrid();

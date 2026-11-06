@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Guest Dashboard | Camp Mayagay</title>
 
-<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=27">
+<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=28">
 </head>
 <body>
 
@@ -500,14 +500,25 @@
     <div class="field" style="margin-top:12px;"><label for="guestPhone">Contact number</label><input type="tel" id="guestPhone" placeholder="09XX XXX XXXX"></div>
     <div class="field" style="margin-top:12px;"><label for="guestEmail">Email</label><input type="email" id="guestEmail" placeholder="you@email.com"></div>
     <div class="field-row" style="margin-top:12px;">
-      <div class="field"><label>Check in time</label><div class="fixed-time-box">2:00 PM</div></div>
-      <div class="field"><label>Check out time</label><div class="fixed-time-box">12:00 NN</div></div>
+      <div class="field"><label>Check in time</label><div class="fixed-time-box" aria-readonly="true">2:00 PM</div></div>
+      <div class="field"><label>Check out time</label><div class="fixed-time-box" aria-readonly="true">12:00 NN</div></div>
     </div>
-    <div class="extras-row" style="margin-top:6px;">
-      <label class="extras-check" style="font-weight:600;">Number of days/nights</label>
-      <div class="stepper" data-stepper="nights">
-        <button type="button" data-step="-1">&minus;</button><span id="qtyNights">1</span><button type="button" data-step="1">&plus;</button>
+    <p class="hint" style="margin:4px 0 0;">Fixed ang oras ng check-in at check-out, hindi na kailangang piliin.</p>
+    <div class="day-picker" id="dayPicker">
+      <span class="amenities-title">Pick your day(s)</span>
+      <p class="hint" style="margin:2px 0 8px;">Pindutin ang mga araw na gusto mo (puwedeng marami). Bawat araw ay 1 gabi at may sariling reservation.</p>
+      <div class="cal-head">
+        <button type="button" class="cal-nav" id="calPrev" aria-label="Previous month">&lsaquo;</button>
+        <strong id="calTitle">Month</strong>
+        <button type="button" class="cal-nav" id="calNext" aria-label="Next month">&rsaquo;</button>
       </div>
+      <div class="cal-dow"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-legend"><span><i class="lg ok"></i>Available</span><span><i class="lg sel"></i>Selected</span><span><i class="lg no"></i>Booked</span></div>
+      <div class="weekday-quick"><span>Every:</span>
+        <button type="button" data-wd="1">Mon</button><button type="button" data-wd="2">Tue</button><button type="button" data-wd="3">Wed</button><button type="button" data-wd="4">Thu</button><button type="button" data-wd="5">Fri</button><button type="button" data-wd="6">Sat</button><button type="button" data-wd="0">Sun</button>
+      </div>
+      <p class="selected-days" id="selectedDays">No day selected yet.</p>
     </div>
     <div class="amenities-box" id="bookingAmenitiesBox">
       <span class="amenities-title">Included amenities</span>
@@ -527,13 +538,13 @@
         <label class="extras-check"><input type="radio" name="tentMode" id="tentRent" value="rent"> Rent a tent from the camp <span class="extras-price">&#8369;500/tent</span></label>
       </div>
       <div class="extras-row">
-        <label class="extras-check" style="font-weight:600;">Number of tents</label>
+        <label class="extras-check" style="font-weight:600;">Number of tents <span class="stock-note">max 5</span></label>
         <div class="stepper" data-stepper="tents">
           <button type="button" data-step="-1">&minus;</button><span id="qtyTents">1</span><button type="button" data-step="1">&plus;</button>
         </div>
       </div>
       <div class="extras-row">
-        <label class="extras-check" style="font-weight:600;">Guests <span class="extras-price">&#8369;150 entrance/head</span></label>
+        <label class="extras-check" style="font-weight:600;">Guests <span class="extras-price">&#8369;150 entrance/head</span> <span class="stock-note">max 20</span></label>
         <div class="stepper" data-stepper="heads">
           <button type="button" data-step="-1">&minus;</button><span id="qtyHeads">1</span><button type="button" data-step="1">&plus;</button>
         </div>
@@ -541,19 +552,19 @@
     </div>
     <div style="margin-top:6px;" id="extrasBox">
       <div class="extras-row" id="personRow">
-        <label class="extras-check"><input type="checkbox" id="chkPerson"> Add person <span class="extras-price">₱150/person</span></label>
+        <label class="extras-check"><input type="checkbox" id="chkPerson"> Add person <span class="extras-price">₱150/person</span> <span class="stock-note" id="noteperson">max 5</span></label>
         <div class="stepper" data-stepper="person">
           <button type="button" data-step="-1">&minus;</button><span id="qtyPerson">0</span><button type="button" data-step="1">&plus;</button>
         </div>
       </div>
       <div class="extras-row">
-        <label class="extras-check"><input type="checkbox" id="chkBlanket"> Blanket <span class="extras-price">₱50/blanket</span></label>
+        <label class="extras-check"><input type="checkbox" id="chkBlanket"> Blanket <span class="extras-price">₱50/blanket</span> <span class="stock-note" id="noteblanket">max 5</span></label>
         <div class="stepper" data-stepper="blanket">
           <button type="button" data-step="-1">&minus;</button><span id="qtyBlanket">0</span><button type="button" data-step="1">&plus;</button>
         </div>
       </div>
       <div class="extras-row">
-        <label class="extras-check"><input type="checkbox" id="chkPillow"> Pillow <span class="extras-price">₱50/pillow</span></label>
+        <label class="extras-check"><input type="checkbox" id="chkPillow"> Pillow <span class="extras-price">₱50/pillow</span> <span class="stock-note" id="notepillow">max 5</span></label>
         <div class="stepper" data-stepper="pillow">
           <button type="button" data-step="-1">&minus;</button><span id="qtyPillow">0</span><button type="button" data-step="1">&plus;</button>
         </div>
@@ -580,36 +591,43 @@
     </div>
 
     <div class="pay-block">
-      <h4>GCash: Pay with Reference Number</h4>
-      <div class="gcash-row">
-        <div class="gcash-brand">
-          <span class="pay-logo gcash">GC</span>
-          <div><span class="gname">Pay with GCash</span><div class="gcash-example">Example Number: +639544726346</div></div>
-        </div>
-        <input type="text" id="gcashRef" placeholder="GCash Reference Number">
+      <h4>Choose how you will pay</h4>
+      <div class="pay-options" role="radiogroup" aria-label="Payment option">
+        <button type="button" class="pay-option" data-pay="GCash" role="radio" aria-checked="false">
+          <span class="pay-logo gcash">GC</span><span class="po-text"><b>GCash</b><small>Send to the camp's GCash number</small></span><span class="po-dot"></span>
+        </button>
+        <button type="button" class="pay-option" data-pay="Bank Transfer" role="radio" aria-checked="false">
+          <span class="pay-logo bank">BDO</span><span class="po-text"><b>Bank Transfer</b><small>BDO account deposit</small></span><span class="po-dot"></span>
+        </button>
       </div>
-      <p class="hint">Send payment and input the Reference ID from the GCash app here.</p>
+      <div class="pay-panel" id="panelGcash" style="display:none;">
+        <div class="gcash-row">
+          <div class="gcash-brand">
+            <span class="pay-logo gcash">GC</span>
+            <div><span class="gname">Pay with GCash</span><div class="gcash-example">Example Number: +639544726346</div></div>
+          </div>
+          <input type="text" id="gcashRef" placeholder="Enter GCash Reference Number" inputmode="numeric">
+        </div>
+        <p class="hint">Send payment, then type the Reference No. shown in your GCash receipt.</p>
+      </div>
+      <div class="pay-panel" id="panelBank" style="display:none;">
+        <div class="field" style="margin-bottom:12px; display:none;">
+          <label for="bankSelect">Select bank</label>
+          <select id="bankSelect"><option value="bdo">BDO</option></select>
+        </div>
+        <div class="bank-row">
+          <div class="bank-logos"><span class="bdo" id="bankLogo">BDO</span></div>
+          <div class="bank-details">
+            <strong>Account Name: JESUSA G MONTAGUE</strong>
+            Account Number: <span id="bankAccNum">007170244001</span>
+          </div>
+        </div>
+        <p class="hint">After depositing, upload the photo of your deposit slip below.</p>
+      </div>
     </div>
 
-    <div class="pay-block">
-      <h4>Bank Transfer</h4>
-      <div class="field" style="margin-bottom:12px; display:none;">
-        <label for="bankSelect">Select bank</label>
-        <select id="bankSelect">
-          <option value="bdo">BDO</option>
-        </select>
-      </div>
-      <div class="bank-row">
-        <div class="bank-logos"><span class="bdo" id="bankLogo">BDO</span></div>
-        <div class="bank-details">
-          <strong>Account Name: JESUSA G MONTAGUE</strong>
-          Account Number: <span id="bankAccNum">007170244001</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="pay-block">
-      <h4>Upload Payment Receipt</h4>
+    <div class="pay-block" id="receiptBlock" style="display:none;">
+      <h4 id="receiptTitle">Upload Payment Receipt</h4>
       <div class="upload-section">
         <div class="upload-drop" id="uploadDrop">
           <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4M12 4L7 9M12 4L17 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16V18C4 19.1 4.9 20 6 20H18C19.1 20 20 19.1 20 18V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -752,7 +770,7 @@
   <a class="auth-switch" href="php/logout.php">Log out</a>
 </div>
 
-<script src="assets/js/dashboard-guest.js?v=31"></script>
+<script src="assets/js/dashboard-guest.js?v=32"></script>
 <script>
   (function () {
     var okBtn = document.getElementById('passwordOkBtn');
