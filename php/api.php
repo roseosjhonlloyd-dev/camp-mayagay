@@ -365,6 +365,134 @@ function notifyGuestWithEmail(PDO $pdo, ?int $userId, ?string $email, string $ty
     } catch (Throwable $e) { /* best effort */ }
 }
 
+/* ------------------------------------------------------------
+   PAYMENT REMINDERS
+   Staff/admin remind guests who still owe a balance. Each reminder is
+   saved as an in-app notification (if the guest has an account) AND
+   emailed. Every send is written to payment_reminder_log so the same
+   guest is not reminded twice by accident.
+------------------------------------------------------------ */
+const PAYMENT_REMINDER_COOLDOWN_HOURS = 24;
+const PAYMENT_REMINDER_MAX_PER_CALL   = 50;
+
+function ensurePaymentReminderLog(PDO $pdo): void
+{
+    static $done = false;
+    if ($done) return;
+    $columns =
+        "id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+         reservation_id INT UNSIGNED NOT NULL,
+         sent_by        INT UNSIGNED NULL,
+         in_app         TINYINT(1) NOT NULL DEFAULT 0,
+         email_status   ENUM('sent','failed','not_applicable') NOT NULL DEFAULT 'not_applicable',
+         sent_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+         KEY idx_reservation_sent (reservation_id, sent_at)";
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS payment_reminder_log ($columns,
+            FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id) ON DELETE CASCADE
+        ) ENGINE=InnoDB");
+    } catch (PDOException $e) {
+        // The link to reservations is only for tidy-up; if this database's column types
+        // differ, create the table without it so the Payments page keeps working.
+        $pdo->exec("CREATE TABLE IF NOT EXISTS payment_reminder_log ($columns) ENGINE=InnoDB");
+    }
+    $done = true;
+}
+
+/** Reservations that still owe money (unpaid/partial, not declined/cancelled). */
+function paymentReminderRows(PDO $pdo, array $ids): array
+{
+    if (!$ids) return [];
+    $in = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare(
+        "SELECT r.reservation_id, r.user_id, r.code, r.guest_name, r.guest_email, r.check_in_date,
+                r.total_amount, r.amount_paid, r.payment_status, r.reservation_status,
+                a.accommodation_name, u.email AS user_email,
+                (SELECT TIMESTAMPDIFF(MINUTE, MAX(l.sent_at), NOW())
+                   FROM payment_reminder_log l WHERE l.reservation_id = r.reservation_id) AS minutes_since_reminder
+         FROM reservations r
+         JOIN accommodations a ON a.accommodation_id = r.accommodation_id
+         LEFT JOIN users u ON u.user_id = r.user_id
+         WHERE r.reservation_id IN ($in)
+           AND r.payment_status IN ('unpaid','partial')
+           AND r.reservation_status NOT IN ('declined','cancelled')
+           AND r.total_amount > r.amount_paid"
+    );
+    $stmt->execute(array_values($ids));
+    return $stmt->fetchAll();
+}
+
+/** Sends one reminder. Returns ['ok' => bool, 'in_app' => bool, 'email' => 'sent|failed|not_applicable', 'reason' => string]. */
+function sendPaymentReminder(PDO $pdo, array $r, ?int $sentBy): array
+{
+    $total   = (float)$r['total_amount'];
+    $paid    = (float)$r['amount_paid'];
+    $balance = max(0.0, $total - $paid);
+    $name    = trim((string)$r['guest_name']);
+    $first   = $name !== '' ? preg_split('/\s+/', $name)[0] : 'Guest';
+    $checkIn = $r['check_in_date'] ? date('M j, Y', strtotime((string)$r['check_in_date'])) : '';
+    $userId  = $r['user_id'] ? (int)$r['user_id'] : null;
+    $resId   = (int)$r['reservation_id'];
+
+    // Booking email first, then the account's email; use the first one that is valid.
+    $email = '';
+    foreach ([$r['guest_email'] ?? '', $r['user_email'] ?? ''] as $candidate) {
+        $candidate = trim((string)$candidate);
+        if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_EMAIL)) { $email = $candidate; break; }
+    }
+
+    $title = 'Payment Reminder';
+    // notifications.message is VARCHAR(255): keep it short and cut it safely.
+    $message = mb_strimwidth(
+        'Hi ' . $first . ', friendly reminder: reservation ' . $r['code'] . ' (' . $r['accommodation_name'] .
+        ($checkIn !== '' ? ', check-in ' . $checkIn : '') . ') still has a balance of ₱' . number_format($balance, 2) .
+        '. Please settle it before your stay.',
+        0, 250, '…', 'UTF-8'
+    );
+
+    $emailStatus = 'not_applicable';
+    if ($email !== '') {
+        try {
+            require_once __DIR__ . '/mailer.php';
+            $err = null;
+            $ok = sendPaymentReminderEmail($email, $name !== '' ? $name : 'Guest', [
+                'code' => $r['code'], 'accommodation' => $r['accommodation_name'], 'check_in' => $checkIn,
+                'total' => $total, 'paid' => $paid, 'balance' => $balance,
+            ], $err);
+            if (!$ok) error_log('Payment reminder mail error: ' . $err);
+            $emailStatus = $ok ? 'sent' : 'failed';
+        } catch (Throwable $e) {
+            error_log('Payment reminder mail exception: ' . $e->getMessage());
+            $emailStatus = 'failed';
+        }
+    }
+
+    $inApp = false;
+    if ($userId) {
+        try {
+            addNotification($pdo, $userId, 'guest', 'payment', $title, $message, $resId, $email !== '' ? $email : null, $emailStatus);
+            $inApp = true;
+        } catch (Throwable $e) {
+            error_log('Payment reminder notification error: ' . $e->getMessage());
+        }
+    }
+
+    if (!$inApp && $emailStatus !== 'sent') {
+        $reason = ($userId === null && $email === '')
+            ? 'No account or email on file.'
+            : ($emailStatus === 'failed' ? 'The email could not be sent.' : 'Nothing could be delivered.');
+        return ['ok' => false, 'in_app' => false, 'email' => $emailStatus, 'reason' => $reason];
+    }
+
+    try {
+        $pdo->prepare('INSERT INTO payment_reminder_log (reservation_id, sent_by, in_app, email_status) VALUES (:r, :s, :a, :e)')
+            ->execute(['r' => $resId, 's' => $sentBy, 'a' => $inApp ? 1 : 0, 'e' => $emailStatus]);
+    } catch (Throwable $e) {
+        error_log('Payment reminder log error: ' . $e->getMessage());
+    }
+    return ['ok' => true, 'in_app' => $inApp, 'email' => $emailStatus, 'reason' => ''];
+}
+
 /** Logs an entry to security_logs. */
 /** Decodes a base64 data-URL image and saves it under assets/uploads/accommodations.
  *  Returns the relative path on success, or null (with $error set) on failure. */
@@ -1713,6 +1841,7 @@ try {
             if (!isStaffOrAdmin($user)) deny('Admins and staff only.', 403);
             requireModuleAccess($pdo, $user, 'payments');
             ensureAmountPaidColumn($pdo);
+            ensurePaymentReminderLog($pdo);
             // One row per reservation: how much it costs, how much was paid,
             // and the balance. (The heavy `data` JSON / receipt image is not sent.)
             $stmt = $pdo->query(
@@ -1720,7 +1849,9 @@ try {
                         a.accommodation_name, r.check_in_date, r.check_out_date,
                         r.payment_method, r.total_amount, r.amount_paid, r.payment_status,
                         r.reservation_status, r.created_by, r.created_at,
-                        (SELECT MAX(p.payment_date) FROM payments p WHERE p.reservation_id = r.reservation_id) AS last_payment_date
+                        (SELECT MAX(p.payment_date) FROM payments p WHERE p.reservation_id = r.reservation_id) AS last_payment_date,
+                        (SELECT MAX(l.sent_at) FROM payment_reminder_log l WHERE l.reservation_id = r.reservation_id) AS last_reminder_at,
+                        (SELECT TIMESTAMPDIFF(MINUTE, MAX(l.sent_at), NOW()) FROM payment_reminder_log l WHERE l.reservation_id = r.reservation_id) AS minutes_since_reminder
                  FROM reservations r
                  JOIN accommodations a ON a.accommodation_id = r.accommodation_id
                  ORDER BY r.created_at DESC"
@@ -1744,10 +1875,47 @@ try {
                     'reservation_status' => $r['reservation_status'],
                     'source'           => $r['created_by'] === 'admin' ? 'walk-in' : 'website',
                     'last_payment_date'=> $r['last_payment_date'],
+                    'last_reminder_at' => $r['last_reminder_at'],
+                    'reminded_recently'=> $r['minutes_since_reminder'] !== null
+                                          && (int)$r['minutes_since_reminder'] < PAYMENT_REMINDER_COOLDOWN_HOURS * 60,
                     'created_at'       => $r['created_at'],
                 ];
             }, $stmt->fetchAll());
             echo json_encode(['success' => true, 'payments' => $rows]);
+            break;
+
+        /** Sends a payment reminder (in-app notification + email) to the guests of
+         *  the given reservations. Input: `ids` (up to 50 reservation ids), and
+         *  `force` = true to resend even if reminded in the last 24 hours (single only). */
+        case 'payments_send_reminder':
+            requireLogin($user);
+            if (!isStaffOrAdmin($user)) deny('Admins and staff only.', 403);
+            requireModuleAccess($pdo, $user, 'payments');
+            ensureAmountPaidColumn($pdo);
+            ensurePaymentReminderLog($pdo);
+
+            $ids = array_values(array_unique(array_filter(array_map('intval', (array)($input['ids'] ?? [])), function ($n) { return $n > 0; })));
+            if (!$ids) deny('Choose at least one reservation.', 422);
+            if (count($ids) > PAYMENT_REMINDER_MAX_PER_CALL) deny('Too many at once. Send up to ' . PAYMENT_REMINDER_MAX_PER_CALL . ' per request.', 422);
+            $force = !empty($input['force']) && count($ids) === 1;
+
+            $found = paymentReminderRows($pdo, $ids);
+            $sum = ['sent' => 0, 'in_app' => 0, 'emailed' => 0, 'skipped_recent' => 0, 'no_balance' => count($ids) - count($found), 'failed' => 0];
+            $failures = [];
+            foreach ($found as $r) {
+                $recent = $r['minutes_since_reminder'] !== null && (int)$r['minutes_since_reminder'] < PAYMENT_REMINDER_COOLDOWN_HOURS * 60;
+                if ($recent && !$force) { $sum['skipped_recent']++; continue; }
+                $res = sendPaymentReminder($pdo, $r, (int)$user['id']);
+                if ($res['ok']) {
+                    $sum['sent']++;
+                    if ($res['in_app']) $sum['in_app']++;
+                    if ($res['email'] === 'sent') $sum['emailed']++;
+                } else {
+                    $sum['failed']++;
+                    $failures[] = $r['guest_name'] . ' (' . $r['code'] . '): ' . $res['reason'];
+                }
+            }
+            echo json_encode(['success' => true] + $sum + ['failures' => $failures]);
             break;
 
         /** Staff/admin records money received for a reservation.

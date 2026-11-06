@@ -255,3 +255,40 @@ function sendNotificationEmail(string $toEmail, string $subject, string $message
 
     return sendMailMessage($toEmail, $subject, $html, $message, $errorOut);
 }
+
+/**
+ * Payment reminder for a reservation that still has a balance. $d needs:
+ * code, accommodation, check_in (text), total, paid, balance (floats).
+ */
+function sendPaymentReminderEmail(string $toEmail, string $guestName, array $d, ?string &$errorOut = null): bool
+{
+    $peso = function (float $n): string { return '₱' . number_format($n, 2); };
+    $name = htmlspecialchars($guestName);
+    $row = function (string $label, string $value, bool $strong = false): string {
+        return '<tr><td style="padding:6px 16px 6px 0;color:#555;">' . $label . '</td>' .
+               '<td style="padding:6px 0;' . ($strong ? 'font-weight:bold;color:#b3261e;' : '') . '">' . $value . '</td></tr>';
+    };
+
+    $html =
+        '<p>Hi ' . $name . ',</p>' .
+        '<p>This is a friendly reminder that your Camp Mayagay reservation still has an unpaid balance.</p>' .
+        '<table style="border-collapse:collapse;margin:16px 0;font-size:15px;">' .
+            $row('Reservation', htmlspecialchars((string)$d['code'])) .
+            $row('Accommodation', htmlspecialchars((string)$d['accommodation'])) .
+            $row('Check-in', htmlspecialchars((string)$d['check_in'])) .
+            $row('Total', $peso((float)$d['total'])) .
+            $row('Paid so far', $peso((float)$d['paid'])) .
+            $row('Balance due', $peso((float)$d['balance']), true) .
+        '</table>' .
+        '<p>Please settle the remaining balance before your check-in date. If you already paid, you can ignore this message &mdash; we will update your record once the payment is confirmed.</p>' .
+        '<p style="color:#888; font-size:12px; margin-top:24px;">This message was sent by Camp Mayagay.</p>';
+
+    $text = "Hi {$guestName},\n\nThis is a friendly reminder that your Camp Mayagay reservation still has an unpaid balance.\n\n" .
+        "Reservation: {$d['code']}\nAccommodation: {$d['accommodation']}\nCheck-in: {$d['check_in']}\n" .
+        'Total: PHP ' . number_format((float)$d['total'], 2) . "\n" .
+        'Paid so far: PHP ' . number_format((float)$d['paid'], 2) . "\n" .
+        'Balance due: PHP ' . number_format((float)$d['balance'], 2) . "\n\n" .
+        "Please settle the remaining balance before your check-in date. If you already paid, you can ignore this message.";
+
+    return sendMailMessage($toEmail, 'Camp Mayagay - Payment Reminder', $html, $text, $errorOut);
+}

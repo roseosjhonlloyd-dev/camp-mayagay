@@ -26,6 +26,14 @@
   function sourceLabel(r) { return r.source === 'walk-in' ? 'Walk-in' : 'Website'; }
   function statusLabel(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
   function toast(msg, err) { if (typeof showAdminToast === 'function') showAdminToast(msg, !!err); }
+  // Guests who still owe money and whose booking is not declined/cancelled can be reminded.
+  function canRemind(r) {
+    return (r.payment_status === 'unpaid' || r.payment_status === 'partial') && r.balance > 0 &&
+      r.reservation_status !== 'declined' && r.reservation_status !== 'cancelled';
+  }
+  function remindTitle(r) {
+    return r.last_reminder_at ? 'Last reminder sent: ' + r.last_reminder_at : 'Send a payment reminder (notification + email)';
+  }
 
   function load() {
     if (typeof adminApiCall !== 'function') return;
@@ -86,6 +94,13 @@
     $('paySumCollected').textContent = money(collected);
     $('paySumOutstanding').textContent = money(outstanding) + ' outstanding';
 
+    var remindable = filtered(false).filter(canRemind);
+    var remindAllBtn = $('payRemindAll');
+    if (remindAllBtn && !remindAllBtn.dataset.busy) {
+      remindAllBtn.textContent = 'Send reminders (' + remindable.length + ')';
+      remindAllBtn.disabled = !remindable.length;
+    }
+
     var list = filtered(false);
     var body = $('payTableBody');
     if (!list.length) {
@@ -97,6 +112,10 @@
       if (r.payment_status === 'paid') act = '<button type="button" class="btn-secondary pay-act" data-pay-id="' + r.id + '">Edit payment</button>';
       else if (r.payment_status === 'refunded') act = '<span style="opacity:.6">Refunded</span>';
       else act = '<button type="button" class="btn-secondary pay-act" data-pay-id="' + r.id + '">Record payment</button>';
+      if (canRemind(r)) {
+        act += ' <button type="button" class="btn-secondary pay-act pay-remind" data-remind-id="' + r.id + '" title="' + esc(remindTitle(r)) + '">' +
+          (r.reminded_recently ? 'Reminded &#10003;' : 'Remind') + '</button>';
+      }
       return '<tr>' +
         '<td>' + esc(r.code) + '</td>' +
         '<td>' + esc(r.guest_name) + '</td>' +
@@ -139,6 +158,68 @@
       toast(res.payment_status === 'paid' ? 'Marked as Paid.' : 'Payment recorded.');
       load();
       if (typeof loadAllReservations === 'function') loadAllReservations();
+    });
+  }
+
+  /* ---------- Payment reminders ---------- */
+  // Sends in batches of 25 so a long list never makes one request too slow.
+  function sendReminders(ids, force) {
+    var total = { sent: 0, in_app: 0, emailed: 0, skipped_recent: 0, no_balance: 0, failed: 0, failures: [] };
+    var chunks = [];
+    for (var i = 0; i < ids.length; i += 25) chunks.push(ids.slice(i, i + 25));
+    return chunks.reduce(function (p, chunk) {
+      return p.then(function () {
+        return adminApiCall('payments_send_reminder', { ids: chunk, force: !!force }).then(function (res) {
+          if (!res || !res.success) {
+            total.failed += chunk.length;
+            total.failures.push((res && res.message) || 'The request failed.');
+            return;
+          }
+          ['sent', 'in_app', 'emailed', 'skipped_recent', 'no_balance', 'failed'].forEach(function (k) { total[k] += res[k] || 0; });
+          total.failures = total.failures.concat(res.failures || []);
+        });
+      });
+    }, Promise.resolve()).then(function () { return total; });
+  }
+
+  function summarize(t) {
+    var parts = [];
+    if (t.sent) parts.push('Reminder sent to ' + t.sent + ' guest' + (t.sent === 1 ? '' : 's') +
+      ' (' + t.in_app + ' notification' + (t.in_app === 1 ? '' : 's') + ', ' + t.emailed + ' email' + (t.emailed === 1 ? '' : 's') + ')');
+    if (t.skipped_recent) parts.push(t.skipped_recent + ' skipped (reminded in the last 24 hours)');
+    if (t.no_balance) parts.push(t.no_balance + ' had no balance');
+    if (t.failed) parts.push(t.failed + ' failed' + (t.failures.length ? ': ' + t.failures[0] : ''));
+    return parts.join('. ') + '.';
+  }
+
+  function remindOne(id) {
+    var r = rows.filter(function (x) { return x.id === id; })[0];
+    if (!r) return;
+    var force = false;
+    if (r.reminded_recently) {
+      if (!window.confirm(r.guest_name + ' was already reminded (' + r.last_reminder_at + '). Send another reminder now?')) return;
+      force = true;
+    }
+    sendReminders([id], force).then(function (t) {
+      toast(summarize(t), !t.sent);
+      load();
+    });
+  }
+
+  function remindAll() {
+    var targets = filtered(false).filter(canRemind);
+    if (!targets.length) { toast('No guests with a balance to remind.', true); return; }
+    var due = targets.reduce(function (sum, r) { return sum + r.balance; }, 0);
+    if (!window.confirm('Send a payment reminder to ' + targets.length + ' guest' + (targets.length === 1 ? '' : 's') +
+      ' (' + money(due) + ' unpaid in total)?\n\nGuests already reminded in the last 24 hours are skipped.')) return;
+    var btn = $('payRemindAll');
+    btn.dataset.busy = '1';
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    sendReminders(targets.map(function (r) { return r.id; }), false).then(function (t) {
+      delete btn.dataset.busy;
+      toast(summarize(t), !t.sent);
+      load();
     });
   }
 
@@ -225,9 +306,12 @@
       $(id).addEventListener('change', render);
     });
     $('payTableBody').addEventListener('click', function (e) {
+      var remind = e.target.closest('[data-remind-id]');
+      if (remind) { remindOne(Number(remind.getAttribute('data-remind-id'))); return; }
       var btn = e.target.closest('[data-pay-id]');
       if (btn) openRecord(Number(btn.getAttribute('data-pay-id')));
     });
+    if ($('payRemindAll')) $('payRemindAll').addEventListener('click', remindAll);
     $('payRecordClose').addEventListener('click', closeRecord);
     $('payRecordModal').addEventListener('click', function (e) { if (e.target.id === 'payRecordModal') closeRecord(); });
     $('payRecordForm').addEventListener('submit', function (e) {
