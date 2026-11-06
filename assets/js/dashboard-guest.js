@@ -875,9 +875,13 @@
     document.getElementById('qtyPerson').textContent = 0;
     document.getElementById('qtyBlanket').textContent = 0;
     document.getElementById('qtyPillow').textContent = 0;
-    document.getElementById('chkPerson').checked = false;
-    document.getElementById('chkBlanket').checked = false;
-    document.getElementById('chkPillow').checked = false;
+    Object.keys(extraQty).forEach(markAddon);
+  }
+  // Highlights an add-on row once the guest has picked some of it.
+  function markAddon(key){
+    const el = document.getElementById('qty' + key.charAt(0).toUpperCase() + key.slice(1));
+    const row = el && el.closest('.addon-row');
+    if (row) row.classList.toggle('has-qty', extraQty[key] > (STEP_MIN[key] || 0));
   }
   document.querySelectorAll('.stepper').forEach(st => {
     const key = st.dataset.stepper;
@@ -891,18 +895,8 @@
         extraQty[key] = Math.max(min, next);
         const cap = key.charAt(0).toUpperCase() + key.slice(1);
         document.getElementById('qty' + cap).textContent = extraQty[key];
-        const chk = document.getElementById('chk' + cap);
-        if (chk) chk.checked = extraQty[key] > 0;
+        markAddon(key);
       });
-    });
-  });
-  ['Person','Blanket','Pillow'].forEach(cap => {
-    const chk = document.getElementById('chk' + cap);
-    if (!chk) return;
-    chk.addEventListener('change', () => {
-      const key = cap.toLowerCase();
-      extraQty[key] = chk.checked ? 1 : 0;
-      document.getElementById('qty' + cap).textContent = extraQty[key];
     });
   });
 
@@ -965,8 +959,7 @@
       if (extraQty[key] > STEP_MAX[key]){
         extraQty[key] = STEP_MAX[key];
         document.getElementById('qty' + cap).textContent = extraQty[key];
-        const chk = document.getElementById('chk' + cap);
-        if (chk) chk.checked = extraQty[key] > 0;
+        markAddon(key);
       }
       const note = document.getElementById('note' + key);
       if (note) note.textContent = left <= 0 ? 'out of stock' : (left < STEP_LIMIT ? 'only ' + left + ' left' : 'max ' + STEP_LIMIT);
@@ -1046,9 +1039,9 @@
     pendingBooking.nights = 1; // each picked day is its own 1-night reservation
     pendingBooking.dates = Array.from(bk.dates).sort();
     pendingBooking.tent = isTentArea(pendingBooking.cabin) ? { rent: document.getElementById('tentRent').checked, tents: extraQty.tents, heads: extraQty.heads } : null;
-    pendingBooking.persons = document.getElementById('chkPerson').checked ? extraQty.person : 0;
-    pendingBooking.blankets = document.getElementById('chkBlanket').checked ? extraQty.blanket : 0;
-    pendingBooking.pillows = document.getElementById('chkPillow').checked ? extraQty.pillow : 0;
+    pendingBooking.persons = extraQty.person;
+    pendingBooking.blankets = extraQty.blanket;
+    pendingBooking.pillows = extraQty.pillow;
     closeBookingModal();
     openPaymentModal();
   });
