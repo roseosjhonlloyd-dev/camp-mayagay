@@ -587,6 +587,8 @@
         <p class="acc-details-price">${peso(c.price)}/ ${c.unit}</p>
         <p class="ro-label" style="margin:12px 0 6px;">Amenities</p>
         <div class="amenity-list">${(c.amenities || []).map(a => `<span class="amenity-chip">${a}</span>`).join('')}</div>
+        <p class="ro-label" style="margin:14px 0 6px;">Check-in and check-out</p>
+        <div class="amenity-list"><span class="amenity-chip">Check-in: 2:00 PM</span><span class="amenity-chip">Check-out: 12:00 NN</span></div>
         <p class="ro-label" style="margin:14px 0 6px;">This week</p>
         <div class="day-row">${days}</div>
         <button class="btn-primary acc-details-book" type="button" data-booknow="${c.id}">Book now</button>
@@ -890,6 +892,7 @@
   function todayKey(){ const t = new Date(); return keyOf(t.getFullYear(), t.getMonth(), t.getDate()); }
   function dayChoiceState(key){
     if (key < todayKey()) return 'past';
+    if (Number(key.slice(0, 4)) > new Date().getFullYear()) return 'past'; // this year only
     if (pendingBooking && isBookedOn(pendingBooking.cabinId, key)) return 'booked';
     return 'ok';
   }
@@ -914,6 +917,7 @@
     const prevBtn = document.getElementById('calPrev');
     const now = new Date();
     prevBtn.disabled = (bk.y === now.getFullYear() && bk.m <= now.getMonth()) || bk.y < now.getFullYear();
+    document.getElementById('calNext').disabled = bk.y >= now.getFullYear() && bk.m >= 11; // no booking beyond December of this year
   }
   function toggleDay(key){
     if (bk.dates.has(key)) bk.dates.delete(key); else bk.dates.add(key);
@@ -946,23 +950,8 @@
       if (note) note.textContent = left <= 0 ? 'out of stock' : (left < STEP_LIMIT ? 'only ' + left + ' left' : 'max ' + STEP_LIMIT);
     });
   }
-  const typedBookDate = document.getElementById('typedBookDate');
-  typedBookDate.addEventListener('input', () => autoFormatDate(typedBookDate));
-  function addTypedBookDate(){
-    const v = typedBookDate.value.trim();
-    if (!validDateKey(v)){ showToast('Please enter a valid date (YYYY-MM-DD)'); return; }
-    const st = dayChoiceState(v);
-    if (st === 'past'){ showToast('That date has already passed'); return; }
-    if (st === 'booked'){ showToast('That date is already booked'); return; }
-    bk.dates.add(v);
-    const d = keyToDate(v); bk.y = d.getFullYear(); bk.m = d.getMonth();
-    typedBookDate.value = '';
-    afterDaysChanged();
-  }
-  document.getElementById('typedBookAdd').addEventListener('click', addTypedBookDate);
-  typedBookDate.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ e.preventDefault(); addTypedBookDate(); } });
   document.getElementById('calPrev').addEventListener('click', () => { bk.m--; if (bk.m < 0){ bk.m = 11; bk.y--; } renderCalendar(); });
-  document.getElementById('calNext').addEventListener('click', () => { bk.m++; if (bk.m > 11){ bk.m = 0; bk.y++; } renderCalendar(); });
+  document.getElementById('calNext').addEventListener('click', () => { if (bk.y >= new Date().getFullYear() && bk.m >= 11) return; bk.m++; if (bk.m > 11){ bk.m = 0; bk.y++; } renderCalendar(); });
   document.querySelectorAll('[data-wd]').forEach(btn => {
     btn.addEventListener('click', () => {
       const wd = Number(btn.dataset.wd);
