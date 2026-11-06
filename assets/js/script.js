@@ -291,10 +291,15 @@ function initRegisterForm() {
   /* ---------- Email verification (code sent before the account is created) ---------- */
   var emailInput    = document.getElementById('email');
   var verifyBtn     = document.getElementById('verifyEmailBtn');
+  var verifyBtnText = document.getElementById('verifyEmailBtnText');
   var statusEl      = document.getElementById('emailVerifyStatus');
   var hintEl        = document.getElementById('verifyHint');
-  var codeBox       = document.getElementById('emailCodeBox');
-  var codeInput     = document.getElementById('emailCode');
+  var modal         = document.getElementById('verifyModal');
+  var modalEmail    = document.getElementById('verifyModalEmail');
+  var modalClose    = document.getElementById('verifyModalClose');
+  var otpRow        = document.getElementById('emailOtpRow');
+  var otpBoxes      = Array.prototype.slice.call(otpRow.querySelectorAll('.otp-box'));
+  var codeError     = document.getElementById('emailCodeError');
   var confirmBtn    = document.getElementById('confirmEmailBtn');
   var resendBtn     = document.getElementById('resendEmailCodeBtn');
   var resendTimerEl = document.getElementById('resendEmailTimer');
@@ -312,6 +317,23 @@ function initRegisterForm() {
     });
   }
 
+  function clearOtp() { otpBoxes.forEach(function (b) { b.value = ''; }); }
+  function getOtp() { return otpBoxes.map(function (b) { return b.value; }).join(''); }
+
+  function openModal(email) {
+    modalEmail.textContent = email;
+    clearOtp();
+    codeError.textContent = '';
+    modal.hidden = false;
+    document.body.classList.add('modal-open');
+    otpBoxes[0].focus();
+  }
+
+  function closeModal() {
+    modal.hidden = true;
+    document.body.classList.remove('modal-open');
+  }
+
   function setEmailVerified(ok) {
     emailVerified = ok;
     statusEl.textContent = ok ? 'Email verified ✓' : 'Email not verified';
@@ -319,12 +341,13 @@ function initRegisterForm() {
     statusEl.classList.toggle('is-unverified', !ok);
     emailInput.readOnly = ok;
     emailInput.classList.toggle('is-verified-input', ok);
-    verifyBtn.textContent = ok ? 'Change' : 'Verify';
+    verifyBtnText.textContent = ok ? 'Change' : 'Verify';
+    verifyBtn.classList.toggle('is-verified', ok);
     verifyBtn.disabled = false;
     submitBtn.disabled = !ok;
     hintEl.classList.toggle('is-hidden', ok);
     if (ok) {
-      codeBox.hidden = true;
+      closeModal();
       stopResendTimer();
     }
   }
@@ -349,39 +372,45 @@ function initRegisterForm() {
     }, 1000);
   }
 
-  function sendEmailCode(triggerBtn, idleLabel) {
+  // Asks the server to email a code. `fromModal` is true when the guest pressed
+  // "Resend code" inside the popup, so errors are shown there instead.
+  function sendEmailCode(fromModal) {
     var email = emailInput.value.trim();
     setFieldError('email', '');
-    setFieldError('emailCode', '');
+    codeError.textContent = '';
     if (email === '') { setFieldError('email', 'Email is required.'); return; }
     if (!isValidEmail(email)) { setFieldError('email', 'Enter a valid email address.'); return; }
 
-    var isVerifyBtn = triggerBtn === verifyBtn;
-    triggerBtn.disabled = true;
-    if (isVerifyBtn) triggerBtn.textContent = 'Sending...';
+    var originalLabel = verifyBtnText.textContent;
+    verifyBtn.disabled = true;
+    resendBtn.disabled = true;
+    if (!fromModal) verifyBtnText.textContent = 'Sending...';
+
     postJson('php/signup_email.php?action=send_code', { email: email })
       .then(function (result) {
         if (result.data.success) {
-          codeBox.hidden = false;
-          codeInput.value = '';
-          codeInput.focus();
+          openModal(email);
           startResendTimer(30);
+        } else if (fromModal) {
+          codeError.textContent = result.data.message || 'Could not send the code.';
+          if (result.status === 429 && result.data.wait) startResendTimer(result.data.wait);
+          else resendBtn.disabled = false;
+        } else if (result.status === 429 && result.data.wait) {
+          // A code was just sent: reopen the popup instead of showing an error.
+          openModal(email);
+          startResendTimer(result.data.wait);
         } else {
           setFieldError('email', result.data.message || 'Could not send the code.');
-          if (result.status === 429 && result.data.wait) {
-            codeBox.hidden = false;
-            startResendTimer(result.data.wait);
-          }
         }
       })
       .catch(function () {
-        setFieldError('email', 'Unable to reach the server. Please try again.');
+        var msg = 'Unable to reach the server. Please try again.';
+        if (fromModal) { codeError.textContent = msg; resendBtn.disabled = false; }
+        else setFieldError('email', msg);
       })
       .finally(function () {
-        if (isVerifyBtn) {
-          triggerBtn.textContent = idleLabel;
-          triggerBtn.disabled = false;
-        }
+        verifyBtn.disabled = false;
+        if (!fromModal) verifyBtnText.textContent = originalLabel;
       });
   }
 
@@ -392,21 +421,35 @@ function initRegisterForm() {
       emailInput.focus();
       return;
     }
-    sendEmailCode(verifyBtn, 'Verify');
+    sendEmailCode(false);
   });
 
-  resendBtn.addEventListener('click', function () {
-    sendEmailCode(resendBtn, '');
-  });
+  resendBtn.addEventListener('click', function () { sendEmailCode(true); });
 
-  codeInput.addEventListener('input', function () {
-    codeInput.value = codeInput.value.replace(/[^0-9]/g, '').slice(0, 6);
+  // 6 code boxes: digits only, auto-advance, backspace goes back, paste fills all.
+  otpBoxes.forEach(function (box, i) {
+    box.addEventListener('input', function () {
+      box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
+      codeError.textContent = '';
+      if (box.value && i < otpBoxes.length - 1) otpBoxes[i + 1].focus();
+    });
+    box.addEventListener('keydown', function (e) {
+      if (e.key === 'Backspace' && !box.value && i > 0) otpBoxes[i - 1].focus();
+      if (e.key === 'Enter') { e.preventDefault(); confirmBtn.click(); }
+    });
+    box.addEventListener('paste', function (e) {
+      var text = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+      if (!text) return;
+      e.preventDefault();
+      text.split('').forEach(function (d, k) { otpBoxes[k].value = d; });
+      otpBoxes[Math.min(text.length, otpBoxes.length - 1)].focus();
+    });
   });
 
   confirmBtn.addEventListener('click', function () {
-    var code = codeInput.value.trim();
-    setFieldError('emailCode', '');
-    if (code.length !== 6) { setFieldError('emailCode', 'Enter all 6 digits.'); return; }
+    var code = getOtp();
+    codeError.textContent = '';
+    if (code.length !== 6) { codeError.textContent = 'Enter all 6 digits.'; return; }
 
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Checking...';
@@ -416,13 +459,13 @@ function initRegisterForm() {
           setFieldError('email', '');
           setEmailVerified(true);
         } else {
-          setFieldError('emailCode', result.data.message || 'Incorrect code. Please try again.');
-          codeInput.value = '';
-          codeInput.focus();
+          codeError.textContent = result.data.message || 'Incorrect code. Please try again.';
+          clearOtp();
+          otpBoxes[0].focus();
         }
       })
       .catch(function () {
-        setFieldError('emailCode', 'Unable to reach the server. Please try again.');
+        codeError.textContent = 'Unable to reach the server. Please try again.';
       })
       .finally(function () {
         confirmBtn.disabled = false;
@@ -430,9 +473,15 @@ function initRegisterForm() {
       });
   });
 
-  // Typing a different email (before it is verified) hides the old code box.
+  modalClose.addEventListener('click', closeModal);
+  modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !modal.hidden) closeModal();
+  });
+
+  // Typing a different email (before it is verified) stops the old resend timer.
   emailInput.addEventListener('input', function () {
-    if (!emailVerified) { codeBox.hidden = true; stopResendTimer(); }
+    if (!emailVerified) stopResendTimer();
   });
 
   function readFileAsDataUrl(file) {
