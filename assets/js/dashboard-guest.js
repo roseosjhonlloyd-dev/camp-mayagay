@@ -572,7 +572,7 @@
   }
 
   /* Details of an accommodation (photos, amenities, price, open days). */
-  function openAccDetails(cabinId){
+  function openAccDetails(cabinId, simple){
     const c = CABINS.find(x => x.id === cabinId);
     if (!c) return;
     const days = DAYS.map((d, i) => {
@@ -588,15 +588,16 @@
         <p class="acc-details-price">${peso(c.price)}/ ${c.unit}</p>
         <p class="ro-label" style="margin:12px 0 6px;">Amenities</p>
         <div class="amenity-list">${(c.amenities || []).map(a => `<span class="amenity-chip">${a}</span>`).join('')}</div>
-        <p class="ro-label" style="margin:14px 0 6px;">Check-in and check-out</p>
+        ${simple ? '' : `<p class="ro-label" style="margin:14px 0 6px;">Check-in and check-out</p>
         <div class="amenity-list"><span class="amenity-chip">Check-in: 2:00 PM</span><span class="amenity-chip">Check-out: 12:00 NN</span></div>
         <p class="ro-label" style="margin:14px 0 6px;">This week</p>
         <div class="day-row">${days}</div>
-        <button class="btn-primary acc-details-book" type="button" data-booknow="${c.id}">Book now</button>
+        <button class="btn-primary acc-details-book" type="button" data-booknow="${c.id}">Book now</button>`}
       </div>`;
     initAccomSliders(body);
     body.querySelectorAll('.accom-art').forEach(refreshSlider);
-    body.querySelector('[data-booknow]').addEventListener('click', () => bookNow(c.id));
+    const bookBtn = body.querySelector('[data-booknow]');
+    if (bookBtn) bookBtn.addEventListener('click', () => bookNow(c.id));
     body.querySelectorAll('[data-detail-day]').forEach(btn => {
       btn.addEventListener('click', () => { closeAccDetails(); openBookingModal(c.id, Number(btn.dataset.detailDay)); });
     });
@@ -775,6 +776,14 @@
       btn.addEventListener('click', () => openAccReviews(Number(btn.dataset.reviews)));
     });
     initAccomSliders(grid);
+    // Click a room card (not its photo, heart, reviews or day buttons) to see its details.
+    grid.querySelectorAll('.accom-card').forEach((card, i) => {
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('button, .accom-art, .accom-fav, [data-reviews], .day-row')) return;
+        openAccDetails(pageItems[i].id, true);
+      });
+    });
     grid.querySelectorAll('.day-pill.avail').forEach(btn => {
       btn.addEventListener('click', () => openBookingModal(btn.dataset.cabin, Number(btn.dataset.day)));
     });
