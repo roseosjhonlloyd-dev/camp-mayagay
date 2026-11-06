@@ -71,6 +71,18 @@ if (!empty($errors)) {
     exit;
 }
 
+// The email must have been confirmed with the link sent by signup_email.php.
+// Checked here on the server too, so it can't be skipped by editing the page.
+if (strtolower($email) !== (string)($_SESSION['signup_verified_email'] ?? '')) {
+    http_response_code(403);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Please verify your email address before creating an account.',
+        'errors'  => ['email' => 'Verify your email first.'],
+    ]);
+    exit;
+}
+
 try {
     $check = $pdo->prepare('SELECT user_id FROM users WHERE email = :email OR username = :username LIMIT 1');
     $check->execute(['email' => $email, 'username' => $username]);
@@ -89,7 +101,7 @@ try {
 
     $stmt = $pdo->prepare(
         'INSERT INTO users (role, firstname, lastname, username, email, contact_number, password, email_verified)
-         VALUES (:role, :firstname, :lastname, :username, :email, :contact_number, :password, 0)'
+         VALUES (:role, :firstname, :lastname, :username, :email, :contact_number, :password, 1)'
     );
 
     $stmt->execute([
@@ -104,15 +116,22 @@ try {
 
     $newUserId = (int)$pdo->lastInsertId();
 
-    // The account stays inactive until the guest clicks the link we email.
-    // If the email cannot be delivered (e.g. a made-up address), no account is kept.
-    $mailErr = null;
-    if (!sendAccountActivationLink($pdo, $newUserId, $email, $firstname, $mailErr)) {
-        $pdo->prepare('DELETE FROM users WHERE user_id = :id')->execute(['id' => $newUserId]);
-        http_response_code(502);
-        echo json_encode(['success' => false, 'message' => 'We could not send the verification email. Please check that your email address is real and try again.']);
-        exit;
+    // The email was already confirmed with the emailed link before this point,
+    // so the account is created as verified. Clear the flags so they can't be reused.
+    try {
+        if (!empty($_SESSION['signup_pending_id'])) {
+            $pdo->prepare('DELETE FROM signup_email_verifications WHERE pending_id = :p')
+                ->execute(['p' => (string)$_SESSION['signup_pending_id']]);
+        }
+    } catch (PDOException $e) {
+        // not critical - expired rows are cleaned up on the next request
     }
+    unset(
+        $_SESSION['signup_email'],
+        $_SESSION['signup_pending_id'],
+        $_SESSION['signup_sent_at'],
+        $_SESSION['signup_verified_email']
+    );
 
     // Save the valid ID photo the guest uploaded during sign-up, so it's
     // ready for the admin to review (Security Management > User
@@ -153,8 +172,8 @@ try {
 
     echo json_encode([
         'success'  => true,
-        'message'  => 'Account created! We sent a verification link to ' . $email . '. Click it to activate your account, then log in.',
-        'needs_verification' => true,
+        'message'  => 'Account created! You can now log in.',
+        'needs_verification' => false,
         'redirect' => 'index.html'
     ]);
 

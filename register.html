@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sign Up | Camp Mayagay</title>
 
-<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/style.css?v=4">
 </head>
 <body>
       <img src="assets/images/Background.png" alt="" class="bg-image">
@@ -32,9 +32,16 @@
           </div>
         </div>
 
-        <div class="form-group">  
+        <div class="form-group">
           <label for="email">Email Address</label>
-          <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email">
+          <div class="email-verify-row">
+            <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email">
+            <button type="button" class="btn-verify-email" id="verifyEmailBtn">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+              <span id="verifyEmailBtnText">Verify</span>
+            </button>
+          </div>
+          <span class="verify-status is-unverified" id="emailVerifyStatus" role="status">Email not verified</span>
           <span class="field-error" id="emailError"></span>
         </div>
 
@@ -68,13 +75,43 @@
           <span class="field-error" id="confirm_passwordError"></span>
         </div>
 
-        <button type="submit" class="btn-primary">Sign Up</button>
+        <button type="submit" class="btn-primary" id="registerSubmitBtn" disabled>Sign Up</button>
+        <p class="verify-hint" id="verifyHint">Verify your email to enable Sign Up.</p>
       </form>
 
       <p class="auth-switch">Already have an account? <a href="index.html">Login</a></p>
     </div>
   </main>
 
-<script src="assets/js/script.js?v=5"></script>
+  <!-- Popup shown after the guest presses Verify -->
+  <div class="verify-modal" id="verifyModal" hidden role="dialog" aria-modal="true" aria-labelledby="verifyModalTitle">
+    <div class="verify-modal-card">
+      <button type="button" class="verify-modal-close" id="verifyModalClose" aria-label="Close">&times;</button>
+      <div class="verify-modal-icon">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>
+      </div>
+      <h2 id="verifyModalTitle">Check your email</h2>
+      <p class="verify-modal-text">We sent an email to <strong id="verifyModalEmail"></strong>. Open it and tap <strong>Verify my email</strong>.</p>
+
+      <div class="verify-waiting" id="verifyWaiting" role="status">
+        <span class="verify-spinner" aria-hidden="true"></span>
+        <span>Waiting for you to verify&hellip;</span>
+      </div>
+      <span class="field-error verify-modal-error" id="verifyModalError" role="alert"></span>
+
+      <button type="button" class="verify-alt-toggle" id="verifyCodeToggle">Link not opening? Enter the code instead</button>
+      <div class="verify-code-row" id="verifyCodeRow" hidden>
+        <input type="text" id="verifyCodeInput" inputmode="numeric" maxlength="6" placeholder="6-digit code" autocomplete="one-time-code" aria-label="6-digit code from the email">
+        <button type="button" class="btn-verify-email" id="verifyCodeBtn">Confirm</button>
+      </div>
+
+      <p class="verify-modal-resend">
+        Didn't get it? Check your spam folder or
+        <button type="button" class="resend-code-btn" id="resendEmailCodeBtn" disabled>resend email <span id="resendEmailTimer"></span></button>
+      </p>
+    </div>
+  </div>
+
+<script src="assets/js/script.js?v=9"></script>
 </body>
 </html>

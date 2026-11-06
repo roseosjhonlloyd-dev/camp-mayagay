@@ -1211,6 +1211,9 @@ body{
 .pay-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
 .pay-table-wrap .data-table{min-width:880px;}
 .pay-act{padding:6px 10px; font-size:12px; white-space:nowrap;}
+.pay-remind-all{padding:9px 16px;}
+.pay-remind-all:disabled{opacity:.5; cursor:not-allowed;}
+.pay-remind{border-color:var(--status-yellow); color:var(--status-yellow);}
 .pill.pay-st-paid{background:var(--status-green-bg); color:var(--status-green);}
 .pill.pay-st-partial{background:var(--status-yellow-bg); color:var(--status-yellow);}
 .pill.pay-st-unpaid{background:var(--status-red-bg); color:var(--status-red);}

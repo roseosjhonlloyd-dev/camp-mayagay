@@ -206,6 +206,26 @@ function sendLoginCodeEmail(string $toEmail, string $code, ?string &$errorOut = 
 }
 
 /**
+ * Email with a "Verify my email" button, sent while the guest is filling in
+ * the Sign Up form so the email is confirmed before the account is created.
+ * It also carries a 6-digit code as a backup for when the link cannot be
+ * opened (e.g. the email provider's click-tracking redirect is blocked).
+ */
+function sendSignupLinkEmail(string $toEmail, string $link, string $code, ?string &$errorOut = null): bool
+{
+    $html =
+        '<p>Welcome to Camp Mayagay!</p>' .
+        '<p>Please confirm that this is your email address to continue creating your account.</p>' .
+        '<p style="margin:24px 0;"><a href="' . htmlspecialchars($link) . '" style="background:#2f5d3a;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold;">Verify my email</a></p>' .
+        '<p style="margin-top:28px;">Button not opening? Enter this code on the Sign Up page instead:</p>' .
+        '<h2 style="letter-spacing:6px;margin:8px 0;">' . htmlspecialchars($code) . '</h2>' .
+        '<p>This link and code expire in 30 minutes. If you did not try to sign up, you can ignore this email.</p>';
+    $text = "Welcome to Camp Mayagay!\n\nVerify your email by opening this link:\n{$link}\n\nLink not opening? Enter this code on the Sign Up page: {$code}\n\nThis link and code expire in 30 minutes. If you did not try to sign up, ignore this email.";
+
+    return sendMailMessage($toEmail, 'Camp Mayagay - Verify my email', $html, $text, $errorOut);
+}
+
+/**
  * Account activation email (sent after sign-up). The account cannot log in
  * until the guest clicks the link.
  */
@@ -234,4 +254,41 @@ function sendNotificationEmail(string $toEmail, string $subject, string $message
         '<p style="color:#888; font-size:12px; margin-top:24px;">This message was sent by Camp Mayagay.</p>';
 
     return sendMailMessage($toEmail, $subject, $html, $message, $errorOut);
+}
+
+/**
+ * Payment reminder for a reservation that still has a balance. $d needs:
+ * code, accommodation, check_in (text), total, paid, balance (floats).
+ */
+function sendPaymentReminderEmail(string $toEmail, string $guestName, array $d, ?string &$errorOut = null): bool
+{
+    $peso = function (float $n): string { return '₱' . number_format($n, 2); };
+    $name = htmlspecialchars($guestName);
+    $row = function (string $label, string $value, bool $strong = false): string {
+        return '<tr><td style="padding:6px 16px 6px 0;color:#555;">' . $label . '</td>' .
+               '<td style="padding:6px 0;' . ($strong ? 'font-weight:bold;color:#b3261e;' : '') . '">' . $value . '</td></tr>';
+    };
+
+    $html =
+        '<p>Hi ' . $name . ',</p>' .
+        '<p>This is a friendly reminder that your Camp Mayagay reservation still has an unpaid balance.</p>' .
+        '<table style="border-collapse:collapse;margin:16px 0;font-size:15px;">' .
+            $row('Reservation', htmlspecialchars((string)$d['code'])) .
+            $row('Accommodation', htmlspecialchars((string)$d['accommodation'])) .
+            $row('Check-in', htmlspecialchars((string)$d['check_in'])) .
+            $row('Total', $peso((float)$d['total'])) .
+            $row('Paid so far', $peso((float)$d['paid'])) .
+            $row('Balance due', $peso((float)$d['balance']), true) .
+        '</table>' .
+        '<p>Please settle the remaining balance before your check-in date. If you already paid, you can ignore this message &mdash; we will update your record once the payment is confirmed.</p>' .
+        '<p style="color:#888; font-size:12px; margin-top:24px;">This message was sent by Camp Mayagay.</p>';
+
+    $text = "Hi {$guestName},\n\nThis is a friendly reminder that your Camp Mayagay reservation still has an unpaid balance.\n\n" .
+        "Reservation: {$d['code']}\nAccommodation: {$d['accommodation']}\nCheck-in: {$d['check_in']}\n" .
+        'Total: PHP ' . number_format((float)$d['total'], 2) . "\n" .
+        'Paid so far: PHP ' . number_format((float)$d['paid'], 2) . "\n" .
+        'Balance due: PHP ' . number_format((float)$d['balance'], 2) . "\n\n" .
+        "Please settle the remaining balance before your check-in date. If you already paid, you can ignore this message.";
+
+    return sendMailMessage($toEmail, 'Camp Mayagay - Payment Reminder', $html, $text, $errorOut);
 }
