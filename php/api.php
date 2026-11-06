@@ -1671,7 +1671,7 @@ try {
             $pdo->prepare("UPDATE payments SET payment_status = 'refunded' WHERE reservation_id = :id")->execute(['id' => $id]);
             $pdo->prepare("UPDATE reservations SET payment_status = 'refunded' WHERE reservation_id = :id")->execute(['id' => $id]);
             if ($row['user_id']) {
-                notifyGuestWithEmail($pdo, (int)$row['user_id'], $row['guest_email'] ?? null, 'confirmation', 'Cancellation approved', 'Your reservation ' . $row['code'] . ' has been cancelled and your payment will be refunded.', $id);
+                notifyGuestWithEmail($pdo, (int)$row['user_id'], $row['guest_email'] ?? null, 'confirmation', 'Cancellation approved', 'Your cancellation request for reservation ' . $row['code'] . ' has been approved. Your payment will be returned to you in a few minutes.', $id);
             }
             $stmt = $pdo->prepare(RESERVATION_SELECT . ' WHERE r.reservation_id = :id');
             $stmt->execute(['id' => $id]);
