@@ -543,7 +543,7 @@
     });
     grid.querySelectorAll('.cabin-card').forEach((card, i) => {
       card.style.cursor = 'pointer';
-      card.addEventListener('click', () => openAccDetails(ranked[i].id));
+      card.addEventListener('click', () => openAccDetails(ranked[i].id, true));
     });
     grid.querySelectorAll('[data-reviews]').forEach(btn => {
       btn.addEventListener('click', () => openAccReviews(Number(btn.dataset.reviews)));
