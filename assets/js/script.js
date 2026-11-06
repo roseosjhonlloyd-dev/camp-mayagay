@@ -288,6 +288,153 @@ function initRegisterForm() {
     });
   }
 
+  /* ---------- Email verification (code sent before the account is created) ---------- */
+  var emailInput    = document.getElementById('email');
+  var verifyBtn     = document.getElementById('verifyEmailBtn');
+  var statusEl      = document.getElementById('emailVerifyStatus');
+  var hintEl        = document.getElementById('verifyHint');
+  var codeBox       = document.getElementById('emailCodeBox');
+  var codeInput     = document.getElementById('emailCode');
+  var confirmBtn    = document.getElementById('confirmEmailBtn');
+  var resendBtn     = document.getElementById('resendEmailCodeBtn');
+  var resendTimerEl = document.getElementById('resendEmailTimer');
+  var emailVerified = false;
+  var resendCountdown = null;
+
+  function postJson(url, body) {
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(body)
+    }).then(function (res) {
+      return res.json().then(function (data) { return { status: res.status, data: data }; });
+    });
+  }
+
+  function setEmailVerified(ok) {
+    emailVerified = ok;
+    statusEl.textContent = ok ? 'Email verified ✓' : 'Email not verified';
+    statusEl.classList.toggle('is-verified', ok);
+    statusEl.classList.toggle('is-unverified', !ok);
+    emailInput.readOnly = ok;
+    emailInput.classList.toggle('is-verified-input', ok);
+    verifyBtn.textContent = ok ? 'Change' : 'Verify';
+    verifyBtn.disabled = false;
+    submitBtn.disabled = !ok;
+    hintEl.classList.toggle('is-hidden', ok);
+    if (ok) {
+      codeBox.hidden = true;
+      stopResendTimer();
+    }
+  }
+
+  function stopResendTimer() {
+    if (resendCountdown) { clearInterval(resendCountdown); resendCountdown = null; }
+    resendTimerEl.textContent = '';
+  }
+
+  function startResendTimer(seconds) {
+    stopResendTimer();
+    resendBtn.disabled = true;
+    resendTimerEl.textContent = '(' + seconds + 's)';
+    resendCountdown = setInterval(function () {
+      seconds--;
+      if (seconds <= 0) {
+        stopResendTimer();
+        resendBtn.disabled = false;
+      } else {
+        resendTimerEl.textContent = '(' + seconds + 's)';
+      }
+    }, 1000);
+  }
+
+  function sendEmailCode(triggerBtn, idleLabel) {
+    var email = emailInput.value.trim();
+    setFieldError('email', '');
+    setFieldError('emailCode', '');
+    if (email === '') { setFieldError('email', 'Email is required.'); return; }
+    if (!isValidEmail(email)) { setFieldError('email', 'Enter a valid email address.'); return; }
+
+    var isVerifyBtn = triggerBtn === verifyBtn;
+    triggerBtn.disabled = true;
+    if (isVerifyBtn) triggerBtn.textContent = 'Sending...';
+    postJson('php/signup_email.php?action=send_code', { email: email })
+      .then(function (result) {
+        if (result.data.success) {
+          codeBox.hidden = false;
+          codeInput.value = '';
+          codeInput.focus();
+          startResendTimer(30);
+        } else {
+          setFieldError('email', result.data.message || 'Could not send the code.');
+          if (result.status === 429 && result.data.wait) {
+            codeBox.hidden = false;
+            startResendTimer(result.data.wait);
+          }
+        }
+      })
+      .catch(function () {
+        setFieldError('email', 'Unable to reach the server. Please try again.');
+      })
+      .finally(function () {
+        if (isVerifyBtn) {
+          triggerBtn.textContent = idleLabel;
+          triggerBtn.disabled = false;
+        }
+      });
+  }
+
+  verifyBtn.addEventListener('click', function () {
+    if (emailVerified) {
+      // "Change": unlock the email so another one can be verified.
+      setEmailVerified(false);
+      emailInput.focus();
+      return;
+    }
+    sendEmailCode(verifyBtn, 'Verify');
+  });
+
+  resendBtn.addEventListener('click', function () {
+    sendEmailCode(resendBtn, '');
+  });
+
+  codeInput.addEventListener('input', function () {
+    codeInput.value = codeInput.value.replace(/[^0-9]/g, '').slice(0, 6);
+  });
+
+  confirmBtn.addEventListener('click', function () {
+    var code = codeInput.value.trim();
+    setFieldError('emailCode', '');
+    if (code.length !== 6) { setFieldError('emailCode', 'Enter all 6 digits.'); return; }
+
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Checking...';
+    postJson('php/signup_email.php?action=verify_code', { email: emailInput.value.trim(), code: code })
+      .then(function (result) {
+        if (result.data.success) {
+          setFieldError('email', '');
+          setEmailVerified(true);
+        } else {
+          setFieldError('emailCode', result.data.message || 'Incorrect code. Please try again.');
+          codeInput.value = '';
+          codeInput.focus();
+        }
+      })
+      .catch(function () {
+        setFieldError('emailCode', 'Unable to reach the server. Please try again.');
+      })
+      .finally(function () {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Confirm';
+      });
+  });
+
+  // Typing a different email (before it is verified) hides the old code box.
+  emailInput.addEventListener('input', function () {
+    if (!emailVerified) { codeBox.hidden = true; stopResendTimer(); }
+  });
+
   function readFileAsDataUrl(file) {
     return new Promise(function (resolve, reject) {
       var reader = new FileReader();
@@ -308,6 +455,11 @@ function initRegisterForm() {
     });
 
     var hasError = false;
+
+    if (!emailVerified) {
+      setFieldError('email', 'Verify your email first.');
+      return;
+    }
 
     if (values.firstname === '') { setFieldError('firstname', 'First name is required.'); hasError = true; }
     if (values.lastname === '') { setFieldError('lastname', 'Last name is required.'); hasError = true; }
@@ -361,6 +513,7 @@ function initRegisterForm() {
       return fetch('php/register.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify(values)
       });
     })
@@ -369,10 +522,12 @@ function initRegisterForm() {
         if (result.data.success) {
           showAlert(alertEl, result.data.message || 'Registration successful.', 'success');
           form.reset();
+          setEmailVerified(false);
           setTimeout(function () {
             window.location.href = result.data.redirect || 'index.html';
           }, result.data.needs_verification ? 6000 : 1200);
         } else {
+          if (result.status === 403) setEmailVerified(false);
           showAlert(alertEl, result.data.message || 'Registration failed.', 'error');
           if (result.data.errors) {
             Object.keys(result.data.errors).forEach(function (key) {
@@ -385,7 +540,7 @@ function initRegisterForm() {
         showAlert(alertEl, 'Unable to reach the server. Please try again.', 'error');
       })
       .finally(function () {
-        submitBtn.disabled = false;
+        submitBtn.disabled = !emailVerified;
         submitBtn.textContent = originalText;
       });
   });
