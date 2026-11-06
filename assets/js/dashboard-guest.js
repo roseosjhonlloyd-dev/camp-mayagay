@@ -792,14 +792,6 @@
       btn.addEventListener('click', () => openAccReviews(Number(btn.dataset.reviews)));
     });
     try { initAccomSliders(grid); } catch (err) { console.error(err); }
-    // Click a room card (not its photo, heart, reviews or day buttons) to see its details.
-    grid.querySelectorAll('.accom-card').forEach((card, i) => {
-      card.style.cursor = 'pointer';
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('button, .accom-art, .accom-fav, [data-reviews], .day-row')) return;
-        openAccDetails(pageItems[i].id, true);
-      });
-    });
     updatePaginationButtons();
   }
 
