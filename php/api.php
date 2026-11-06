@@ -343,6 +343,28 @@ function addNotification(PDO $pdo, ?int $userId, string $audience, string $type,
     return (int)$pdo->lastInsertId();
 }
 
+/** Saves an in-app notification for a guest AND emails the same message to
+ *  their address (booking received / confirmed / cancelled ...). The email
+ *  result is recorded on the notification (sent / failed). Never throws:
+ *  a mail problem must not break the booking itself. */
+function notifyGuestWithEmail(PDO $pdo, ?int $userId, ?string $email, string $type, string $title, string $message, ?int $reservationId = null): void
+{
+    $email = trim((string)$email);
+    $status = 'not_applicable';
+    if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        try {
+            require_once __DIR__ . '/mailer.php';
+            $err = null;
+            $status = sendNotificationEmail($email, 'Camp Mayagay - ' . $title, $message, $err) ? 'sent' : 'failed';
+        } catch (Throwable $e) { $status = 'failed'; }
+    } else {
+        $email = null;
+    }
+    try {
+        addNotification($pdo, $userId, 'guest', $type, $title, $message, $reservationId, $email, $status);
+    } catch (Throwable $e) { /* best effort */ }
+}
+
 /** Logs an entry to security_logs. */
 /** Decodes a base64 data-URL image and saves it under assets/uploads/accommodations.
  *  Returns the relative path on success, or null (with $error set) on failure. */
@@ -1489,7 +1511,14 @@ try {
                 }
             } else {
                 addNotification($pdo, null, 'admin', 'booking', 'New booking received', $guestName . ' booked ' . $cabinName . '.', $newId);
-                addNotification($pdo, $user['id'], 'guest', 'confirmation', 'Reservation Confirmation', 'Your reservation has been received and is pending confirmation.', $newId);
+                $in  = date('M j, Y', strtotime($checkIn));
+                $out = date('M j, Y', strtotime($checkOut));
+                notifyGuestWithEmail($pdo, (int)$user['id'], $guestEmail, 'confirmation', 'Booking Received',
+                    "Hi " . $guestName . ",\n\nWe received your booking. Here are the details:\n\n" .
+                    "Reference no.: " . $code . "\nAccommodation: " . $cabinName . "\n" .
+                    "Check-in: " . $in . ", 2:00 PM\nCheck-out: " . $out . ", 12:00 NN\n" .
+                    "Total amount: PHP " . number_format($total, 2) . "\nPayment method: " . $payment . "\n\n" .
+                    "Status: PENDING. Camp Mayagay will verify your payment and email you once your booking is confirmed.", $newId);
                 addNotification($pdo, $user['id'], 'guest', 'payment', 'Payment Received', 'We received your payment details. Camp Mayagay will verify them and confirm your booking.', $newId);
             }
 
@@ -1534,7 +1563,9 @@ try {
             $stmt->execute(['id' => $id]);
             $row = $stmt->fetch();
             if ($row && $row['user_id']) {
-                addNotification($pdo, (int)$row['user_id'], 'guest', 'confirmation', 'Reservation ' . ucfirst($status), 'Your reservation ' . $row['code'] . ' is now ' . $status . '.', $id);
+                $extra = in_array($status, ['declined', 'cancelled'], true) ? ' Your payment will be refunded.' : '';
+                notifyGuestWithEmail($pdo, (int)$row['user_id'], $row['guest_email'] ?? null, 'confirmation', 'Reservation ' . ucfirst($status),
+                    'Your reservation ' . $row['code'] . ' (' . ($row['accommodation_name'] ?? 'Camp Mayagay') . ') is now ' . strtoupper($status) . '.' . $extra, $id);
             }
             echo json_encode(['success' => true, 'reservation' => $row ? reservationRow($row) : null]);
             break;
@@ -1634,7 +1665,7 @@ try {
             $pdo->prepare("UPDATE payments SET payment_status = 'refunded' WHERE reservation_id = :id")->execute(['id' => $id]);
             $pdo->prepare("UPDATE reservations SET payment_status = 'refunded' WHERE reservation_id = :id")->execute(['id' => $id]);
             if ($row['user_id']) {
-                addNotification($pdo, (int)$row['user_id'], 'guest', 'confirmation', 'Cancellation approved', 'Your reservation ' . $row['code'] . ' has been cancelled and your payment will be refunded.', $id);
+                notifyGuestWithEmail($pdo, (int)$row['user_id'], $row['guest_email'] ?? null, 'confirmation', 'Cancellation approved', 'Your reservation ' . $row['code'] . ' has been cancelled and your payment will be refunded.', $id);
             }
             $stmt = $pdo->prepare(RESERVATION_SELECT . ' WHERE r.reservation_id = :id');
             $stmt->execute(['id' => $id]);
@@ -1654,7 +1685,7 @@ try {
             }
             $pdo->prepare("UPDATE reservations SET cancel_requested = 0, cancel_reason = NULL WHERE reservation_id = :id")->execute(['id' => $id]);
             if ($row['user_id']) {
-                addNotification($pdo, (int)$row['user_id'], 'guest', 'announcement', 'Cancellation request declined', 'Your request to cancel reservation ' . $row['code'] . ' was declined. Your booking is still active.', $id);
+                notifyGuestWithEmail($pdo, (int)$row['user_id'], $row['guest_email'] ?? null, 'announcement', 'Cancellation request declined', 'Your request to cancel reservation ' . $row['code'] . ' was declined. Your booking is still active.', $id);
             }
             $stmt = $pdo->prepare(RESERVATION_SELECT . ' WHERE r.reservation_id = :id');
             $stmt->execute(['id' => $id]);

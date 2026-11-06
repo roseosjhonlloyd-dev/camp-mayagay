@@ -1363,6 +1363,8 @@ function renderGuestTable() {
 
 function renderGuestStats() {
   var setTxt = function (id, val) { var e = document.getElementById(id); if (e) e.textContent = val; };
+  // 'statTotalGuests' exists twice (Dashboard card and Guest Record card): update both.
+  document.querySelectorAll('[id="statTotalGuests"]').forEach(function (e) { e.textContent = allGuests.length; });
   setTxt('statTotalGuests', allGuests.length);
   setTxt('statActiveGuests', allGuests.filter(function (g) { return g.status === 'active'; }).length);
   setTxt('statInactiveGuests', allGuests.filter(function (g) { return g.status === 'inactive'; }).length);
