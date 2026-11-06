@@ -528,6 +528,26 @@ body.modal-open { overflow: hidden; }
 }
 @keyframes verifySpin { to { transform: rotate(360deg); } }
 
+.verify-alt-toggle {
+  display: block;
+  margin: 16px auto 0;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-white);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.verify-alt-toggle:hover { opacity: 0.8; }
+
+.verify-code-row { display: flex; gap: 10px; margin-top: 14px; }
+.verify-code-row[hidden] { display: none; }
+.verify-code-row input { flex: 1; min-width: 0; text-align: center; letter-spacing: 4px; font-weight: 600; }
+
 .verify-modal-resend { margin-top: 16px; font-size: 0.85rem; color: var(--text-muted); }
 .verify-modal-resend .resend-code-btn { font-size: 0.85rem; }
 

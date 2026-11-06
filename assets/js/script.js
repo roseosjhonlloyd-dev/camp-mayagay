@@ -300,6 +300,10 @@ function initRegisterForm() {
   var modalError    = document.getElementById('verifyModalError');
   var resendBtn     = document.getElementById('resendEmailCodeBtn');
   var resendTimerEl = document.getElementById('resendEmailTimer');
+  var codeToggle    = document.getElementById('verifyCodeToggle');
+  var codeRow       = document.getElementById('verifyCodeRow');
+  var codeInput     = document.getElementById('verifyCodeInput');
+  var codeBtn       = document.getElementById('verifyCodeBtn');
   var emailVerified = false;
   var resendCountdown = null;
   var pollTimer = null;
@@ -318,6 +322,9 @@ function initRegisterForm() {
   function openModal(email) {
     modalEmail.textContent = email;
     modalError.textContent = '';
+    codeRow.hidden = true;
+    codeToggle.hidden = false;
+    codeInput.value = '';
     modal.hidden = false;
     document.body.classList.add('modal-open');
     startPolling();
@@ -447,6 +454,48 @@ function initRegisterForm() {
   });
 
   resendBtn.addEventListener('click', function () { sendVerifyLink(true); });
+
+  // Backup: type the 6-digit code from the email when the link can't be opened.
+  codeToggle.addEventListener('click', function () {
+    codeToggle.hidden = true;
+    codeRow.hidden = false;
+    codeInput.focus();
+  });
+
+  codeInput.addEventListener('input', function () {
+    codeInput.value = codeInput.value.replace(/[^0-9]/g, '').slice(0, 6);
+    modalError.textContent = '';
+  });
+  codeInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); codeBtn.click(); }
+  });
+
+  codeBtn.addEventListener('click', function () {
+    var code = codeInput.value.trim();
+    modalError.textContent = '';
+    if (code.length !== 6) { modalError.textContent = 'Enter all 6 digits.'; return; }
+
+    codeBtn.disabled = true;
+    codeBtn.textContent = 'Checking...';
+    postJson('php/signup_email.php?action=verify_code', { email: emailInput.value.trim(), code: code })
+      .then(function (result) {
+        if (result.data.success) {
+          setFieldError('email', '');
+          setEmailVerified(true);
+        } else {
+          modalError.textContent = result.data.message || 'Incorrect code. Please try again.';
+          codeInput.value = '';
+          codeInput.focus();
+        }
+      })
+      .catch(function () {
+        modalError.textContent = 'Unable to reach the server. Please try again.';
+      })
+      .finally(function () {
+        codeBtn.disabled = false;
+        codeBtn.textContent = 'Confirm';
+      });
+  });
 
   modalClose.addEventListener('click', closeModal);
   modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
