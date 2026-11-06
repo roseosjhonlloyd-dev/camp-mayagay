@@ -1642,6 +1642,12 @@ try {
                 echo json_encode(['success' => false, 'message' => 'Please tell us why you want to cancel.']);
                 break;
             }
+            // Guests can only cancel within 24 hours after booking (staff/admin are exempt).
+            if (!isStaffOrAdmin($user) && !empty($row['created_at']) && strtotime((string)$row['created_at']) < time() - 24 * 3600) {
+                http_response_code(422);
+                echo json_encode(['success' => false, 'message' => 'Cancellation is only allowed within 24 hours after booking.']);
+                break;
+            }
             $pdo->prepare("UPDATE reservations SET cancel_requested = 1, cancel_reason = :reason WHERE reservation_id = :id")
                 ->execute(['reason' => $reason, 'id' => $id]);
             addNotification($pdo, null, 'admin', 'booking', 'Cancellation requested', $row['guest_name'] . ' requested to cancel reservation ' . $row['code'] . '. Reason: ' . $reason, $id);

@@ -1526,3 +1526,8 @@ body.dark-mode .cal-day.sel{background:#3d7a3a;}
 .resv-balance.paid{background:rgba(61,122,58,.18);color:#2f5d3a;}
 .resv-balance.due{background:rgba(192,57,43,.14);color:#c0392b;}
 .resv-balance.refunded{background:rgba(0,0,0,.08);}
+
+/* Amenity chips in the accommodation details: close together, wrapping neatly */
+.amenity-list{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.amenity-list .amenity-chip{display:inline-block;white-space:nowrap;margin:0;}
+.cancel-closed{display:block;font-size:12px;opacity:.75;margin-top:8px;}

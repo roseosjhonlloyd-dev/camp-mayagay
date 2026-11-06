@@ -143,6 +143,7 @@
           id: 'r' + row.id,
           dbId: row.id,
           status: row.status.charAt(0).toUpperCase() + row.status.slice(1),
+          createdAt: row.created_at || '',
           cancelRequested: !!row.cancel_requested,
           cancelReason: row.cancel_reason || '',
           guest: saved.guest || { name: row.guest_name, email: row.guest_email, phone: row.guest_phone },
@@ -1301,6 +1302,14 @@
     return '<span class="resv-balance due">Remaining balance: ' + peso(Math.max(0, total - paid)) + '</span>';
   }
 
+  /* Guests may cancel only within 24 hours after the booking was made. */
+  function canCancelNow(r){
+    if (!r.createdAt) return true;
+    const made = new Date(String(r.createdAt).replace(' ', 'T'));
+    if (isNaN(made.getTime())) return true;
+    return Date.now() - made.getTime() <= 24 * 60 * 60 * 1000;
+  }
+
   function renderHistory(){
     const el = document.getElementById('historyList');
     if (state.reservations.length === 0){
@@ -1335,7 +1344,7 @@
             <div class="sum-total"><span>Total:</span><span>${peso(r.total)}</span></div>
             ${r.cancelRequested ? '<p style="color:#8a6d1d;font-size:13px;margin:8px 0 0;">Cancellation requested \u2014 waiting for admin review.</p>' : ''}
             <div class="resv-actions">
-              ${r.status === 'Cancelled' ? `<button class="btn-cancel-resv" data-id="${r.id}" data-action="delete">Delete</button>` : (r.cancelRequested ? '' : `<button class="btn-cancel-resv" data-id="${r.id}">Cancel booking</button>`)}
+              ${r.status === 'Cancelled' ? `<button class="btn-cancel-resv" data-id="${r.id}" data-action="delete">Delete</button>` : (r.cancelRequested ? '' : (canCancelNow(r) ? `<button class="btn-cancel-resv" data-id="${r.id}">Cancel booking</button>` : '<span class="cancel-closed">Cancellation is only allowed within 24 hours of booking.</span>'))}
               <button class="btn-secondary btn-receipt" data-id="${r.id}" type="button" style="flex:0 0 auto; padding:11px 16px;">Receipt</button>
               <button class="btn-status">${r.cancelRequested ? 'Pending' : r.status}</button>
             </div>
