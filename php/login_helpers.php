@@ -198,3 +198,44 @@ function resolveClientLocation(array $input): ?array
 
     return ['label' => $label, 'lat' => $lat, 'lng' => $lng];
 }
+
+
+/** Adds the email-verification columns once. DEFAULT 1 means every account that
+ *  already exists counts as verified; only new sign-ups are set to 0. */
+function ensureEmailVerifyColumns(PDO $pdo): void
+{
+    static $done = false;
+    if ($done) return;
+    $has = $pdo->query("SHOW COLUMNS FROM users LIKE 'email_verified'")->fetch();
+    if (!$has) {
+        $pdo->exec("ALTER TABLE users
+            ADD COLUMN email_verified TINYINT(1) NOT NULL DEFAULT 1,
+            ADD COLUMN email_verify_hash CHAR(64) NULL,
+            ADD COLUMN email_verify_expires DATETIME NULL,
+            ADD COLUMN email_verify_sent DATETIME NULL");
+    }
+    $done = true;
+}
+
+/** Public base URL of the site (works behind Railway's proxy). */
+function siteBaseUrl(): string
+{
+    $proto = (string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '');
+    $https = $proto !== '' ? ($proto === 'https') : (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+    $host  = (string)($_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost');
+    $dir   = rtrim(str_replace('\\', '/', dirname(dirname((string)($_SERVER['SCRIPT_NAME'] ?? '/php/x.php')))), '/');
+    return ($https ? 'https://' : 'http://') . $host . $dir;
+}
+
+/** Creates a fresh activation link for the user and emails it. Returns false
+ *  (with $err set) when the email could not be sent. */
+function sendAccountActivationLink(PDO $pdo, int $userId, string $email, string $firstname, ?string &$err = null): bool
+{
+    ensureEmailVerifyColumns($pdo);
+    $token = bin2hex(random_bytes(24));
+    $pdo->prepare('UPDATE users SET email_verify_hash = :h, email_verify_expires = DATE_ADD(NOW(), INTERVAL 24 HOUR), email_verify_sent = NOW() WHERE user_id = :id')
+        ->execute(['h' => hash('sha256', $token), 'id' => $userId]);
+    require_once __DIR__ . '/mailer.php';
+    $link = siteBaseUrl() . '/php/verify_email.php?token=' . $token;
+    return sendAccountActivationEmail($email, $firstname, $link, $err);
+}

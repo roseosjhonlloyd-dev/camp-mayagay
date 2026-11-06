@@ -156,8 +156,9 @@ try {
         exit;
     }
 
+   ensureEmailVerifyColumns($pdo);
    $stmt = $pdo->prepare(
-    'SELECT user_id AS id, role, firstname, lastname, username, email, contact_number, address, password, status, profile_image, valid_id_image, id_verification_status
+    'SELECT user_id AS id, role, firstname, lastname, username, email, contact_number, address, password, status, profile_image, valid_id_image, id_verification_status, email_verified
      FROM users
      WHERE username = :identifier1 OR email = :identifier2
      LIMIT 1'
@@ -199,6 +200,16 @@ $stmt->execute([
     if ($user['status'] === 'disabled') {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'This account has been disabled. Contact the administrator.']);
+        exit;
+    }
+
+    if ((int)$user['email_verified'] === 0) {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'needs_verification' => true,
+            'message' => 'Please verify your email first. Open the verification link we sent to ' . $user['email'] . ', then log in.',
+        ]);
         exit;
     }
 

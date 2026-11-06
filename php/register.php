@@ -85,10 +85,11 @@ try {
     }
 
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+    ensureEmailVerifyColumns($pdo);
 
     $stmt = $pdo->prepare(
-        'INSERT INTO users (role, firstname, lastname, username, email, contact_number, password)
-         VALUES (:role, :firstname, :lastname, :username, :email, :contact_number, :password)'
+        'INSERT INTO users (role, firstname, lastname, username, email, contact_number, password, email_verified)
+         VALUES (:role, :firstname, :lastname, :username, :email, :contact_number, :password, 0)'
     );
 
     $stmt->execute([
@@ -102,6 +103,16 @@ try {
     ]);
 
     $newUserId = (int)$pdo->lastInsertId();
+
+    // The account stays inactive until the guest clicks the link we email.
+    // If the email cannot be delivered (e.g. a made-up address), no account is kept.
+    $mailErr = null;
+    if (!sendAccountActivationLink($pdo, $newUserId, $email, $firstname, $mailErr)) {
+        $pdo->prepare('DELETE FROM users WHERE user_id = :id')->execute(['id' => $newUserId]);
+        http_response_code(502);
+        echo json_encode(['success' => false, 'message' => 'We could not send the verification email. Please check that your email address is real and try again.']);
+        exit;
+    }
 
     // Save the valid ID photo the guest uploaded during sign-up, so it's
     // ready for the admin to review (Security Management > User
@@ -142,7 +153,8 @@ try {
 
     echo json_encode([
         'success'  => true,
-        'message'  => 'Registration successful. You may now log in.',
+        'message'  => 'Account created! We sent a verification link to ' . $email . '. Click it to activate your account, then log in.',
+        'needs_verification' => true,
         'redirect' => 'index.html'
     ]);
 

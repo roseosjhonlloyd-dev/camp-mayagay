@@ -65,6 +65,34 @@ function initLoginForm() {
   var resendBtn = document.getElementById('resendCodeBtn');
   var resendInterval = null;
 
+  // Message after the guest clicked the link in the activation email.
+  try {
+    var qs = new URLSearchParams(window.location.search);
+    if (qs.get('verified') === '1') showAlert(alertEl, 'Email verified! Your account is active. You can log in now.', 'success');
+    else if (qs.get('verified') === '0') showAlert(alertEl, 'That verification link is invalid or has expired. Log in to get a new one.', 'error');
+  } catch (e) {}
+
+  // "Resend verification email" button shown when an unverified account tries to log in.
+  function addResendVerification(identifier) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'Resend verification email';
+    btn.style.cssText = 'display:block;margin:8px auto 0;background:none;border:0;text-decoration:underline;cursor:pointer;color:inherit;font:inherit;font-weight:600;';
+    btn.addEventListener('click', function () {
+      btn.disabled = true;
+      fetch('php/resend_verification.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: identifier })
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        showAlert(alertEl, d.message || 'Done.', d.success ? 'success' : 'error');
+      }).catch(function () {
+        showAlert(alertEl, 'Unable to reach the server. Please try again.', 'error');
+      });
+    });
+    alertEl.appendChild(btn);
+  }
+
   var awaitingTwoFa = false;
 
   function startResendCountdown(seconds) {
@@ -210,6 +238,7 @@ function initLoginForm() {
           window.location.href = result.data.redirect || 'dashboard-guest.html';
         } else {
           showAlert(alertEl, result.data.message || 'Login failed.', 'error');
+          if (result.data.needs_verification) addResendVerification(identifier);
         }
       })
       .catch(function () {
@@ -342,7 +371,7 @@ function initRegisterForm() {
           form.reset();
           setTimeout(function () {
             window.location.href = result.data.redirect || 'index.html';
-          }, 1200);
+          }, result.data.needs_verification ? 6000 : 1200);
         } else {
           showAlert(alertEl, result.data.message || 'Registration failed.', 'error');
           if (result.data.errors) {

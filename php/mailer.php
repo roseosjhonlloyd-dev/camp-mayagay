@@ -206,6 +206,24 @@ function sendLoginCodeEmail(string $toEmail, string $code, ?string &$errorOut = 
 }
 
 /**
+ * Account activation email (sent after sign-up). The account cannot log in
+ * until the guest clicks the link.
+ */
+function sendAccountActivationEmail(string $toEmail, string $firstname, string $link, ?string &$errorOut = null): bool
+{
+    $name = htmlspecialchars($firstname);
+    $html =
+        '<p>Hi ' . $name . ',</p>' .
+        '<p>Welcome to Camp Mayagay! Please confirm that this is your email address to activate your account.</p>' .
+        '<p style="margin:24px 0;"><a href="' . htmlspecialchars($link) . '" style="background:#2f5d3a;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold;">Verify my email</a></p>' .
+        '<p>Or copy this link into your browser:<br>' . htmlspecialchars($link) . '</p>' .
+        '<p>This link expires in 24 hours. If you did not create this account, you can ignore this email.</p>';
+    $text = "Hi {$firstname},\n\nActivate your Camp Mayagay account by opening this link:\n{$link}\n\nThis link expires in 24 hours. If you did not sign up, ignore this email.";
+
+    return sendMailMessage($toEmail, 'Camp Mayagay - Verify your email', $html, $text, $errorOut);
+}
+
+/**
  * Sends a general-purpose notification email (used by the admin
  * "Add Message" composer and reservation notifications).
  */
