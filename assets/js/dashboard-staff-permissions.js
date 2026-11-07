@@ -69,6 +69,11 @@ document.addEventListener('DOMContentLoaded', function () {
       navBtn.style.display = 'none';
     });
 
+    // Payment Transactions is a tab inside Reservation: hide its tab button too.
+    document.querySelectorAll('[data-restab="' + viewName + '"]').forEach(function (tabBtn) {
+      tabBtn.style.display = 'none';
+    });
+
     var section = document.getElementById('view-' + viewName);
     if (section) section.style.display = 'none';
   }

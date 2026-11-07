@@ -291,7 +291,8 @@
   document.addEventListener('DOMContentLoaded', function () {
     if (!$('view-payments')) return;
 
-    document.querySelectorAll('.nav-item[data-view="payments"]').forEach(function (btn) {
+    // Payment Transactions is now a tab inside Reservation (the old sidebar button no longer exists).
+    document.querySelectorAll('.nav-item[data-view="payments"], [data-restab="payments"]').forEach(function (btn) {
       btn.addEventListener('click', load);
     });
     document.querySelectorAll('[data-pay-tab]').forEach(function (b) {

@@ -2199,6 +2199,9 @@ function initReportsPinModal() {
 }
 
 function goToView(viewName) {
+  // Payment Transactions now lives as a tab inside Reservation; keep old links working.
+  var openPaymentsTab = false;
+  if (viewName === 'payments') { viewName = 'reservation'; openPaymentsTab = true; }
   document.querySelectorAll('.view').forEach(function (section) {
     section.classList.remove('active');
   });
@@ -2210,6 +2213,11 @@ function goToView(viewName) {
   document.querySelectorAll('.nav-item[data-view]').forEach(function (btn) {
     btn.classList.toggle('active', btn.getAttribute('data-view') === viewName);
   });
+
+  if (openPaymentsTab) {
+    var payTab = document.querySelector('[data-restab="payments"]');
+    if (payTab) payTab.click();
+  }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
   closeSidebar();
@@ -3842,6 +3850,31 @@ document.addEventListener('DOMContentLoaded', function () {
     adminApiCall('feedback_mark_read', {}).then(function (res) {
       if (typeof showAdminToast === 'function') showAdminToast(res && res.success ? 'All feedback marked as read.' : 'Could not mark feedback as read.', !(res && res.success));
       loadFeedback();
+    });
+  });
+});
+
+
+/* ================= In-page tabs: Reservation | Payment Transactions, Accommodation | Inventory ================= */
+function selectPageTab(row, panelId) {
+  row.querySelectorAll('.tab-btn[data-pagetab]').forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-pagetab') === panelId);
+  });
+  var section = row.closest('.view');
+  if (!section) return;
+  section.querySelectorAll('.pagetab-panel').forEach(function (panel) {
+    panel.classList.toggle('active', panel.id === panelId);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.tab-row[data-pagetabs]').forEach(function (row) {
+    row.querySelectorAll('.tab-btn[data-pagetab]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var panelId = btn.getAttribute('data-pagetab');
+        selectPageTab(row, panelId);
+        if (panelId === 'acctab-inventory' && typeof loadRentalItems === 'function') loadRentalItems(); // show the latest stock
+      });
     });
   });
 });
