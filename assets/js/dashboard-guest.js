@@ -439,10 +439,13 @@
   }
 
   /* Blanket / pillow stock per night (server keeps the daily limits). */
-  let inventory = { limits: { blankets: 30, pillows: 30 }, remaining: {} };
+  let inventory = { items: [], limits: {}, remaining: {} };
   function loadInventory(){
     return apiCall('inventory_list', {}).then(res => {
-      if (res && res.success) inventory = { limits: res.limits || inventory.limits, remaining: res.remaining || {} };
+      if (res && res.success){
+        inventory = { items: res.items || [], limits: res.limits || {}, remaining: res.remaining || {} };
+        if (document.getElementById('rentalRows')) renderRentalRows();
+      }
     }).catch(() => {});
   }
   function stockLeft(dateKey, item){
@@ -843,10 +846,12 @@
   }
 
   let pendingBooking = null;
-  const extraQty = { person:0, blanket:0, pillow:0, nights:1, tents:1, heads:1 };
-  const STEP_MAX = { person:5, blanket:5, pillow:5, tents:5, heads:20 };
+  const extraQty = { person:0, nights:1, ownTents:0, heads:1 };
+  const STEP_MAX = { person:5, ownTents:5, heads:20 };
+  let rentalQty = {};            // rental item id -> quantity picked
+  const RENT_LIMIT = 5;          // most of one rental item per booking day
   const STEP_LIMIT = 5; // most blankets / pillows / extra persons per booking day
-  const STEP_MIN = { nights:1, tents:1, heads:1 };
+  const STEP_MIN = { nights:1, heads:1 };
   // Tent Area pricing (per the camp owner): own tent 250/tent, rented tent 500/tent,
   // plus 150 entrance per head.
   const TENT_OWN_PRICE = 250, TENT_RENT_PRICE = 500, ENTRANCE_PER_HEAD = 150;
@@ -854,14 +859,13 @@
   const EXTRA_MAX = 5;
 
   function resetSteppers(){
-    extraQty.person = 0; extraQty.blanket = 0; extraQty.pillow = 0; extraQty.nights = 1; extraQty.tents = 1; extraQty.heads = 1;
-    document.getElementById('qtyTents').textContent = 1;
+    extraQty.person = 0; extraQty.nights = 1; extraQty.ownTents = 0; extraQty.heads = 1;
+    rentalQty = {};
+    document.getElementById('qtyOwnTents').textContent = 0;
     document.getElementById('qtyHeads').textContent = 1;
-    document.getElementById('tentOwn').checked = true;
     document.getElementById('qtyPerson').textContent = 0;
-    document.getElementById('qtyBlanket').textContent = 0;
-    document.getElementById('qtyPillow').textContent = 0;
     Object.keys(extraQty).forEach(markAddon);
+    renderRentalRows();
   }
   // Highlights an add-on row once the guest has picked some of it.
   function markAddon(key){
@@ -934,21 +938,61 @@
       : 'No day selected yet.';
     updateStockLimits();
   }
-  /* Blankets / pillows: max = smaller of 5 and what is left on every chosen night. */
+  /* ---------- Rental items (blankets, pillows, tents, items the admin adds) ---------- */
+  function rentalLeft(id){
+    let left = inventory.limits[id];
+    if (left === undefined) return 0;
+    bk.dates.forEach(k => { left = Math.min(left, stockLeft(k, id)); });
+    return left;
+  }
+  function rentalRowHtml(it){
+    const isTent = it.id === 'tents';
+    const name = isTent ? 'Tents to rent from the camp' : it.name;
+    const unit = isTent ? '/tent' : ' each';
+    const safe = String(it.name).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    return '<div class="addon-row" data-rent-row="' + it.id + '"><div class="addon-info"><span class="addon-name">' + (isTent ? name : safe) + '</span>' +
+      '<span class="addon-meta">₱' + Number(it.price).toLocaleString() + unit + ' <span class="stock-note" id="rn-' + it.id + '">max ' + RENT_LIMIT + '</span></span></div>' +
+      '<div class="stepper"><button type="button" data-rent-id="' + it.id + '" data-rent-step="-1" aria-label="Fewer">−</button>' +
+      '<span id="rq-' + it.id + '">' + (rentalQty[it.id] || 0) + '</span>' +
+      '<button type="button" data-rent-id="' + it.id + '" data-rent-step="1" aria-label="More">+</button></div></div>';
+  }
+  function renderRentalRows(){
+    const addonBox = document.getElementById('rentalRows');
+    const tentBox2 = document.getElementById('tentRentalRows');
+    if (!addonBox || !tentBox2) return;
+    let a = '', t = '';
+    (inventory.items || []).forEach(it => { if (it.id === 'tents') t += rentalRowHtml(it); else a += rentalRowHtml(it); });
+    addonBox.innerHTML = a;
+    tentBox2.innerHTML = t;
+    [addonBox, tentBox2].forEach(box => box.querySelectorAll('[data-rent-step]').forEach(btn => {
+      btn.addEventListener('click', () => stepRental(btn.dataset.rentId, Number(btn.dataset.rentStep)));
+    }));
+    updateStockLimits();
+  }
+  function stepRental(id, delta){
+    const max = Math.min(RENT_LIMIT, rentalLeft(id));
+    const next = (rentalQty[id] || 0) + delta;
+    if (next > max){ showToast(max === 0 ? 'Out of stock for your selected day(s)' : 'Maximum of ' + max + ' only'); return; }
+    rentalQty[id] = Math.max(0, next);
+    const q = document.getElementById('rq-' + id);
+    if (q) q.textContent = rentalQty[id];
+    const row = q && q.closest('.addon-row');
+    if (row) row.classList.toggle('has-qty', rentalQty[id] > 0);
+  }
+  /* Max per item = smaller of 5 and what is left on every chosen night. */
   function updateStockLimits(){
-    const list = Array.from(bk.dates);
-    [['blanket', 'blankets'], ['pillow', 'pillows']].forEach(pair => {
-      const key = pair[0], item = pair[1], cap = key.charAt(0).toUpperCase() + key.slice(1);
-      let left = inventory.limits[item];
-      list.forEach(k => { left = Math.min(left, stockLeft(k, item)); });
-      STEP_MAX[key] = Math.min(STEP_LIMIT, left);
-      if (extraQty[key] > STEP_MAX[key]){
-        extraQty[key] = STEP_MAX[key];
-        document.getElementById('qty' + cap).textContent = extraQty[key];
-        markAddon(key);
+    (inventory.items || []).forEach(it => {
+      const left = rentalLeft(it.id);
+      const max = Math.min(RENT_LIMIT, left);
+      if ((rentalQty[it.id] || 0) > max) rentalQty[it.id] = max;
+      const q = document.getElementById('rq-' + it.id);
+      if (q){
+        q.textContent = rentalQty[it.id] || 0;
+        const row = q.closest('.addon-row');
+        if (row) row.classList.toggle('has-qty', (rentalQty[it.id] || 0) > 0);
       }
-      const note = document.getElementById('note' + key);
-      if (note) note.textContent = left <= 0 ? 'out of stock' : (left < STEP_LIMIT ? 'only ' + left + ' left' : 'max ' + STEP_LIMIT);
+      const note = document.getElementById('rn-' + it.id);
+      if (note) note.textContent = left <= 0 ? 'out of stock' : (left < RENT_LIMIT ? 'only ' + left + ' left' : 'max ' + RENT_LIMIT);
     });
   }
   document.getElementById('calPrev').addEventListener('click', () => { bk.m--; if (bk.m < 0){ bk.m = 11; bk.y--; } renderCalendar(); });
@@ -1024,10 +1068,16 @@
     pendingBooking.checkOut = '12:00';
     pendingBooking.nights = 1; // each picked day is its own 1-night reservation
     pendingBooking.dates = Array.from(bk.dates).sort();
-    pendingBooking.tent = isTentArea(pendingBooking.cabin) ? { rent: document.getElementById('tentRent').checked, tents: extraQty.tents, heads: extraQty.heads } : null;
+    const tentMode2 = isTentArea(pendingBooking.cabin);
+    if (tentMode2 && (extraQty.ownTents + (rentalQty.tents || 0)) < 1){
+      showToast('Please choose at least one tent: bring your own or rent one from the camp');
+      return;
+    }
+    pendingBooking.tent = tentMode2 ? { own: extraQty.ownTents, rent: rentalQty.tents || 0, heads: extraQty.heads } : null;
     pendingBooking.persons = extraQty.person;
-    pendingBooking.blankets = extraQty.blanket;
-    pendingBooking.pillows = extraQty.pillow;
+    const picked = {};
+    Object.keys(rentalQty).forEach(id => { if (rentalQty[id] > 0 && (tentMode2 || id !== 'tents')) picked[id] = rentalQty[id]; });
+    pendingBooking.rentals = picked;
     closeBookingModal();
     openPaymentModal();
   });
@@ -1047,7 +1097,7 @@
     document.getElementById('bankSelect').value = 'bdo';
     document.getElementById('tncCheck').checked = false;
     updateBankDisplay();
-    const { total } = computeCharges(pendingBooking.cabin, pendingBooking.persons, pendingBooking.blankets, pendingBooking.pillows, pendingBooking.nights, pendingBooking.tent);
+    const { total } = computeCharges(pendingBooking.cabin, pendingBooking.persons, pendingBooking.rentals || {}, pendingBooking.nights, pendingBooking.tent);
     const days = (pendingBooking.dates || []).length || 1;
     const grand = total * days;
     document.getElementById('paymentTotalAmount').textContent = peso(grand) + (days > 1 ? ' (' + days + ' days x ' + peso(total) + ')' : '');
@@ -1081,6 +1131,7 @@
     document.querySelectorAll('.pay-option').forEach(b => {
       const on = b.dataset.pay === choice;
       b.classList.toggle('active', on);
+      if (b.parentElement) b.parentElement.classList.toggle('active', on);
       b.setAttribute('aria-checked', on ? 'true' : 'false');
     });
     document.getElementById('panelGcash').style.display = choice === 'GCash' ? '' : 'none';
@@ -1163,18 +1214,24 @@
   });
   document.getElementById('paymentConfirm').addEventListener('click', finalizeBooking);
 
-  function computeCharges(cabin, persons, blankets, pillows, nights, tent){
+  function rentalItem(id){ return (inventory.items || []).find(x => x.id === id); }
+  function tentRentPrice(){ const it = rentalItem('tents'); return it ? it.price : TENT_RENT_PRICE; }
+  function computeCharges(cabin, persons, rentals, nights, tent){
     nights = Math.max(1, Number(nights) || 1);
+    rentals = rentals || {};
     let baseRate = cabin.price * nights;
     let extraGuestsCharge = persons * 150 * nights;
     if (tent){
-      baseRate = tent.tents * (tent.rent ? TENT_RENT_PRICE : TENT_OWN_PRICE) * nights;
+      baseRate = (tent.own * TENT_OWN_PRICE + tent.rent * tentRentPrice()) * nights;
       extraGuestsCharge = tent.heads * ENTRANCE_PER_HEAD * nights;
     }
     const totalAccommodation = baseRate + extraGuestsCharge;
     const addons = [];
-    if (blankets > 0) addons.push({ label: 'Blankets (' + blankets + ')', price: blankets * 50 });
-    if (pillows > 0) addons.push({ label: 'Pillows (' + pillows + ')', price: pillows * 50 });
+    Object.keys(rentals).forEach(id => {
+      const it = rentalItem(id);
+      if (id === 'tents' || !it || rentals[id] <= 0) return;
+      addons.push({ label: it.name + ' (' + rentals[id] + ')', price: rentals[id] * it.price });
+    });
     const addonsTotal = addons.reduce((s, a) => s + a.price, 0);
     const total = totalAccommodation + addonsTotal;
     return { baseRate, extraGuestsCharge, totalAccommodation, addons, addonsTotal, total, nights };
@@ -1191,16 +1248,19 @@
     confirmBtn.textContent = 'Sinasave ang booking...';
 
     const pb = pendingBooking;
-    const { cabinId, cabin, guest, checkIn: checkInTime, checkOut: checkOutTime, persons, blankets, pillows, paymentMethod, tent } = pb;
+    const { cabinId, cabin, guest, checkIn: checkInTime, checkOut: checkOutTime, persons, rentals: pickedRentals, paymentMethod, tent } = pb;
     const nights = 1;
     const dates = (pb.dates && pb.dates.length) ? pb.dates : [keyOf(...(function(){ const d = getDateForDay(pb.dayIndex); return [d.getFullYear(), d.getMonth(), d.getDate()]; })())];
-    const { baseRate, extraGuestsCharge, totalAccommodation, addons, addonsTotal, total } = computeCharges(cabin, persons, blankets, pillows, nights, tent);
+    const { baseRate, extraGuestsCharge, totalAccommodation, addons, addonsTotal, total } = computeCharges(cabin, persons, pickedRentals || {}, nights, tent);
 
     const lineItems = [
       { label: cabin.name + ' - ' + cabin.note + ' (1 night)', price: baseRate },
     ];
     if (tent){
-      lineItems[0].label = cabin.name + ' - ' + tent.tents + ' ' + (tent.rent ? 'rented' : 'own') + ' tent' + (tent.tents > 1 ? 's' : '') + ' @ ₱' + (tent.rent ? TENT_RENT_PRICE : TENT_OWN_PRICE) + ' (1 night)';
+      const tentParts = [];
+      if (tent.own > 0) tentParts.push(tent.own + ' own tent' + (tent.own > 1 ? 's' : '') + ' @ ₱' + TENT_OWN_PRICE);
+      if (tent.rent > 0) tentParts.push(tent.rent + ' rented tent' + (tent.rent > 1 ? 's' : '') + ' @ ₱' + tentRentPrice());
+      lineItems[0].label = cabin.name + ' - ' + tentParts.join(' + ') + ' (1 night)';
       lineItems.push({ label: 'Entrance fee: ' + tent.heads + ' guest' + (tent.heads > 1 ? 's' : '') + ' @ ₱' + ENTRANCE_PER_HEAD, price: extraGuestsCharge });
     } else if (persons > 0) lineItems.push({ label: persons + ' Extra Person' + (persons > 1 ? 's' : ''), price: extraGuestsCharge });
     lineItems.push(...addons);
@@ -1224,7 +1284,7 @@
         checkOutLabel: fmtDate(checkOutDate) + ' · ' + fmtTime(checkOutTime),
         guest, paymentMethod, lineItems, total, status: 'Pending',
         guestsCount: tent ? tent.heads : 1 + persons, baseRate, extraGuestsCharge, totalAccommodation, addons, addonsTotal,
-        blankets, pillows,
+        rentals: pickedRentals || {}, blankets: (pickedRentals && pickedRentals.blankets) || 0, pillows: (pickedRentals && pickedRentals.pillows) || 0,
         gcashRef: pb.gcashRef || '',
         receiptImage: uploadedReceiptDataUrl || null,
         receiptFileName: uploadedReceiptName || null
@@ -1773,6 +1833,19 @@
     document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === name));
     window.scrollTo({ top:0, behavior:'smooth' });
     closeSidebar();
+    if (name === 'notifications') {
+      // Opening the Notifications page clears the "new" highlight.
+      setTimeout(() => {
+        const view = document.getElementById('view-notifications');
+        if (!view || !view.classList.contains('active')) return;
+        const unread = state.notifications.filter(n => !n.read);
+        if (!unread.length) return;
+        unread.forEach(n => { n.read = true; });
+        renderNotifications();
+        const dbIds = unread.map(n => n.id).filter(id => /^\d+$/.test(String(id))).map(Number);
+        if (dbIds.length) apiCall('notifications_mark_read', { ids: dbIds }).catch(() => {});
+      }, 1200);
+    }
   }
 
   /* ---------------- MOBILE SIDEBAR (hamburger drawer) ---------------- */

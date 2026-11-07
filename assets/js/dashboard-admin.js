@@ -164,6 +164,7 @@ document.addEventListener('DOMContentLoaded', function () {
   initWalkInModal();
   initAccommodationFilters();
   initAccommodationCrud();
+  initRentalInventory();
   initGuestFilters();
   initNotificationFilters();
   initUserManagement();
@@ -1168,6 +1169,81 @@ function addAccAmenityFromInput() {
   input.value = '';
   renderAccAmenities();
   input.focus();
+}
+
+/* ---------- Rental inventory (blankets, pillows, tents, extra items) ---------- */
+var rentalItemsList = [];
+function escapeHtml(v) {
+  return String(v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+}
+function loadRentalItems() {
+  adminApiCall('inventory_list', {}).then(function (res) {
+    rentalItemsList = (res && res.success && res.items) ? res.items : [];
+    renderRentalItems();
+  });
+}
+function renderRentalItems() {
+  var body = document.getElementById('rentalTableBody');
+  if (!body) return;
+  if (!rentalItemsList.length) {
+    body.innerHTML = '<tr><td colspan="4" class="empty-admin-note">No rental items yet.</td></tr>';
+    return;
+  }
+  body.innerHTML = rentalItemsList.map(function (it) {
+    var custom = /^i\d+$/.test(it.id);
+    return '<tr><td>' + escapeHtml(it.name) + '</td><td>&#8369;' + Number(it.price).toLocaleString() + '</td><td>' + it.stock + '</td>' +
+      '<td><button type="button" class="btn-secondary" data-rental-edit="' + it.id + '">Edit</button> ' +
+      (custom ? '<button type="button" class="btn-secondary" data-rental-del="' + it.id + '">Remove</button>' : '') + '</td></tr>';
+  }).join('');
+}
+function openRentalModal(item) {
+  document.getElementById('rentalModalTitle').textContent = item ? 'Edit Rental Item' : 'Add Rental Item';
+  document.getElementById('rentalFormId').value = item ? item.id : '';
+  document.getElementById('rentalFormName').value = item ? item.name : '';
+  document.getElementById('rentalFormPrice').value = item ? item.price : '';
+  document.getElementById('rentalFormStock').value = item ? item.stock : '';
+  document.getElementById('rentalModal').classList.remove('hidden');
+}
+function closeRentalModal() { document.getElementById('rentalModal').classList.add('hidden'); }
+function initRentalInventory() {
+  var addBtn = document.getElementById('addRentalItemBtn');
+  if (!addBtn) return;
+  addBtn.addEventListener('click', function () { openRentalModal(null); });
+  document.getElementById('rentalModalClose').addEventListener('click', closeRentalModal);
+  document.getElementById('rentalModalCancelBtn').addEventListener('click', closeRentalModal);
+  document.getElementById('rentalTableBody').addEventListener('click', function (e) {
+    var ed = e.target.closest('[data-rental-edit]');
+    var del = e.target.closest('[data-rental-del]');
+    if (ed) {
+      var it = rentalItemsList.filter(function (x) { return x.id === ed.getAttribute('data-rental-edit'); })[0];
+      if (it) openRentalModal(it);
+    } else if (del) {
+      if (!confirm('Remove this rental item? Guests will no longer see it.')) return;
+      adminApiCall('rental_item_delete', { id: del.getAttribute('data-rental-del') }).then(function (res) {
+        if (res && res.success) { rentalItemsList = res.items || []; renderRentalItems(); showAdminToast('Item removed'); }
+        else showAdminToast((res && res.message) || 'Could not remove the item.', true);
+      });
+    }
+  });
+  document.getElementById('rentalForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    adminApiCall('rental_item_save', {
+      id: document.getElementById('rentalFormId').value,
+      name: document.getElementById('rentalFormName').value.trim(),
+      price: Number(document.getElementById('rentalFormPrice').value),
+      stock: Number(document.getElementById('rentalFormStock').value)
+    }).then(function (res) {
+      if (res && res.success) {
+        rentalItemsList = res.items || [];
+        renderRentalItems();
+        closeRentalModal();
+        showAdminToast('Rental item saved');
+      } else {
+        showAdminToast((res && res.message) || 'Could not save the item.', true);
+      }
+    });
+  });
+  loadRentalItems();
 }
 
 function initAccommodationCrud() {

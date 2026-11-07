@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Guest Dashboard | Camp Mayagay</title>
 
-<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=34">
+<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=36">
 </head>
 <body>
 
@@ -542,14 +542,13 @@
       <div id="tentBox" style="display:none;">
         <h4 class="bk-section-title"><span class="bk-step"></span>Tent Area options</h4>
         <div class="addon-list">
-          <label class="extras-check opt-card"><input type="radio" name="tentMode" id="tentOwn" value="own" checked><span>Bring own tent</span><span class="extras-price">&#8369;250/tent</span></label>
-          <label class="extras-check opt-card"><input type="radio" name="tentMode" id="tentRent" value="rent"><span>Rent a tent from the camp</span><span class="extras-price">&#8369;500/tent</span></label>
           <div class="addon-row">
-            <div class="addon-info"><span class="addon-name">Number of tents</span><span class="addon-meta"><span class="stock-note">max 5</span></span></div>
-            <div class="stepper" data-stepper="tents">
-              <button type="button" data-step="-1" aria-label="Fewer tents">&minus;</button><span id="qtyTents">1</span><button type="button" data-step="1" aria-label="More tents">&plus;</button>
+            <div class="addon-info"><span class="addon-name">Tents you bring</span><span class="addon-meta">&#8369;250/tent <span class="stock-note">max 5</span></span></div>
+            <div class="stepper" data-stepper="ownTents">
+              <button type="button" data-step="-1" aria-label="Fewer own tents">&minus;</button><span id="qtyOwnTents">0</span><button type="button" data-step="1" aria-label="More own tents">&plus;</button>
             </div>
           </div>
+          <div id="tentRentalRows"></div>
           <div class="addon-row">
             <div class="addon-info"><span class="addon-name">Guests</span><span class="addon-meta">&#8369;150 entrance/head <span class="stock-note">max 20</span></span></div>
             <div class="stepper" data-stepper="heads">
@@ -568,18 +567,7 @@
               <button type="button" data-step="-1" aria-label="Fewer persons">&minus;</button><span id="qtyPerson">0</span><button type="button" data-step="1" aria-label="More persons">&plus;</button>
             </div>
           </div>
-          <div class="addon-row">
-            <div class="addon-info"><span class="addon-name">Blanket</span><span class="addon-meta">&#8369;50/blanket <span class="stock-note" id="noteblanket">max 5</span></span></div>
-            <div class="stepper" data-stepper="blanket">
-              <button type="button" data-step="-1" aria-label="Fewer blankets">&minus;</button><span id="qtyBlanket">0</span><button type="button" data-step="1" aria-label="More blankets">&plus;</button>
-            </div>
-          </div>
-          <div class="addon-row">
-            <div class="addon-info"><span class="addon-name">Pillow</span><span class="addon-meta">&#8369;50/pillow <span class="stock-note" id="notepillow">max 5</span></span></div>
-            <div class="stepper" data-stepper="pillow">
-              <button type="button" data-step="-1" aria-label="Fewer pillows">&minus;</button><span id="qtyPillow">0</span><button type="button" data-step="1" aria-label="More pillows">&plus;</button>
-            </div>
-          </div>
+          <div id="rentalRows"></div>
         </div>
       </div>
     </section>
@@ -607,13 +595,10 @@
     <div class="pay-block">
       <h4>Choose how you will pay</h4>
       <div class="pay-options" role="radiogroup" aria-label="Payment option">
+        <div class="pay-choice">
         <button type="button" class="pay-option" data-pay="GCash" role="radio" aria-checked="false">
           <span class="pay-logo gcash">GC</span><span class="po-text"><b>GCash</b><small>Send to the camp's GCash number</small></span><span class="po-dot"></span>
         </button>
-        <button type="button" class="pay-option" data-pay="Bank Transfer" role="radio" aria-checked="false">
-          <span class="pay-logo bank">BDO</span><span class="po-text"><b>Bank Transfer</b><small>BDO account deposit</small></span><span class="po-dot"></span>
-        </button>
-      </div>
       <div class="pay-panel" id="panelGcash" style="display:none;">
         <div class="gcash-row">
           <div class="gcash-brand">
@@ -624,6 +609,11 @@
         </div>
         <p class="hint">Send payment, then type the Reference No. shown in your GCash receipt.</p>
       </div>
+        </div>
+        <div class="pay-choice">
+        <button type="button" class="pay-option" data-pay="Bank Transfer" role="radio" aria-checked="false">
+          <span class="pay-logo bank">BDO</span><span class="po-text"><b>Bank Transfer</b><small>BDO account deposit</small></span><span class="po-dot"></span>
+        </button>
       <div class="pay-panel" id="panelBank" style="display:none;">
         <div class="field" style="margin-bottom:12px; display:none;">
           <label for="bankSelect">Select bank</label>
@@ -637,6 +627,8 @@
           </div>
         </div>
         <p class="hint">After depositing, upload the photo of your deposit slip below.</p>
+      </div>
+        </div>
       </div>
     </div>
 
@@ -786,7 +778,7 @@
   <a class="auth-switch" href="php/logout.php">Log out</a>
 </div>
 
-<script src="assets/js/dashboard-guest.js?v=41"></script>
+<script src="assets/js/dashboard-guest.js?v=43"></script>
 <script>
   (function () {
     var okBtn = document.getElementById('passwordOkBtn');

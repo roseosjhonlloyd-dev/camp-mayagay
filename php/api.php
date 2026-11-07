@@ -577,23 +577,58 @@ function reservationRow(array $r): array
     ];
 }
 
-/** Daily stock of the borrowable add-ons. Defaults can be overridden with
- *  system_settings keys stock_blankets / stock_pillows (no schema change). */
+/** Rental inventory (blankets, pillows, tents for rent and anything the admin adds).
+ *  Kept in system_settings as rent_<id> = "price|stock|name" (the value column only
+ *  holds 60 characters), so no schema change is needed. Defaults are created once. */
+function rentalItems(PDO $pdo): array
+{
+    $load = function () use ($pdo): array {
+        $items = [];
+        $st = $pdo->query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key LIKE 'rent\\_%'");
+        foreach ($st->fetchAll() as $r) {
+            $parts = explode('|', (string)$r['setting_value'], 3);
+            if (count($parts) !== 3) { continue; }
+            $items[] = ['id' => substr((string)$r['setting_key'], 5), 'price' => (int)$parts[0], 'stock' => (int)$parts[1], 'name' => $parts[2]];
+        }
+        return $items;
+    };
+    $items = $load();
+    if (!$items) {
+        $old = ['blankets' => 30, 'pillows' => 30];
+        try {
+            $st = $pdo->query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('stock_blankets','stock_pillows')");
+            foreach ($st->fetchAll() as $row) {
+                $k = substr((string)$row['setting_key'], 6);
+                if (isset($old[$k]) && is_numeric($row['setting_value'])) { $old[$k] = max(0, (int)$row['setting_value']); }
+            }
+        } catch (PDOException $e) { /* defaults */ }
+        $defaults = [
+            'rent_blankets' => '50|' . $old['blankets'] . '|Blanket',
+            'rent_pillows'  => '50|' . $old['pillows'] . '|Pillow',
+            'rent_tents'    => '500|10|Tent (for rent)',
+        ];
+        $ins = $pdo->prepare('INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES (:k, :v)');
+        foreach ($defaults as $k => $v) { $ins->execute(['k' => $k, 'v' => $v]); }
+        $items = $load();
+    }
+    $order = ['blankets' => 1, 'pillows' => 2, 'tents' => 3];
+    usort($items, function ($x, $y) use ($order) {
+        $ox = $order[$x['id']] ?? (10 + (int)substr($x['id'], 1));
+        $oy = $order[$y['id']] ?? (10 + (int)substr($y['id'], 1));
+        return $ox <=> $oy;
+    });
+    return $items;
+}
+
+/** Stock limit per rental item id. */
 function addonStockLimits(PDO $pdo): array
 {
-    $limits = ['blankets' => 30, 'pillows' => 30];
-    try {
-        $st = $pdo->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('stock_blankets','stock_pillows')");
-        $st->execute();
-        foreach ($st->fetchAll() as $row) {
-            $k = substr((string)$row['setting_key'], 6);
-            if (isset($limits[$k]) && is_numeric($row['setting_value'])) { $limits[$k] = max(0, (int)$row['setting_value']); }
-        }
-    } catch (PDOException $e) { /* keep defaults */ }
+    $limits = [];
+    foreach (rentalItems($pdo) as $it) { $limits[$it['id']] = $it['stock']; }
     return $limits;
 }
 
-/** Add-on units already reserved per night: ['YYYY-MM-DD' => ['blankets'=>n,'pillows'=>n]]. */
+/** Rental units reserved per night: ['YYYY-MM-DD' => ['blankets'=>n, 'tents'=>n, ...]]. */
 function addonUsedByNight(PDO $pdo, string $from, string $to): array
 {
     $used = [];
@@ -605,19 +640,32 @@ function addonUsedByNight(PDO $pdo, string $from, string $to): array
     $st->execute(['from' => $from . ' 00:00:00', 'to' => $to . ' 23:59:59']);
     foreach ($st->fetchAll() as $r) {
         $d = $r['data'] ? json_decode((string)$r['data'], true) : null;
-        $b = is_array($d) ? max(0, (int)($d['blankets'] ?? 0)) : 0;
-        $p = is_array($d) ? max(0, (int)($d['pillows'] ?? 0)) : 0;
-        if ($b === 0 && $p === 0) { continue; }
+        $qty = reservationRentalQty(is_array($d) ? $d : []);
+        if (!$qty) { continue; }
         $day = new DateTime(substr((string)$r['check_in_date'], 0, 10));
         $end = new DateTime(substr((string)$r['check_out_date'], 0, 10));
         for ($i = 0; $day < $end && $i < 120; $i++, $day->modify('+1 day')) {
             $k = $day->format('Y-m-d');
-            if (!isset($used[$k])) { $used[$k] = ['blankets' => 0, 'pillows' => 0]; }
-            $used[$k]['blankets'] += $b;
-            $used[$k]['pillows']  += $p;
+            foreach ($qty as $id => $n) { $used[$k][$id] = ($used[$k][$id] ?? 0) + $n; }
         }
     }
     return $used;
+}
+
+/** Rental quantities stored in a reservation's data (new "rentals" map, or the old blankets/pillows keys). */
+function reservationRentalQty(array $d): array
+{
+    $out = [];
+    if (isset($d['rentals']) && is_array($d['rentals'])) {
+        foreach ($d['rentals'] as $id => $n) {
+            $n = (int)$n;
+            if ($n > 0 && preg_match('/^[a-z0-9]{1,12}$/', (string)$id)) { $out[(string)$id] = $n; }
+        }
+        return $out;
+    }
+    if (!empty($d['blankets'])) { $out['blankets'] = max(0, (int)$d['blankets']); }
+    if (!empty($d['pillows']))  { $out['pillows']  = max(0, (int)$d['pillows']); }
+    return array_filter($out);
 }
 
 /** True when another active reservation (pending/confirmed/completed) already
@@ -1437,18 +1485,45 @@ try {
         case 'inventory_list':
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'reservation');
-            $from = date('Y-m-d');
-            $to   = date('Y-m-d', strtotime('+400 days'));
+            $items = rentalItems($pdo);
             $limits = addonStockLimits($pdo);
-            $used = addonUsedByNight($pdo, $from, $to);
+            $used = addonUsedByNight($pdo, date('Y-m-d'), date('Y-m-d', strtotime('+400 days')));
             $remaining = [];
             foreach ($used as $day => $u) {
-                $remaining[$day] = [
-                    'blankets' => max(0, $limits['blankets'] - $u['blankets']),
-                    'pillows'  => max(0, $limits['pillows'] - $u['pillows']),
-                ];
+                foreach ($limits as $id => $lim) { $remaining[$day][$id] = max(0, $lim - ($u[$id] ?? 0)); }
             }
-            echo json_encode(['success' => true, 'limits' => $limits, 'remaining' => $remaining]);
+            echo json_encode(['success' => true, 'items' => $items, 'limits' => $limits, 'remaining' => $remaining]);
+            break;
+
+        case 'rental_item_save':
+            requireModuleAccess($pdo, $user, 'accommodation');
+            $rid   = trim((string)($input['id'] ?? ''));
+            $rname = trim(preg_replace('/[|]/', ' ', (string)($input['name'] ?? '')));
+            $rname = function_exists('mb_substr') ? mb_substr($rname, 0, 36) : substr($rname, 0, 36);
+            $rprice = (int)($input['price'] ?? -1);
+            $rstock = (int)($input['stock'] ?? -1);
+            if ($rname === '' || $rprice < 0 || $rprice > 999999 || $rstock < 0 || $rstock > 99999) {
+                deny('Please enter a name, a price and a stock count.', 422);
+            }
+            $existing = rentalItems($pdo);
+            if ($rid === '') {
+                $max = 0;
+                foreach ($existing as $it) { if (preg_match('/^i(\d+)$/', $it['id'], $m)) { $max = max($max, (int)$m[1]); } }
+                $rid = 'i' . ($max + 1);
+            } elseif (!preg_match('/^[a-z0-9]{1,12}$/', $rid) || !in_array($rid, array_column($existing, 'id'), true)) {
+                deny('Item not found.', 404);
+            }
+            $pdo->prepare('INSERT INTO system_settings (setting_key, setting_value) VALUES (:k, :v) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)')
+                ->execute(['k' => 'rent_' . $rid, 'v' => $rprice . '|' . $rstock . '|' . $rname]);
+            echo json_encode(['success' => true, 'items' => rentalItems($pdo)]);
+            break;
+
+        case 'rental_item_delete':
+            requireModuleAccess($pdo, $user, 'accommodation');
+            $rid = trim((string)($input['id'] ?? ''));
+            if (!preg_match('/^i\d+$/', $rid)) { deny('Only items you added can be removed.', 422); }
+            $pdo->prepare('DELETE FROM system_settings WHERE setting_key = :k')->execute(['k' => 'rent_' . $rid]);
+            echo json_encode(['success' => true, 'items' => rentalItems($pdo)]);
             break;
 
         case 'reservations_create':
@@ -1536,23 +1611,26 @@ try {
                 $lockStmt = $pdo->prepare('SELECT accommodation_id FROM accommodations WHERE accommodation_id = :id FOR UPDATE');
                 $lockStmt->execute(['id' => $accommodationId]);
 
-                // ---- Add-on stock (blankets / pillows) per night ----------
-                $wantB = is_array($data) ? max(0, (int)($data['blankets'] ?? 0)) : 0;
-                $wantP = is_array($data) ? max(0, (int)($data['pillows'] ?? 0)) : 0;
-                if ($wantB > 0 || $wantP > 0) {
-                    $limits = addonStockLimits($pdo);
+                // ---- Rental stock (blankets, pillows, tents, added items) per night ----
+                $wantQty = reservationRentalQty(is_array($data) ? $data : []);
+                if ($wantQty) {
+                    $rItems = [];
+                    foreach (rentalItems($pdo) as $it) { $rItems[$it['id']] = $it; }
                     $dFrom = substr($checkIn, 0, 10);
                     $dTo   = substr($checkOut, 0, 10);
                     $usedMap = addonUsedByNight($pdo, $dFrom, $dTo);
                     $day = new DateTime($dFrom);
                     $endDay = new DateTime($dTo);
                     for ($i = 0; $day < $endDay && $i < 120; $i++, $day->modify('+1 day')) {
-                        $u = $usedMap[$day->format('Y-m-d')] ?? ['blankets' => 0, 'pillows' => 0];
-                        if ($u['blankets'] + $wantB > $limits['blankets'] || $u['pillows'] + $wantP > $limits['pillows']) {
-                            $pdo->rollBack();
-                            http_response_code(409);
-                            echo json_encode(['success' => false, 'message' => 'Not enough blankets/pillows left on ' . $day->format('M j, Y') . '. Please lower the quantity.']);
-                            break 2;
+                        $u = $usedMap[$day->format('Y-m-d')] ?? [];
+                        foreach ($wantQty as $rid2 => $n) {
+                            if (!isset($rItems[$rid2])) { continue; }
+                            if (($u[$rid2] ?? 0) + $n > $rItems[$rid2]['stock']) {
+                                $pdo->rollBack();
+                                http_response_code(409);
+                                echo json_encode(['success' => false, 'message' => 'Not enough ' . strtolower($rItems[$rid2]['name']) . ' left on ' . $day->format('M j, Y') . '. Please lower the quantity.']);
+                                break 3;
+                            }
                         }
                     }
                 }
