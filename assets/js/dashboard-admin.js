@@ -3667,6 +3667,8 @@ function adminEsc(s) {
 
 var SENT_PAGE_SIZE = 50;
 var sentPage = 0;
+var sentSelected = {};
+var sentVisibleIds = [];
 
 function loadSentMessages() {
   var box = document.getElementById('sentMessagesBody');
@@ -3678,6 +3680,7 @@ function loadSentMessages() {
     }
     sentMessagesList = res.messages || [];
     sentPage = 0;
+    sentSelected = {};
     renderSentMessages();
   });
 }
@@ -3725,7 +3728,9 @@ function renderSentMessages(keepPage) {
   if (prev) prev.disabled = sentPage <= 0;
   if (next) next.disabled = sentPage >= maxPage;
 
+  sentVisibleIds = list.map(function (m) { return String(m.id); });
   if (!total) {
+    updateSentSelectUI();
     box.innerHTML = '<div class="gm-empty">No replies or messages found.</div>';
     return;
   }
@@ -3735,6 +3740,7 @@ function renderSentMessages(keepPage) {
     var emailMark = m.email_status === 'sent' ? '<span class="gm-row-flag ok" title="Sent to email">Emailed</span>'
                   : m.email_status === 'failed' ? '<span class="gm-row-flag bad" title="Email could not be delivered">Email failed</span>' : '';
     html += '<div class="gm-row ' + (m.admin_read ? 'seen' : 'unseen') + '" data-sent-id="' + m.id + '" role="button" tabindex="0">';
+    html += '  <input type="checkbox" class="sent-check" data-id="' + m.id + '" aria-label="Select message"' + (sentSelected[m.id] ? ' checked' : '') + '>';
     html += '  <span class="gm-row-to">' + adminEsc(m.guest_name) + '</span>';
     html += '  <span class="gm-row-line">';
     html += '    <span class="gm-chip ' + (isReply ? 'reply' : 'msg') + '">' + (isReply ? 'Reply' : 'Message') + '</span>';
@@ -3750,8 +3756,23 @@ function renderSentMessages(keepPage) {
   box.querySelectorAll('.gm-row').forEach(function (row) {
     var open = function () { openSentMessage(row.getAttribute('data-sent-id')); };
     row.addEventListener('click', open);
-    row.addEventListener('keydown', function (e) { if (e.key === 'Enter') open(); });
+    row.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target === row) open(); });
+    var cb = row.querySelector('.sent-check');
+    cb.addEventListener('click', function (e) { e.stopPropagation(); });
+    cb.addEventListener('change', function () {
+      if (cb.checked) sentSelected[cb.getAttribute('data-id')] = true; else delete sentSelected[cb.getAttribute('data-id')];
+      updateSentSelectUI();
+    });
   });
+  updateSentSelectUI();
+}
+
+function updateSentSelectUI() {
+  var n = Object.keys(sentSelected).length;
+  var del = document.getElementById('sentDeleteBtn');
+  var all = document.getElementById('sentSelectAll');
+  if (del) { del.disabled = !n; del.textContent = n ? 'Delete (' + n + ')' : 'Delete'; }
+  if (all) all.checked = sentVisibleIds.length > 0 && sentVisibleIds.every(function (id) { return sentSelected[id]; });
 }
 
 function relativeAgo(raw) {
@@ -3828,6 +3849,25 @@ function initFeedbackTabs() {
   var nextBtn = document.getElementById('sentNextBtn');
   if (prevBtn) prevBtn.addEventListener('click', function () { if (sentPage > 0) { sentPage--; renderSentMessages(true); } });
   if (nextBtn) nextBtn.addEventListener('click', function () { sentPage++; renderSentMessages(true); });
+  var selAll = document.getElementById('sentSelectAll');
+  if (selAll) selAll.addEventListener('change', function () {
+    sentVisibleIds.forEach(function (id) { if (selAll.checked) sentSelected[id] = true; else delete sentSelected[id]; });
+    renderSentMessages(true);
+  });
+  var delBtn = document.getElementById('sentDeleteBtn');
+  if (delBtn) delBtn.addEventListener('click', function () {
+    var ids = Object.keys(sentSelected).map(Number);
+    if (!ids.length || !confirm('Delete ' + ids.length + ' selected message(s) from this list?')) return;
+    adminApiCall('sent_messages_delete', { ids: ids }).then(function (res) {
+      var ok = res && res.success;
+      if (typeof showAdminToast === 'function') showAdminToast(ok ? 'Selected messages deleted.' : 'Could not delete messages.', !ok);
+      if (ok) {
+        sentMessagesList = sentMessagesList.filter(function (m) { return !sentSelected[m.id]; });
+        sentSelected = {};
+        renderSentMessages(true);
+      }
+    });
+  });
   var refresh = document.getElementById('refreshSentBtn');
   if (refresh) refresh.addEventListener('click', loadSentMessages);
   var markAllSent = document.getElementById('markAllSentReadBtn');

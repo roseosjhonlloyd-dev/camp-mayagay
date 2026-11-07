@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Staff Dashboard | Camp Mayagay</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="assets/css/dashboard-admin.css?v=13">
+<link rel="stylesheet" href="assets/css/dashboard-admin.css?v=14">
 </head>
 <body>
 
@@ -417,11 +417,12 @@
   <section class="view" id="view-reservation">
     <h2 class="page-title">Reservation</h2>
     <div class="tab-row" id="reservationTabs" data-pagetabs>
-      <button class="tab-btn active" data-pagetab="restab-list" type="button">Reservation</button>
+      <button class="tab-btn active" data-pagetab="restab-overview" type="button">Reservation</button>
+      <button class="tab-btn" data-pagetab="restab-list" type="button">Reservation List</button>
       <button class="tab-btn" data-pagetab="view-payments" data-restab="payments" type="button">Payment Transactions</button>
     </div>
 
-    <div class="pagetab-panel active" id="restab-list">
+    <div class="pagetab-panel active" id="restab-overview">
 
     <div class="summary-grid">
       <div class="summary-card">
@@ -498,6 +499,10 @@
         </div>
       </div>
     </div>
+
+    </div>
+
+    <div class="pagetab-panel" id="restab-list">
 
     <div class="panel">
       <div class="panel-head">
@@ -1229,7 +1234,7 @@
         </div>
 
         <div class="gm-list-head">
-          <span class="gm-list-title">Sent</span>
+          <span class="gm-list-title"><label class="sent-selall"><input type="checkbox" id="sentSelectAll" aria-label="Select all"> Select all</label> <button class="btn-primary" id="sentDeleteBtn" type="button" disabled style="padding:4px 12px;font-size:12px;margin-left:8px;">Delete</button></span>
           <span class="gm-list-pager">
             <span id="sentPageInfo">0 of 0</span>
             <button class="gm-pg-btn" id="sentPrevBtn" type="button" aria-label="Newer" title="Newer">
@@ -1507,7 +1512,7 @@
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="assets/js/dashboard-admin.js?v=29"></script>
+<script src="assets/js/dashboard-admin.js?v=30"></script>
 <script src="assets/js/dashboard-payments.js?v=4"></script>
 <script src="assets/js/dashboard-staff-permissions.js?v=6"></script>
 </body>

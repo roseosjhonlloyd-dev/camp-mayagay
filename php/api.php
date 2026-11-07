@@ -146,6 +146,26 @@ function ensureAmountPaidColumn(PDO $pdo): void
     $done = true;
 }
 
+/** Confirmed reservations that have checked out (past check-out day, or today after noon)
+ *  become 'completed' - but only when fully paid. Unpaid/partial ones stay open
+ *  until the balance is settled (payments_record re-runs this). */
+function autoCompleteCheckedOut(PDO $pdo): void
+{
+    try {
+        ensureAmountPaidColumn($pdo);
+        $now = new DateTime('now', new DateTimeZone('Asia/Manila'));
+        $today = $now->format('Y-m-d');
+        $noonPassed = (int)$now->format('H') >= 12;
+        $pdo->prepare(
+            "UPDATE reservations SET reservation_status = 'completed'
+             WHERE reservation_status = 'confirmed'
+               AND payment_status <> 'refunded'
+               AND amount_paid + 0.004 >= total_amount
+               AND (check_out_date < :d1 OR (check_out_date = :d2 AND :n = 1))"
+        )->execute(['d1' => $today, 'd2' => $today, 'n' => $noonPassed ? 1 : 0]);
+    } catch (Throwable $e) { /* never block the page */ }
+}
+
 /** unpaid / partial / paid from the amounts. */
 function paymentStatusFor(float $total, float $paid): string
 {
@@ -1447,6 +1467,7 @@ try {
             ensureAmountPaidColumn($pdo);
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'reservation');
+            autoCompleteCheckedOut($pdo);
             if (isStaffOrAdmin($user)) {
                 $stmt = $pdo->query(RESERVATION_SELECT . ' ORDER BY r.created_at DESC');
                 $rows = $stmt->fetchAll();
@@ -2048,6 +2069,7 @@ try {
                 $pdo->rollBack();
                 deny('Could not record the payment.', 500);
             }
+            autoCompleteCheckedOut($pdo);
             echo json_encode([
                 'success' => true,
                 'id' => $id,
@@ -2340,6 +2362,7 @@ try {
             );
             // Admin-side read flag; the guest's own read status in notifications.status is untouched.
             $sentState = readStateLoad($pdo, 'sent_read', 'sent_messages_read_ids');
+            $sentDel = readStateLoad($pdo, 'sent_del');
                         $rows = array_map(function ($n) use ($sentState) {
                 return [
                     'id'          => (int)$n['notification_id'],
@@ -2353,7 +2376,9 @@ try {
                     'seen'        => $n['status'] === 'read',
                     'created_at'  => $n['created_at'],
                 ];
-            }, $stmt->fetchAll());
+            }, array_values(array_filter($stmt->fetchAll(), function ($n) use ($sentDel) {
+                return !isset($sentDel['ids'][(int)$n['notification_id']]);
+            })));
             echo json_encode(['success' => true, 'messages' => $rows]);
             break;
 
@@ -2361,6 +2386,16 @@ try {
             requireModuleAccess($pdo, $user, 'feedback');
             $maxSent = (int)$pdo->query("SELECT COALESCE(MAX(notification_id), 0) FROM notifications WHERE audience = 'guest' AND notification_type IN ('announcement','feedback')")->fetchColumn();
             readStateSet($pdo, 'sent_read', is_array($input['ids'] ?? null) ? $input['ids'] : null, $maxSent);
+            echo json_encode(['success' => true]);
+            break;
+
+        /** Hides sent messages from the admin/staff Sent list only; the guest keeps their copy. */
+        case 'sent_messages_delete':
+            requireLogin($user);
+            requireModuleAccess($pdo, $user, 'feedback');
+            $delIds = is_array($input['ids'] ?? null) ? $input['ids'] : [];
+            if (!count($delIds)) { echo json_encode(['success' => false, 'message' => 'No messages selected.']); break; }
+            readStateSet($pdo, 'sent_del', $delIds, 0);
             echo json_encode(['success' => true]);
             break;
 

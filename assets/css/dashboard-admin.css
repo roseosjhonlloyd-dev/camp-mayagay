@@ -1057,7 +1057,7 @@ body{
 .gm-pg-btn:hover:not(:disabled){background:rgba(255,255,255,0.12);}
 .gm-pg-btn:disabled{opacity:.3; cursor:default;}
 .gm-list{border-top:1px solid rgba(255,255,255,0.12); border-radius:8px; overflow:hidden;}
-.gm-row{display:grid; grid-template-columns:190px 1fr auto auto; gap:14px; align-items:center; height:46px; padding:0 14px; border-bottom:1px solid rgba(255,255,255,0.10); cursor:pointer; font-size:13.5px; color:#fff; position:relative;}
+.gm-row{display:grid; grid-template-columns:22px 190px 1fr auto auto; gap:14px; align-items:center; height:46px; padding:0 14px; border-bottom:1px solid rgba(255,255,255,0.10); cursor:pointer; font-size:13.5px; color:#fff; position:relative;}
 .gm-row.unseen{background:rgba(255,255,255,0.09); font-weight:700;}
 .gm-row.seen{background:transparent; font-weight:400;}
 .gm-row:hover{background:rgba(255,255,255,0.15); box-shadow:0 1px 4px rgba(0,0,0,0.45); z-index:1;}
@@ -1075,10 +1075,11 @@ body{
 .gm-empty{padding:34px 16px; text-align:center; font-size:13px; opacity:.75; color:#fff;}
 
 @media (max-width:700px){
-  .gm-row{grid-template-columns:1fr auto; height:auto; padding:10px 12px; row-gap:2px;}
-  .gm-row-to{grid-column:1; font-size:13px;}
-  .gm-row-date{grid-column:2; grid-row:1;}
-  .gm-row-line{grid-column:1 / 3;}
+  .gm-row{grid-template-columns:22px 1fr auto; height:auto; padding:10px 12px; row-gap:2px;}
+  .sent-check{grid-row:1;}
+  .gm-row-to{grid-column:2; font-size:13px;}
+  .gm-row-date{grid-column:3; grid-row:1;}
+  .gm-row-line{grid-column:2 / 4;}
   .gm-row-flag{display:none;}
 }
 
@@ -1239,3 +1240,6 @@ body{
 /* In-page tab panels (Reservation | Payment Transactions, Accommodation | Inventory) */
 .pagetab-panel{display:none;}
 .pagetab-panel.active{display:block;}
+
+.sent-check{width:16px;height:16px;cursor:pointer;accent-color:#f59e0b;}
+.sent-selall{display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;}
