@@ -142,6 +142,7 @@
         return Object.assign({}, saved, {
           id: 'r' + row.id,
           dbId: row.id,
+          code: saved.code || row.code || '',
           status: row.status.charAt(0).toUpperCase() + row.status.slice(1),
           createdAt: row.created_at || '',
           cancelRequested: !!row.cancel_requested,
@@ -755,47 +756,133 @@
     DAYS.forEach((d, i) => { if (state.availability[availKey(c.id, i)]) a++; });
     return `<p class="accom-avail-line"><span class="av-dot ok"></span>Available: ${a} day${a === 1 ? '' : 's'} <span class="av-dot no"></span>Booked: ${DAYS.length - a} day${DAYS.length - a === 1 ? '' : 's'}</p>`;
   }
+  /* ---------- Accommodation page (v2): filters, week strip, summary bar ---------- */
+  let accomFilter = 'all';
+  let accSelected = null;   // { cabinId, dayIndex } set by "Book now" - shown in the summary bar
+  function cabinMatchesFilter(c){
+    switch (accomFilter){
+      case 'nipa':      return c.icon === 'hut';
+      case 'rooms':     return c.icon === 'glass' || c.icon === 'house';
+      case 'tent':      return c.icon === 'tent';
+      case 'available': return DAYS.some((d, i) => state.availability[availKey(c.id, i)]);
+      default:          return true;
+    }
+  }
+  function filteredCabins(){ return CABINS.filter(cabinMatchesFilter); }
+  function weekAvailCount(c){
+    let n = 0;
+    DAYS.forEach((d, i) => { if (state.availability[availKey(c.id, i)]) n++; });
+    return n;
+  }
+  function availBadgeText(c){
+    const n = weekAvailCount(c);
+    if (n === DAYS.length) return 'Fully available';
+    if (n === 0) return 'Fully booked';
+    return n + ' day' + (n === 1 ? '' : 's') + ' left';
+  }
+  function maxGuestsOf(c){
+    const m = /(\d+)\s*pax/i.exec(c.note || '');
+    return m ? Number(m[1]) : 0;
+  }
+  function shortDate(d){ return d.toLocaleDateString(undefined, { month:'short', day:'numeric' }); }
+
+  function updateAccSummary(){
+    const bar = document.getElementById('accSummary');
+    if (!bar) return;
+    let c = null, day = -1;
+    if (accSelected){
+      c = CABINS.find(x => x.id === accSelected.cabinId);
+      day = c ? firstAvailableDay(c.id) : -1;
+    }
+    if (!c || day < 0){ accSelected = null; bar.hidden = true; return; }
+    accSelected.dayIndex = day;
+    const inDate = getDateForDay(day);
+    const outDate = new Date(inDate); outDate.setDate(outDate.getDate() + 1);
+    const guests = maxGuestsOf(c);
+    document.getElementById('accSummaryTitle').textContent = c.name + ' · 1 night';
+    document.getElementById('accSummarySub').textContent =
+      shortDate(inDate) + ' → ' + shortDate(outDate) +
+      (guests ? ' · ' + guests + ' guest' + (guests === 1 ? '' : 's') : '') +
+      ' · 50% down payment ' + peso(Math.round(c.price * 0.5));
+    bar.hidden = false;
+  }
+
   function renderAccomGrid(){
     const grid = document.getElementById('accomGrid');
-    const pageItems = CABINS.slice(accomPage * ACCOM_PAGE_SIZE, accomPage * ACCOM_PAGE_SIZE + ACCOM_PAGE_SIZE);
+    const list = filteredCabins();
+    const totalPages = Math.max(1, Math.ceil(list.length / ACCOM_PAGE_SIZE));
+    if (accomPage > totalPages - 1) accomPage = totalPages - 1;
+    const pageItems = list.slice(accomPage * ACCOM_PAGE_SIZE, accomPage * ACCOM_PAGE_SIZE + ACCOM_PAGE_SIZE);
 
-    grid.innerHTML = pageItems.map(c => `
-      <div class="accom-card">
-        <div class="accom-art" style="background:${ART_BG[c.icon]}${c.image ? ";--art-img:url('" + encodeURI(c.image).replace(/'/g, '%27') + "')" : ''}">${accomSlider(c)}</div>
-        <div class="accom-info">
-          <div>
+    if (!pageItems.length){
+      grid.innerHTML = '<p class="acc2-empty">No accommodations match this filter.</p>';
+    } else grid.innerHTML = pageItems.map(c => {
+      const on = state.favorites.has(c.id);
+      const chips = (c.amenities || []).slice(0, 3).map(a => '<span class="acc2-amenity">' + escHtml(a) + '</span>').join('');
+      const bars = DAYS.map((d, i) => {
+        const avail = state.availability[availKey(c.id, i)];
+        return '<div class="acc2-day"><button type="button" class="acc2-bar ' + (avail ? 'avail' : 'booked') + '" data-cabin="' + c.id + '" data-day="' + i +
+               '" aria-label="' + d + (avail ? ' - available' : ' - booked') + '"' + (avail ? '' : ' disabled') + '></button><span>' + d.charAt(0) + '</span></div>';
+      }).join('');
+      const badge = availBadgeText(c);
+      return `
+      <div class="accom-card acc2-card${accSelected && accSelected.cabinId === c.id ? ' selected' : ''}">
+        <div class="accom-art" style="background:${ART_BG[c.icon]}${c.image ? ";--art-img:url('" + encodeURI(c.image).replace(/'/g, '%27') + "')" : ''}">
+          ${accomSlider(c)}
+          <span class="acc2-badge${weekAvailCount(c) === 0 ? ' none' : ''}">${badge}</span>
+          <button class="acc2-heart${on ? ' active' : ''}" data-fav="${c.id}" aria-label="Save ${escHtml(c.name)}" type="button">
+            <svg viewBox="0 0 24 24" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8"><path d="${HEART_PATH}"/></svg>
+          </button>
+          <div class="acc2-price"><b>${peso(c.price)}</b> / ${c.unit}</div>
+        </div>
+        <div class="acc2-body">
+          <div class="acc2-titlerow">
             <p class="accom-name">${c.name}</p>
-            <p class="accom-note">${c.note}</p>
-            ${availSummaryHtml(c)}
+            <span class="acc2-favcount" title="Guests who favorited this">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="${HEART_PATH}"/></svg>${state.favCounts[c.id] || 0}
+            </span>
           </div>
-          <div class="accom-fav"><span class="accom-price">${peso(c.price)}/ ${c.unit}</span>${favWrapHtml(c)}</div>
+          <p class="accom-note">${c.note || ''}</p>
+          <div class="acc2-amenities">${chips}</div>
+          <div class="acc2-week">${bars}</div>
+          <div class="acc2-actions">
+            <span class="acc2-weeklabel">This week</span>
+            <button type="button" class="acc2-btn ghost" data-details="${c.id}">Details</button>
+            <button type="button" class="acc2-btn solid" data-book="${c.id}">Book now</button>
+          </div>
         </div>
-        <div class="day-row">
-          ${DAYS.map((d,i) => {
-            const avail = state.availability[availKey(c.id,i)];
-            return `<button type="button" class="day-pill ${avail?'avail':'booked'}" data-cabin="${c.id}" data-day="${i}" ${avail?'':'disabled'}>${d}</button>`;
-          }).join('')}
-        </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
 
-    // Day buttons: one listener on the grid, set first so nothing else can block it.
+    // One delegated listener: week bars open the booking form (as before), Details opens the popup,
+    // Book now selects the stay and shows the summary bar.
     grid.onclick = (e) => {
-      const pill = e.target.closest('.day-pill.avail');
-      if (pill && grid.contains(pill)) openBookingModal(pill.dataset.cabin, Number(pill.dataset.day));
+      const bar = e.target.closest('.acc2-bar.avail');
+      if (bar && grid.contains(bar)){ openBookingModal(bar.dataset.cabin, Number(bar.dataset.day)); return; }
+      const det = e.target.closest('[data-details]');
+      if (det && grid.contains(det)){ openAccDetails(det.dataset.details); return; }
+      const book = e.target.closest('[data-book]');
+      if (book && grid.contains(book)){
+        const id = book.dataset.book;
+        if (firstAvailableDay(id) < 0){ showToast('No open day this week. Pick another date.'); return; }
+        accSelected = { cabinId: id, dayIndex: firstAvailableDay(id) };
+        renderAccomGrid();
+        const bar2 = document.getElementById('accSummary');
+        if (bar2 && bar2.scrollIntoView) bar2.scrollIntoView({ block:'nearest', behavior:'smooth' });
+      }
     };
     bindFavButtons(grid);
-    grid.querySelectorAll('[data-reviews]').forEach(btn => {
-      btn.addEventListener('click', () => openAccReviews(Number(btn.dataset.reviews)));
-    });
     try { initAccomSliders(grid); } catch (err) { console.error(err); }
     updatePaginationButtons();
+    updateAccSummary();
   }
 
   function updatePaginationButtons(){
     const prevBtn = document.getElementById('prevAccomBtn');
     const nextBtnEl = document.getElementById('nextBtn');
-    const totalPages = Math.max(1, Math.ceil(CABINS.length / ACCOM_PAGE_SIZE));
+    const totalPages = Math.max(1, Math.ceil(filteredCabins().length / ACCOM_PAGE_SIZE));
+    const navRow = document.querySelector('#view-accommodation .next-row');
+    if (navRow) navRow.style.display = totalPages > 1 ? '' : 'none';   // no pager when everything fits on one page
     if (prevBtn) prevBtn.style.display = accomPage > 0 ? 'inline-flex' : 'none';
     if (nextBtnEl) {
       nextBtnEl.disabled = accomPage >= totalPages - 1;
@@ -1380,7 +1467,9 @@
       </div>`;
       return;
     }
-    el.innerHTML = state.reservations.map(r => `
+    // Original per-reservation card (guest info, payment summary, Cancel / Receipt) - now shown
+    // as the expandable detail of each table row so no action is lost.
+    const cardHtml = r => `
       <div class="resv-card">
         <div class="resv-top">
           <span class="resv-dates" title="Check-in: ${r.checkInLabel}  |  Check-out: ${r.checkOutLabel}">${r.checkInLabel} - ${r.checkOutLabel}</span>
@@ -1411,7 +1500,62 @@
           </div>
         </div>
       </div>
-    `).join('');
+    `;
+
+    const resBalance = r => {
+      if (r.status === 'Cancelled' || r.payStatus === 'refunded' || r.payStatus === 'paid') return 0;
+      return Math.max(0, (Number(r.total) || 0) - (Number(r.amountPaid) || 0));
+    };
+    const total = state.reservations.length;
+    const upcoming = state.reservations.filter(r => r.status === 'Confirmed' || r.status === 'Pending').length;
+    const completed = state.reservations.filter(r => r.status === 'Completed').length;
+    const balanceDue = state.reservations.reduce((sum, r) => sum + resBalance(r), 0);
+    const statsHtml = `
+      <div class="hist2-stats">
+        <div class="hist2-stat"><span>Total reservations</span><strong>${total}</strong></div>
+        <div class="hist2-stat"><span>Upcoming</span><strong>${upcoming}</strong></div>
+        <div class="hist2-stat"><span>Completed</span><strong>${completed}</strong></div>
+        <div class="hist2-stat"><span>Balance due</span><strong>${peso(balanceDue)}</strong></div>
+      </div>`;
+
+    const rowsHtml = state.reservations.map(r => {
+      const bal = resBalance(r);
+      const label = r.cancelRequested ? 'Cancel requested' : r.status;
+      const cls = r.cancelRequested ? 'pending' : String(r.status).toLowerCase();
+      const code = r.code || ('RES-' + String(r.dbId || '').padStart(4, '0'));
+      return `
+        <tr class="hist2-row">
+          <td class="hist2-code" data-label="Code">${escHtml(code)}</td>
+          <td class="hist2-acc" data-label="Accommodation">${escHtml(String(r.cabin || ''))}</td>
+          <td data-label="Check-in">${escHtml(String(r.checkInLabel || ''))}</td>
+          <td data-label="Check-out">${escHtml(String(r.checkOutLabel || ''))}</td>
+          <td class="hist2-bal${bal > 0 ? ' due' : ''}" data-label="Balance">${peso(bal)}</td>
+          <td data-label="Status"><span class="hist2-pill ${cls}">${escHtml(label)}</span></td>
+          <td class="hist2-act"><button type="button" class="hist2-view" data-row="${r.id}" aria-expanded="false">View</button></td>
+        </tr>
+        <tr class="hist2-detail" data-detail="${r.id}" hidden>
+          <td colspan="7">${cardHtml(r)}</td>
+        </tr>`;
+    }).join('');
+
+    el.innerHTML = statsHtml + `
+      <div class="hist2-table-wrap">
+        <table class="hist2-table">
+          <thead><tr><th>Code</th><th>Accommodation</th><th>Check-in</th><th>Check-out</th><th>Balance</th><th>Status</th><th></th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>`;
+
+    el.querySelectorAll('.hist2-view').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const detail = el.querySelector('.hist2-detail[data-detail="' + btn.dataset.row + '"]');
+        if (!detail) return;
+        const open = detail.hidden;
+        detail.hidden = !open;
+        btn.textContent = open ? 'Hide' : 'View';
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    });
 
     el.querySelectorAll('.btn-cancel-resv').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1875,8 +2019,24 @@
   });
   document.getElementById('heroBookBtn').addEventListener('click', () => goToView('accommodation'));
   document.getElementById('viewAllBtn').addEventListener('click', () => goToView('accommodation'));
+  (function wireAccomV2(){
+    const chips = document.getElementById('accFilters');
+    if (chips) chips.addEventListener('click', (e) => {
+      const btn = e.target.closest('.acc2-chip');
+      if (!btn) return;
+      accomFilter = btn.dataset.filter || 'all';
+      accomPage = 0;
+      chips.querySelectorAll('.acc2-chip').forEach(b => b.classList.toggle('active', b === btn));
+      renderAccomGrid();
+    });
+    const go = document.getElementById('accSummaryGo');
+    if (go) go.addEventListener('click', () => {
+      if (!accSelected) return;
+      openBookingModal(accSelected.cabinId, accSelected.dayIndex);
+    });
+  })();
   document.getElementById('nextBtn').addEventListener('click', () => {
-    const totalPages = Math.max(1, Math.ceil(CABINS.length / ACCOM_PAGE_SIZE));
+    const totalPages = Math.max(1, Math.ceil(filteredCabins().length / ACCOM_PAGE_SIZE));
     if (accomPage < totalPages - 1) {
       accomPage += 1;
       renderAccomGrid();
