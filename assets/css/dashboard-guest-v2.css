@@ -77,6 +77,38 @@ body.dark-mode .view-all{color:var(--leaf);}
 body.dark-mode .cabin-card,
 body.dark-mode .trend-card{background:var(--v2-card); border:1px solid var(--v2-card-border);}
 
+/* ---------- Light theme: same design language as dark (frosted photo, solid active nav, glass panels) ---------- */
+body:not(.dark-mode){
+  background:
+    linear-gradient(180deg, rgba(244,241,230,0.78) 0%, rgba(244,241,230,0.92) 40%, rgba(244,241,230,0.97) 100%) fixed,
+    url('../images/Background.png') center/cover fixed no-repeat;
+}
+body:not(.dark-mode) .sidebar{background:#0d1b13;}
+body:not(.dark-mode) .nav-item.active{background:var(--v2-solid); color:#fff; transform:none;}
+body:not(.dark-mode) .nav-item.active .nav-icon{background:rgba(255,255,255,0.18); color:#fff; transform:none;}
+body:not(.dark-mode) .nav-item.active:hover .nav-icon{transform:none;}
+body:not(.dark-mode) .panel{background:var(--v2-glass); border-color:var(--v2-glass-border); backdrop-filter:blur(10px);}
+/* Home (light): hero is no longer a boxed card - the photo fades into the page */
+body:not(.dark-mode) .hero{background:transparent; box-shadow:none; border:0;}
+body:not(.dark-mode) .hero-slider{
+  -webkit-mask-image:linear-gradient(180deg,#000 55%,transparent 100%);
+          mask-image:linear-gradient(180deg,#000 55%,transparent 100%);
+}
+body:not(.dark-mode) .hero-overlay{background:linear-gradient(90deg, rgba(6,14,10,0.74) 0%, rgba(6,14,10,0.50) 45%, transparent 85%);}
+body:not(.dark-mode) .explore-panel,
+body:not(.dark-mode) .trending-panel{
+  background:var(--v2-glass); border:1px solid var(--v2-glass-border);
+  backdrop-filter:blur(10px); color:var(--v2-text);
+}
+body:not(.dark-mode) .explore-head h2{color:var(--v2-text);}
+body:not(.dark-mode) .view-all{color:var(--v2-accent);}
+body:not(.dark-mode) .cabin-card,
+body:not(.dark-mode) .trend-card{background:var(--v2-card); border:1px solid var(--v2-card-border);}
+body:not(.dark-mode) .star-box{background:var(--v2-field); border:1px solid var(--v2-glass-border);}
+body:not(.dark-mode) .star-btn{color:rgba(168,124,24,0.60);}       /* darker gold so empty stars read on the light box */
+body:not(.dark-mode) .star-btn.on{color:#b8860b;}
+body:not(.dark-mode) .star-label{color:#8a6a12;}
+
 /* ---------- Accommodation page ---------- */
 .acc2-head{display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin:4px 0 16px; flex-wrap:wrap;}
 .acc2-title{font-family:'Fraunces',serif; font-size:32px; font-weight:600; margin:0; color:var(--v2-text);}
