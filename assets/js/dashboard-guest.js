@@ -748,14 +748,9 @@
     return keyOf(d.getFullYear(), d.getMonth(), d.getDate()) < todayKey();
   }
   function availSummaryHtml(c){
-    let a = 0, up = 0;
-    DAYS.forEach((d, i) => {
-      if (isPastDay(i)) return;
-      up++;
-      if (state.availability[availKey(c.id, i)]) a++;
-    });
-    const bk2 = up - a;
-    return `<p class="accom-avail-line"><span class="av-dot ok"></span>Available: ${a} day${a === 1 ? '' : 's'} <span class="av-dot no"></span>Booked: ${bk2} day${bk2 === 1 ? '' : 's'}</p>`;
+    let a = 0;
+    DAYS.forEach((d, i) => { if (state.availability[availKey(c.id, i)]) a++; });
+    return `<p class="accom-avail-line"><span class="av-dot ok"></span>Available: ${a} day${a === 1 ? '' : 's'} <span class="av-dot no"></span>Booked: ${DAYS.length - a} day${DAYS.length - a === 1 ? '' : 's'}</p>`;
   }
   function renderAccomGrid(){
     const grid = document.getElementById('accomGrid');
@@ -774,9 +769,8 @@
         </div>
         <div class="day-row">
           ${DAYS.map((d,i) => {
-            const past = isPastDay(i);
-            const avail = !past && state.availability[availKey(c.id,i)];
-            return `<button type="button" class="day-pill ${past?'past':(avail?'avail':'booked')}" data-cabin="${c.id}" data-day="${i}" ${avail?'':'disabled'}>${d}</button>`;
+            const avail = state.availability[availKey(c.id,i)];
+            return `<button type="button" class="day-pill ${avail?'avail':'booked'}" data-cabin="${c.id}" data-day="${i}" ${avail?'':'disabled'}>${d}</button>`;
           }).join('')}
         </div>
       </div>
