@@ -45,8 +45,8 @@ body.dark-mode{
   --v2-due:#e6b84a;
   /* both layers fixed, so the overlay stays the same height as the photo on long pages */
   background:
-    linear-gradient(180deg, rgba(8,20,26,0.66) 0%, rgba(8,20,14,0.88) 42%, rgba(5,12,8,0.96) 100%) fixed,
-    url('../images/Background.png') center/cover fixed no-repeat;
+    linear-gradient(180deg, rgba(8,20,26,0.40) 0%, rgba(8,20,14,0.90) 45%, rgba(5,12,8,0.97) 100%) fixed,
+    url('../images/whole-area.png') center top/cover fixed no-repeat;
 }
 
 /* ---------- Shell: sidebar + top bar (dark) ---------- */
@@ -80,9 +80,7 @@ body.dark-mode .trend-card{background:var(--v2-card); border:1px solid var(--v2-
 
 /* ---------- Light theme: same design language as dark (frosted photo, solid active nav, glass panels) ---------- */
 body:not(.dark-mode){
-  background:
-    linear-gradient(180deg, rgba(244,241,230,0.78) 0%, rgba(244,241,230,0.92) 40%, rgba(244,241,230,0.97) 100%) fixed,
-    url('../images/Background.png') center/cover fixed no-repeat;
+  background:#ffffff;
 }
 body:not(.dark-mode) .sidebar{background:#0d1b13;}
 body:not(.dark-mode) .nav-item.active{background:var(--v2-solid); color:#fff; transform:none;}
