@@ -80,21 +80,10 @@ body.dark-mode .trend-card{background:var(--v2-card); border:1px solid var(--v2-
 
 /* ---------- Light theme: same design language as dark (frosted photo, solid active nav, glass panels) ---------- */
 body:not(.dark-mode){
-  /* photo stays visible - only a soft green tint (no white wash) so text can sit on it */
   background:
-    linear-gradient(180deg, rgba(10,30,20,0.26) 0%, rgba(10,30,20,0.40) 45%, rgba(8,24,16,0.56) 100%) fixed,
+    linear-gradient(180deg, rgba(244,241,230,0.78) 0%, rgba(244,241,230,0.92) 40%, rgba(244,241,230,0.97) 100%) fixed,
     url('../images/Background.png') center/cover fixed no-repeat;
 }
-/* text that sits directly on the photo (not inside a panel) is white in light mode */
-body:not(.dark-mode) .acc2-title,
-body:not(.dark-mode) .hist2-head h2,
-body:not(.dark-mode) .page-title{color:#fff; text-shadow:0 2px 14px rgba(0,0,0,0.45);}
-body:not(.dark-mode) .acc2-sub,
-body:not(.dark-mode) .hist2-head .sub,
-body:not(.dark-mode) .filter-note,
-body:not(.dark-mode) .acc2-empty,
-body:not(.dark-mode) .acc2-head .legend,
-body:not(.dark-mode) .back-link{color:rgba(255,255,255,0.92); text-shadow:0 1px 8px rgba(0,0,0,0.5);}
 body:not(.dark-mode) .sidebar{background:#0d1b13;}
 body:not(.dark-mode) .nav-item.active{background:var(--v2-solid); color:#fff; transform:none;}
 body:not(.dark-mode) .nav-item.active .nav-icon{background:rgba(255,255,255,0.18); color:#fff; transform:none;}
@@ -107,18 +96,15 @@ body:not(.dark-mode) .hero-slider{
           mask-image:linear-gradient(180deg,#000 55%,transparent 100%);
 }
 body:not(.dark-mode) .hero-overlay{background:linear-gradient(90deg, rgba(6,14,10,0.74) 0%, rgba(6,14,10,0.50) 45%, transparent 85%);}
-/* Home panels: no white backdrop - the cards sit straight on the photo (like the Accommodation page) */
 body:not(.dark-mode) .explore-panel,
 body:not(.dark-mode) .trending-panel{
-  background:transparent; border:0; box-shadow:none; backdrop-filter:none;
+  background:var(--v2-glass); border:1px solid var(--v2-glass-border);
+  backdrop-filter:blur(10px); color:var(--v2-text);
 }
-body:not(.dark-mode) .explore-head h2,
-body:not(.dark-mode) .trending-panel > h2,
-body:not(.dark-mode) .trending-panel h2,
-body:not(.dark-mode) .trending-panel h3{color:#fff; text-shadow:0 2px 12px rgba(0,0,0,0.5);}
-body:not(.dark-mode) .view-all{color:#fff; text-shadow:0 1px 8px rgba(0,0,0,0.5);}
+body:not(.dark-mode) .explore-head h2{color:var(--v2-text);}
+body:not(.dark-mode) .view-all{color:var(--v2-accent);}
 body:not(.dark-mode) .cabin-card,
-body:not(.dark-mode) .trend-card{background:var(--v2-card); border:1px solid var(--v2-card-border); color:var(--v2-text);}
+body:not(.dark-mode) .trend-card{background:var(--v2-card); border:1px solid var(--v2-card-border);}
 body:not(.dark-mode) .star-box{background:var(--v2-field); border:1px solid var(--v2-glass-border);}
 body:not(.dark-mode) .star-btn{color:rgba(168,124,24,0.60);}       /* darker gold so empty stars read on the light box */
 body:not(.dark-mode) .star-btn.on{color:#b8860b;}
@@ -295,7 +281,7 @@ body.dark-mode .set2-left .btn-discard{background:rgba(14,30,21,0.55); border:1p
 
 /* ---------- Responsive ---------- */
 @media (max-width:1100px){
-  .topbar{background:linear-gradient(180deg, rgba(8,20,14,0.60) 0%, rgba(8,20,14,0) 100%);}
+  body.dark-mode .topbar{background:linear-gradient(180deg, rgba(8,20,14,0.60) 0%, rgba(8,20,14,0) 100%);}
 }
 @media (max-width:1100px){
   .hist2-stats{grid-template-columns:repeat(2,1fr);}
