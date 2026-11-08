@@ -45,7 +45,7 @@ body.dark-mode{
   --v2-due:#e6b84a;
   /* both layers fixed, so the overlay stays the same height as the photo on long pages */
   background:
-    linear-gradient(180deg, rgba(8,20,26,0.40) 0%, rgba(8,20,14,0.90) 45%, rgba(5,12,8,0.97) 100%) fixed,
+    linear-gradient(180deg, rgba(8,20,26,0.55) 0%, rgba(8,20,14,0.92) 38%, rgba(5,12,8,0.97) 100%) fixed,
     url('../images/whole-area.png') center top/cover fixed no-repeat;
 }
 
@@ -314,3 +314,12 @@ body.dark-mode .set2-left .btn-discard{background:rgba(14,30,21,0.55); border:1p
   .fb-filter-row{grid-template-columns:1fr;}
   .set2-card, .set2-help{padding:20px 18px;}
 }
+
+/* ---------- Home hero: no rotating photo - text sits straight on the page background ---------- */
+.hero-slider, .hero-overlay, .hero-dots{display:none !important;}
+body .hero{min-height:0 !important;}
+body:not(.dark-mode) .hero-content,
+body:not(.dark-mode) .hero-content h1,
+body:not(.dark-mode) .hero-content p,
+body:not(.dark-mode) .hero-eyebrow{color:#132419; text-shadow:none;}
+body:not(.dark-mode) .hero-content .btn-primary{background:var(--v2-solid); color:#fff; border-color:transparent;}
