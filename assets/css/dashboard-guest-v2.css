@@ -315,11 +315,13 @@ body.dark-mode .set2-left .btn-discard{background:rgba(14,30,21,0.55); border:1p
   .set2-card, .set2-help{padding:20px 18px;}
 }
 
-/* ---------- Home hero: no rotating photo - text sits straight on the page background ---------- */
-.hero-slider, .hero-overlay, .hero-dots{display:none !important;}
-body .hero{min-height:0 !important;}
-body:not(.dark-mode) .hero-content,
-body:not(.dark-mode) .hero-content h1,
-body:not(.dark-mode) .hero-content p,
-body:not(.dark-mode) .hero-eyebrow{color:#132419; text-shadow:none;}
-body:not(.dark-mode) .hero-content .btn-primary{background:var(--v2-solid); color:#fff; border-color:transparent;}
+/* ---------- Home hero: dark mode has no rotating photo (text sits on the page background) ---------- */
+body.dark-mode .hero-slider, body.dark-mode .hero-overlay, body.dark-mode .hero-dots{display:none !important;}
+body.dark-mode .hero{min-height:0 !important;}
+
+/* ---------- Room details: always-visible round X on top of the photo ---------- */
+#accDetailsModal .close-x{
+  z-index:30; top:14px; right:14px; width:40px; height:40px; border-radius:50%;
+  background:#fff; color:#132419; box-shadow:0 2px 10px rgba(0,0,0,0.35); border:0;
+}
+body.dark-mode #accDetailsModal .close-x{background:#14291c; color:#fff; border:1px solid rgba(255,255,255,0.25);}
