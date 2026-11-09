@@ -1648,3 +1648,16 @@ body.dark-mode .addon-name, body.dark-mode .bk-section-title, body.dark-mode .bk
 #receiptBlock .upload-section{display:flex;flex-direction:column;gap:12px;}
 #receiptBlock .upload-drop{width:100%;box-sizing:border-box;}
 #receiptBlock .qr-box{width:100%;box-sizing:border-box;}
+
+/* Dark mode: payment option cards */
+body.dark-mode .pay-choice{background:#1d1d1d;border-color:rgba(255,255,255,.16);}
+body.dark-mode .pay-choice.active{border-color:#4fb36c;box-shadow:0 2px 14px rgba(79,179,108,.22);}
+body.dark-mode .pay-choice.active .pay-option{background:rgba(79,179,108,.14);}
+body.dark-mode .pay-choice .pay-option,body.dark-mode .pay-choice .pay-option b{color:#f1f5f2;}
+body.dark-mode .pay-choice .pay-option small{color:#aab8ae;opacity:1;}
+body.dark-mode .pay-choice .pay-panel{border-top-color:rgba(255,255,255,.2);color:#e6ece8;}
+body.dark-mode .pay-choice .gcash-example,body.dark-mode .pay-choice .pay-panel .hint{color:#aab8ae;opacity:1;}
+body.dark-mode .pay-choice .gname{color:#5fb0ff;}
+body.dark-mode .pay-choice .bank-details,body.dark-mode .pay-choice .bank-details strong{color:#e6ece8;}
+body.dark-mode .pay-choice .pay-option .po-dot{border-color:#4fb36c;}
+body.dark-mode .pay-choice.active .pay-option .po-dot{background:radial-gradient(#4fb36c 55%,transparent 60%);}

@@ -865,10 +865,7 @@
       if (book && grid.contains(book)){
         const id = book.dataset.book;
         if (firstAvailableDay(id) < 0){ showToast('No open day this week. Pick another date.'); return; }
-        accSelected = { cabinId: id, dayIndex: firstAvailableDay(id) };
-        renderAccomGrid();
-        const bar2 = document.getElementById('accSummary');
-        if (bar2 && bar2.scrollIntoView) bar2.scrollIntoView({ block:'nearest', behavior:'smooth' });
+        openBookingModal(id, firstAvailableDay(id));
       }
     };
     bindFavButtons(grid);
