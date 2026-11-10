@@ -101,13 +101,13 @@
       const avatarBtn = document.getElementById('profileBtn');
       if (avatarBtn) {
         avatarBtn.innerHTML = savedPhoto
-          ? `<img src="${savedPhoto}" alt="Profile photo" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+          ? `<img src="${savedPhoto}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.replaceWith(document.createTextNode(${JSON.stringify(initials || 'G')}))">`
           : (initials || 'G');
       }
       const avatarCircle = document.getElementById('avatarCircle');
       if (avatarCircle) {
         avatarCircle.innerHTML = savedPhoto
-          ? `<img src="${savedPhoto}" alt="Profile photo">`
+          ? `<img src="${savedPhoto}" alt="" onerror="this.replaceWith(document.createTextNode(${JSON.stringify(initials || 'G')}))">`
           : (initials || 'G');
       }
       const settingsName = document.getElementById('settingsName');
@@ -2196,7 +2196,7 @@
     const reader = new FileReader();
     reader.onload = () => {
       pendingAvatarPhoto = reader.result;
-      document.getElementById('avatarCircle').innerHTML = `<img src="${reader.result}" alt="Profile photo">`;
+      document.getElementById('avatarCircle').innerHTML = `<img src="${reader.result}" alt="">`;
       showToast("Photo selected — click 'Save changes' to apply it.");
     };
     reader.readAsDataURL(file);

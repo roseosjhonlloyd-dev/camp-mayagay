@@ -220,6 +220,14 @@ function ensureEmailVerifyColumns(PDO $pdo): void
 /** Public base URL of the site (works behind Railway's proxy). */
 function siteBaseUrl(): string
 {
+    // Optional override: set APP_URL (e.g. https://your-app.up.railway.app) in Railway Variables.
+    $fixed = trim((string)(getenv('APP_URL') ?: ''));
+    if ($fixed === '' && getenv('RAILWAY_PUBLIC_DOMAIN')) {
+        $fixed = 'https://' . getenv('RAILWAY_PUBLIC_DOMAIN');
+    }
+    if ($fixed !== '') {
+        return rtrim($fixed, '/');
+    }
     $proto = (string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '');
     $https = $proto !== '' ? ($proto === 'https') : (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
     $host  = (string)($_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost');
