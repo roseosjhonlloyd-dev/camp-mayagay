@@ -823,6 +823,21 @@ function getCalendarBookedReservations() {
     .sort(function (a, b) { return String(a.check_in).localeCompare(String(b.check_in)); });
 }
 
+// Kulay ng bawat guest (pareho ang kulay ng lahat ng booking ng iisang pangalan).
+var CAL_GUEST_COLORS = ['#ef4444', '#f97316', '#3b82f6', '#a855f7', '#ec4899', '#14b8a6', '#eab308', '#06b6d4', '#84cc16', '#f43f5e'];
+function calGuestKey(r) { return String(r.guest_name || '').trim().toLowerCase(); }
+function getCalendarGuestColors() {
+  var names = [];
+  getCalendarBookedReservations().forEach(function (r) {
+    var k = calGuestKey(r);
+    if (names.indexOf(k) === -1) names.push(k);
+  });
+  names.sort();
+  var map = {};
+  names.forEach(function (k, i) { map[k] = CAL_GUEST_COLORS[i % CAL_GUEST_COLORS.length]; });
+  return map;
+}
+
 function renderCalendarGuestList() {
   var list = document.getElementById('calGuestList');
   if (!list) return;
@@ -838,10 +853,11 @@ function renderCalendarGuestList() {
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 
+  var guestColors = getCalendarGuestColors();
   list.innerHTML = booked.map(function (r) {
     var active = String(calResKey(r)) === String(calendarHighlightedId);
-    return '<button type="button" class="calendar-guest-item' + (active ? ' active' : '') + '" data-res-id="' + escapeCalHtml(calResKey(r)) + '">' +
-      '<span class="guest-name">' + escapeCalHtml(r.guest_name) + '</span>' +
+    return '<button type="button" class="calendar-guest-item' + (active ? ' active' : '') + '" data-res-id="' + escapeCalHtml(calResKey(r)) + '" style="--gc:' + guestColors[calGuestKey(r)] + '">' +
+      '<span class="guest-name"><i class="guest-color-dot"></i>' + escapeCalHtml(r.guest_name) + '</span>' +
       '<span class="guest-meta">' + escapeCalHtml(r.cabin_name) + ' &middot; ' + shortDate(r.check_in) + ' - ' + shortDate(r.check_out) + '</span>' +
       '</button>';
   }).join('');
@@ -916,13 +932,17 @@ function renderReservationCalendar() {
     if (r.check_out) checkoutDays[String(r.check_out).slice(0, 10)] = true;
   });
 
+  var guestColors = getCalendarGuestColors();
+  var bookedList = getCalendarBookedReservations();
+
   // Stay ng napiling guest (check-in hanggang check-out) para i-highlight.
-  var stayStart = null, stayEnd = null;
+  var stayStart = null, stayEnd = null, stayColor = '#e0a93a';
   if (calendarHighlightedId !== null) {
     var hl = allReservations.filter(function (r) { return String(calResKey(r)) === String(calendarHighlightedId); })[0];
     if (hl && hl.check_in && hl.check_out) {
       stayStart = String(hl.check_in).slice(0, 10);
       stayEnd = String(hl.check_out).slice(0, 10);
+      stayColor = guestColors[calGuestKey(hl)] || stayColor;
     }
   }
 
@@ -942,6 +962,23 @@ function renderReservationCalendar() {
       if (key === stayEnd) classes += ' guest-stay-end';
     }
 
+    // Colored dots: isang tuldok kada guest na may booking sa araw na ito.
+    var guestDots = '';
+    var seenGuests = {};
+    var dotCount = 0;
+    bookedList.forEach(function (r) {
+      var gk = calGuestKey(r);
+      if (seenGuests[gk]) return;
+      if (key >= String(r.check_in).slice(0, 10) && key <= String(r.check_out).slice(0, 10)) {
+        seenGuests[gk] = true;
+        dotCount++;
+        if (dotCount <= 4) {
+          guestDots += '<i class="cal-guest-dot" style="background:' + guestColors[gk] + '" title="' + escapeCalHtml(r.guest_name) + '"></i>';
+        }
+      }
+    });
+    if (guestDots) guestDots = '<span class="calendar-day-guestdots">' + guestDots + (dotCount > 4 ? '<em>+' + (dotCount - 4) + '</em>' : '') + '</span>';
+
     var dots = '';
     if (checkinDays[key] || checkoutDays[key]) {
       dots = '<span class="calendar-day-dots">';
@@ -950,7 +987,8 @@ function renderReservationCalendar() {
       dots += '</span>';
     }
 
-    html += '<button type="button" class="' + classes + '" data-date="' + key + '">' + day + dots + '</button>';
+    var cellStyle = classes.indexOf('guest-stay') !== -1 ? ' style="--gc:' + stayColor + '"' : '';
+    html += '<button type="button" class="' + classes + '" data-date="' + key + '"' + cellStyle + '>' + day + guestDots + dots + '</button>';
   }
   grid.innerHTML = html;
 
