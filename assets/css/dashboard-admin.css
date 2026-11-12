@@ -1274,3 +1274,6 @@ body{
 
 .sent-check{width:16px;height:16px;cursor:pointer;accent-color:#f59e0b;}
 .sent-selall{display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;}
+
+.topbar .welcome-greet{margin-left:12px;font-size:1.05rem;color:inherit;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.topbar .welcome-greet .wg-sub{opacity:.65;font-size:.9rem}
