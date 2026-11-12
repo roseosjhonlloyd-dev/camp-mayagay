@@ -1869,6 +1869,12 @@ try {
                 echo json_encode(['success' => false, 'message' => 'Please tell us why you want to cancel.']);
                 break;
             }
+            // Confirmed bookings can no longer be cancelled by guests.
+            if (!isStaffOrAdmin($user) && $row['reservation_status'] === 'confirmed') {
+                http_response_code(422);
+                echo json_encode(['success' => false, 'message' => 'Confirmed bookings can no longer be cancelled.']);
+                break;
+            }
             // Guests can only cancel within 24 hours after booking (staff/admin are exempt).
             if (!isStaffOrAdmin($user) && !empty($row['created_at']) && strtotime((string)$row['created_at']) < time() - 24 * 3600) {
                 http_response_code(422);

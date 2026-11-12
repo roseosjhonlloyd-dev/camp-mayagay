@@ -1465,6 +1465,7 @@
 
   /* Guests may cancel only within 24 hours after the booking was made. */
   function canCancelNow(r){
+    if (String(r.status || '').toLowerCase() !== 'pending') return false; // confirmed na = hindi na pwede i-cancel
     if (!r.createdAt) return true;
     const made = new Date(String(r.createdAt).replace(' ', 'T'));
     if (isNaN(made.getTime())) return true;
@@ -1507,7 +1508,7 @@
             <div class="sum-total"><span>Total:</span><span>${peso(r.total)}</span></div>
             ${r.cancelRequested ? '<p style="color:#8a6d1d;font-size:13px;margin:8px 0 0;">Cancellation requested \u2014 waiting for admin review.</p>' : ''}
             <div class="resv-actions">
-              ${r.status === 'Cancelled' ? `<button class="btn-cancel-resv" data-id="${r.id}" data-action="delete">Delete</button>` : (r.cancelRequested ? '' : (canCancelNow(r) ? `<button class="btn-cancel-resv" data-id="${r.id}">Cancel booking</button>` : '<span class="cancel-closed">Cancellation is only allowed within 24 hours of booking.</span>'))}
+              ${r.status === 'Cancelled' ? `<button class="btn-cancel-resv" data-id="${r.id}" data-action="delete">Delete</button>` : (r.cancelRequested ? '' : (canCancelNow(r) ? `<button class="btn-cancel-resv" data-id="${r.id}">Cancel booking</button><span class="cancel-note">You can cancel within 24 hours of booking while still Pending.</span>` : '<span class="cancel-closed">' + (String(r.status || '').toLowerCase() === 'confirmed' ? 'Confirmed bookings can no longer be cancelled.' : 'Cancellation is only allowed within 24 hours of booking.') + '</span>'))}
               <button class="btn-secondary btn-receipt" data-id="${r.id}" type="button" style="flex:0 0 auto; padding:11px 16px;">Receipt</button>
               <button class="btn-status">${r.cancelRequested ? 'Pending' : r.status}</button>
             </div>

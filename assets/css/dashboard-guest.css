@@ -1662,3 +1662,5 @@ body.dark-mode .pay-choice .bank-details,body.dark-mode .pay-choice .bank-detail
 body.dark-mode .pay-choice .pay-option .po-dot{border-color:#4fb36c;}
 body.dark-mode .pay-choice.active .pay-option .po-dot{background:radial-gradient(#4fb36c 55%,transparent 60%);}
 .acc2-filters .date-picker{display:none !important;}
+
+.cancel-note{display:block;font-size:11.5px;opacity:.75;margin-top:6px;}
