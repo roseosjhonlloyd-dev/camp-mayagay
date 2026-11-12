@@ -214,7 +214,7 @@
         <button type="button" class="acc2-chip" data-filter="tent">Tent Area</button>
         <button type="button" class="acc2-chip" data-filter="available">Available only</button>
       </div>
-      <div class="date-picker">
+      <div class="date-picker" style="display:none">
         <label for="typedDate">Enter date</label>
         <div class="pill-input" id="monthPill" style="display:none;"><span id="monthLabel">Month</span>
           <input type="month" id="monthInput">
@@ -230,7 +230,7 @@
         </div>
       </div>
     </div>
-    <p class="filter-note" id="filterNote">Showing this week's availability. Pick a month and day to preview that week instead.</p>
+    <p class="filter-note" id="filterNote">Showing this week's availability. Red days are taken. Tap Book now to pick another date.</p>
 
     <div class="accom-grid" id="accomGrid"></div>
 
@@ -810,7 +810,7 @@
   <a class="auth-switch" href="php/logout.php">Log out</a>
 </div>
 
-<script src="assets/js/dashboard-guest.js?v=46"></script>
+<script src="assets/js/dashboard-guest.js?v=47"></script>
 <script>
   (function () {
     var okBtn = document.getElementById('passwordOkBtn');

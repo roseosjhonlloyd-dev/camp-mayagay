@@ -567,12 +567,8 @@
   function bookNow(cabinId){
     closeAccDetails();
     const day = firstAvailableDay(cabinId);
-    if (day < 0){
-      showToast('No open day this week. Pick another date.');
-      goToView('accommodation');
-      return;
-    }
-    openBookingModal(cabinId, day);
+    // Walang bakante this week? Buksan pa rin ang booking form para makapili ng ibang araw (next week).
+    openBookingModal(cabinId, day < 0 ? 0 : day);
   }
 
   /* Details of an accommodation (photos, amenities, price, open days). */
@@ -864,8 +860,8 @@
       const book = e.target.closest('[data-book]');
       if (book && grid.contains(book)){
         const id = book.dataset.book;
-        if (firstAvailableDay(id) < 0){ showToast('No open day this week. Pick another date.'); return; }
-        openBookingModal(id, firstAvailableDay(id));
+        const fd = firstAvailableDay(id);
+        openBookingModal(id, fd < 0 ? 0 : fd);
       }
     };
     bindFavButtons(grid);
