@@ -809,6 +809,13 @@ function escapeCalHtml(s) {
   });
 }
 
+// ID ng reservation: "id" ang pangalan ng field sa JSON ng API (may fallback pa).
+function calResKey(r) {
+  if (r.id != null) return r.id;
+  if (r.reservation_id != null) return r.reservation_id;
+  return r.code;
+}
+
 // Confirmed (o completed) na reservations lang - kapareho ng rule ng calendar.
 function getCalendarBookedReservations() {
   return allReservations
@@ -832,8 +839,8 @@ function renderCalendarGuestList() {
   }
 
   list.innerHTML = booked.map(function (r) {
-    var active = String(r.reservation_id) === String(calendarHighlightedId);
-    return '<button type="button" class="calendar-guest-item' + (active ? ' active' : '') + '" data-res-id="' + escapeCalHtml(r.reservation_id) + '">' +
+    var active = String(calResKey(r)) === String(calendarHighlightedId);
+    return '<button type="button" class="calendar-guest-item' + (active ? ' active' : '') + '" data-res-id="' + escapeCalHtml(calResKey(r)) + '">' +
       '<span class="guest-name">' + escapeCalHtml(r.guest_name) + '</span>' +
       '<span class="guest-meta">' + escapeCalHtml(r.cabin_name) + ' &middot; ' + shortDate(r.check_in) + ' - ' + shortDate(r.check_out) + '</span>' +
       '</button>';
@@ -847,7 +854,7 @@ function renderCalendarGuestList() {
       } else {
         calendarHighlightedId = id;
         // Lumipat sa buwan ng check-in ng guest para makita agad ang stay niya.
-        var res = booked.filter(function (r) { return String(r.reservation_id) === String(id); })[0];
+        var res = booked.filter(function (r) { return String(calResKey(r)) === String(id); })[0];
         if (res) {
           var p = String(res.check_in).slice(0, 10).split('-');
           calendarViewDate = new Date(Number(p[0]), Number(p[1]) - 1, 1);
@@ -912,7 +919,7 @@ function renderReservationCalendar() {
   // Stay ng napiling guest (check-in hanggang check-out) para i-highlight.
   var stayStart = null, stayEnd = null;
   if (calendarHighlightedId !== null) {
-    var hl = allReservations.filter(function (r) { return String(r.reservation_id) === String(calendarHighlightedId); })[0];
+    var hl = allReservations.filter(function (r) { return String(calResKey(r)) === String(calendarHighlightedId); })[0];
     if (hl && hl.check_in && hl.check_out) {
       stayStart = String(hl.check_in).slice(0, 10);
       stayEnd = String(hl.check_out).slice(0, 10);
