@@ -874,9 +874,21 @@
             <option value="">Select accommodation...</option>
           </select>
         </label>
-        <div class="setting-row-split">
-          <label>Check-in<input type="date" id="walkInCheckIn" required></label>
-          <label>Check-out<input type="date" id="walkInCheckOut" required></label>
+        <div class="wi-cal-block">
+          <span class="wi-cal-label">Check-in &amp; Check-out</span>
+          <input type="hidden" id="walkInCheckIn">
+          <input type="hidden" id="walkInCheckOut">
+          <div class="wi-cal" id="walkInCal">
+            <div class="wi-cal-head">
+              <button type="button" class="wi-cal-nav" id="walkInCalPrev" aria-label="Previous month">&lsaquo;</button>
+              <strong id="walkInCalTitle">Month</strong>
+              <button type="button" class="wi-cal-nav" id="walkInCalNext" aria-label="Next month">&rsaquo;</button>
+            </div>
+            <div class="wi-cal-dow"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+            <div class="wi-cal-grid" id="walkInCalGrid"></div>
+            <div class="wi-cal-legend"><span><i class="wi-lg wi-ok"></i>Available</span><span><i class="wi-lg wi-sel"></i>Selected</span><span><i class="wi-lg wi-no"></i>Booked</span></div>
+          </div>
+          <p class="wi-cal-summary" id="walkInCalSummary"></p>
         </div>
         <div class="setting-row-split">
           <label>Number of Guests<input type="number" id="walkInGuestsCount" min="1" value="1" required></label>

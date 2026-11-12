@@ -1301,3 +1301,33 @@ body.dark-mode .att-input,body.dark-mode .incident-form input,body.dark-mode .in
 body.dark-mode .att-head span{color:#aab8ae;}
 body.dark-mode .att-head strong{color:#f1f5f2;}
 body.dark-mode .att-controls .btn-secondary{background:#26342b;color:#d7e6da;border-color:#3a4c40;}
+
+
+/* ---- Walk-in modal: date calendar (Available / Selected / Booked) ---- */
+.wi-cal-block{ display:flex; flex-direction:column; gap:6px; }
+.wi-cal-label{ font-size:12.5px; font-weight:600; color:var(--ink-soft,#777); }
+.wi-cal{ background:#f3f0e4; border:1px solid #e0dccb; border-radius:14px; padding:12px 14px 10px; }
+.wi-cal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.wi-cal-head strong{ font-size:15px; color:#1b2a1d; }
+.wi-cal .wi-cal-nav{
+  width:34px; height:34px; border-radius:50%; border:1.5px solid #2f5d3a; background:transparent;
+  color:#1b2a1d; font-size:20px; line-height:1; cursor:pointer; padding:0;
+}
+.wi-cal .wi-cal-nav:disabled{ opacity:.35; cursor:not-allowed; }
+.wi-cal-dow, .wi-cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:5px; text-align:center; }
+.wi-cal-dow span{ font-size:12px; font-weight:700; color:#4a5a4a; padding:3px 0; }
+.wi-cal .wi-day{
+  height:38px; border-radius:10px; border:1.5px solid transparent; padding:0;
+  font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;
+  background:#dbe3d0; color:#1b2a1d;
+}
+.wi-cal .wi-day:not(:disabled):hover{ border-color:#2f5d3a; }
+.wi-cal .wi-day.sel{ background:#2f5d3a; color:#fff; border-color:#2f5d3a; }
+.wi-cal .wi-day.booked{ background:#ecc9c0; color:#c0392b; text-decoration:line-through; cursor:not-allowed; }
+.wi-cal .wi-day.past{ background:transparent; color:#1b2a1d; opacity:.3; cursor:not-allowed; }
+.wi-cal-blank{ display:block; }
+.wi-cal-legend{ display:flex; gap:14px; flex-wrap:wrap; font-size:12px; margin-top:10px; color:#1b2a1d; }
+.wi-cal-legend .wi-lg{ display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+.wi-lg.wi-ok{ background:#b5c7ab; } .wi-lg.wi-sel{ background:#2f5d3a; } .wi-lg.wi-no{ background:#d98d80; }
+.wi-cal-summary{ font-size:12.5px; color:var(--ink,#222); margin:2px 0 4px; font-weight:600; }
+.wi-cal-summary.warn{ color:#c0392b; }

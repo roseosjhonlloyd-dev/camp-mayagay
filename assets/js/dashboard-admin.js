@@ -844,19 +844,165 @@ function openWalkInModal() {
   populateWalkInCabinOptions();
 
   // Default check-in to whatever date is currently selected on the
-  // calendar, and check-out to the next day, so admin has less to type.
-  var checkInInput = document.getElementById('walkInCheckIn');
-  var checkOutInput = document.getElementById('walkInCheckOut');
-  if (checkInInput && checkOutInput) {
-    var base = calendarSelectedDate || new Date();
-    var nextDay = new Date(base);
-    nextDay.setDate(nextDay.getDate() + 1);
-    checkInInput.value = toDateKey(base);
-    checkOutInput.value = toDateKey(nextDay);
-  }
+  // calendar (or today kung lumipas na), at check-out sa susunod na araw.
+  var base = calendarSelectedDate || new Date();
+  if (toDateKey(base) < toDateKey(new Date())) base = new Date();
+  walkInCalStart(toDateKey(base));
   document.getElementById('walkInGuestsCount').value = 1;
   var apEl = document.getElementById('walkInAmountPaid'); if (apEl) apEl.value = 0;
   modal.classList.remove('hidden');
+}
+
+/* ---- Walk-in date calendar (Available / Selected / Booked) ----
+   Pumili ng unang gabi, tapos pumili ng huling gabi para mahaba ang stay.
+   Check-out = araw pagkatapos ng huling gabi. Booked = may pending/confirmed
+   na reservation ang napiling accommodation sa gabing iyon. */
+var walkInCal = { y: 0, m: 0, ci: null, co: null, awaiting: false };
+
+function walkInNextKey(key) {
+  var p = key.split('-');
+  return toDateKey(new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]) + 1));
+}
+
+function walkInBookedDays() {
+  var sel = document.getElementById('walkInCabin');
+  var slug = sel ? sel.value : '';
+  var map = {};
+  if (!slug) return map;
+  allReservations.forEach(function (r) {
+    if (r.cabin_id !== slug) return;
+    if (r.status !== 'pending' && r.status !== 'confirmed' && r.status !== 'completed') return;
+    if (!r.check_in || !r.check_out) return;
+    var k = String(r.check_in).slice(0, 10);
+    var end = String(r.check_out).slice(0, 10);
+    var guard = 0;
+    while (k < end && guard++ < 400) { map[k] = true; k = walkInNextKey(k); }
+  });
+  return map;
+}
+
+function walkInCalSync() {
+  var ciEl = document.getElementById('walkInCheckIn');
+  var coEl = document.getElementById('walkInCheckOut');
+  if (ciEl) ciEl.value = walkInCal.ci || '';
+  if (coEl) coEl.value = walkInCal.co || '';
+  // Para tumama ang auto-suggest ng total amount.
+  [ciEl, coEl].forEach(function (el) {
+    if (el) el.dispatchEvent(new Event('change'));
+  });
+}
+
+function walkInCalStart(key) {
+  walkInCal.ci = key;
+  walkInCal.co = walkInNextKey(key);
+  walkInCal.awaiting = true;
+  var p = key.split('-');
+  walkInCal.y = Number(p[0]);
+  walkInCal.m = Number(p[1]) - 1;
+  walkInCalSync();
+  renderWalkInCalendar();
+}
+
+function walkInCalClear(note) {
+  walkInCal.ci = null;
+  walkInCal.co = null;
+  walkInCal.awaiting = false;
+  walkInCalSync();
+  renderWalkInCalendar(note);
+}
+
+function walkInCalPick(key) {
+  var booked = walkInBookedDays();
+  var note = '';
+  if (!walkInCal.awaiting || !walkInCal.ci || key < walkInCal.ci) {
+    walkInCalStart(key);
+    return;
+  }
+  if (key === walkInCal.ci) {
+    walkInCal.awaiting = false; // isang gabi lang
+  } else {
+    var clash = false;
+    for (var k = walkInCal.ci; k <= key; k = walkInNextKey(k)) { if (booked[k]) { clash = true; break; } }
+    if (clash) { walkInCalStart(key); renderWalkInCalendar('That range includes a booked day, so a new check-in was set.'); return; }
+    walkInCal.co = walkInNextKey(key);
+    walkInCal.awaiting = false;
+  }
+  walkInCalSync();
+  renderWalkInCalendar(note);
+}
+
+function renderWalkInCalendar(note) {
+  var grid = document.getElementById('walkInCalGrid');
+  var title = document.getElementById('walkInCalTitle');
+  var summary = document.getElementById('walkInCalSummary');
+  if (!grid || !title) return;
+
+  var y = walkInCal.y, m = walkInCal.m;
+  if (!y) { var n = new Date(); y = walkInCal.y = n.getFullYear(); m = walkInCal.m = n.getMonth(); }
+  title.textContent = new Date(y, m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  var booked = walkInBookedDays();
+  var todayKey = toDateKey(new Date());
+  var lead = (new Date(y, m, 1).getDay() + 6) % 7; // Monday-first
+  var dim = new Date(y, m + 1, 0).getDate();
+  var html = '';
+  for (var i = 0; i < lead; i++) html += '<span class="wi-cal-blank"></span>';
+  for (var d = 1; d <= dim; d++) {
+    var key = toDateKey(new Date(y, m, d));
+    var inRange = walkInCal.ci && key >= walkInCal.ci && key < walkInCal.co;
+    var st = key < todayKey ? 'past' : (booked[key] ? 'booked' : 'ok');
+    var cls = 'wi-day ' + (inRange ? 'sel' : st);
+    html += '<button type="button" class="' + cls + '" data-day="' + key + '"' + (st !== 'ok' && !inRange ? ' disabled' : '') +
+      ' aria-pressed="' + (inRange ? 'true' : 'false') + '">' + d + '</button>';
+  }
+  grid.innerHTML = html;
+  grid.querySelectorAll('[data-day]').forEach(function (b) {
+    b.addEventListener('click', function () { walkInCalPick(b.getAttribute('data-day')); });
+  });
+
+  var now = new Date();
+  var prev = document.getElementById('walkInCalPrev');
+  if (prev) prev.disabled = (y < now.getFullYear()) || (y === now.getFullYear() && m <= now.getMonth());
+
+  if (summary) {
+    summary.classList.toggle('warn', !!note);
+    if (note) {
+      summary.textContent = note;
+    } else if (walkInCal.ci) {
+      var fmt = function (k) { return new Date(k + 'T00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); };
+      var nights = Math.round((new Date(walkInCal.co + 'T00:00') - new Date(walkInCal.ci + 'T00:00')) / 86400000);
+      summary.textContent = 'Check-in: ' + fmt(walkInCal.ci) + '  \u2022  Check-out: ' + fmt(walkInCal.co) + '  (' + nights + ' night' + (nights > 1 ? 's' : '') + ')' +
+        (walkInCal.awaiting ? ' \u2014 tap a later day to extend the stay.' : '');
+    } else {
+      var sel = document.getElementById('walkInCabin');
+      summary.textContent = (sel && sel.value) ? 'Tap a day to set the check-in.' : 'Select an accommodation to see its booked days, then tap a day.';
+    }
+  }
+}
+
+function initWalkInCalendar() {
+  var prev = document.getElementById('walkInCalPrev');
+  var next = document.getElementById('walkInCalNext');
+  var cabin = document.getElementById('walkInCabin');
+  if (prev) prev.addEventListener('click', function () {
+    walkInCal.m--; if (walkInCal.m < 0) { walkInCal.m = 11; walkInCal.y--; }
+    renderWalkInCalendar();
+  });
+  if (next) next.addEventListener('click', function () {
+    walkInCal.m++; if (walkInCal.m > 11) { walkInCal.m = 0; walkInCal.y++; }
+    renderWalkInCalendar();
+  });
+  // Kapag nagpalit ng accommodation, ibang booked days ang lalabas.
+  // Kung bumangga ang napiling petsa sa booked, i-clear.
+  if (cabin) cabin.addEventListener('change', function () {
+    var booked = walkInBookedDays();
+    var clash = false;
+    if (walkInCal.ci) {
+      for (var k = walkInCal.ci; k < walkInCal.co; k = walkInNextKey(k)) { if (booked[k]) { clash = true; break; } }
+    }
+    if (clash) walkInCalClear('The selected dates are already booked for this accommodation. Please pick other days.');
+    else renderWalkInCalendar();
+  });
 }
 
 function closeWalkInModal() {
@@ -876,6 +1022,7 @@ function initWalkInModal() {
   var totalInput = document.getElementById('walkInTotalAmount');
   if (!modal || !form) return;
 
+  initWalkInCalendar();
   if (openBtn) openBtn.addEventListener('click', openWalkInModal);
   [closeBtn, cancelBtn].forEach(function (b) {
     if (b) b.addEventListener('click', closeWalkInModal);
