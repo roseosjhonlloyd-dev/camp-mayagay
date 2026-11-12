@@ -51,6 +51,7 @@
     selectedDate: '',
     availability: {},
     reservations: [],
+    bookedAccIds: [],
     feedback: [],
     allFeedback: [],
     reservationSeq: 0,
@@ -139,6 +140,12 @@
       if (!res || !res.success) return;
       let dismissedResIds = [];
       try { dismissedResIds = JSON.parse(localStorage.getItem('campDismissedReservations') || '[]'); } catch (e) { dismissedResIds = []; }
+      // Rooms na talagang na-book ng guest (confirmed o completed) - ito lang
+      // ang puwedeng i-rate sa Feedback. Hindi apektado ng "dismissed" sa history.
+      state.bookedAccIds = Array.from(new Set((res.reservations || [])
+        .filter(row => ['confirmed', 'completed'].includes(String(row.status || '').toLowerCase()))
+        .map(row => Number(row.accommodation_id))
+        .filter(Boolean)));
       state.reservations = (res.reservations || []).filter(row => !dismissedResIds.includes(row.id)).map(row => {
         const saved = row.data || {};
         return Object.assign({}, saved, {
@@ -224,18 +231,28 @@
     `).join('');
   }
 
-  /** Fills the "Which room are you rating?" select with the rooms this
-   *  guest has actually booked, newest stay first, deduplicated. */
+  /** Fills the "Which room are you rating?" select with ONLY the rooms this
+   *  guest has actually booked (confirmed/completed reservations). */
   function populateFeedbackAccommodationSelect(){
     const select = document.getElementById('fbAccommodation');
     if (!select) return;
     const current = select.value;
-    let options = '<option value="">General / overall stay (no specific room)</option>';
-    ACCOMMODATIONS_RAW.forEach(a => {
-      options += `<option value="${a.accommodation_id}">${a.accommodation_name}</option>`;
+    const booked = ACCOMMODATIONS_RAW.filter(a => state.bookedAccIds.includes(Number(a.accommodation_id)));
+    const note = document.getElementById('fbRoomNote');
+    if (!booked.length){
+      select.innerHTML = '<option value="">No booked rooms yet</option>';
+      select.disabled = true;
+      if (note) note.textContent = 'Book a room first so you can rate it. Only rooms you have booked can be rated.';
+      return;
+    }
+    select.disabled = false;
+    let options = '<option value="">Select a room you booked</option>';
+    booked.forEach(a => {
+      options += `<option value="${a.accommodation_id}">${escHtml(a.accommodation_name)}</option>`;
     });
     select.innerHTML = options;
-    if (current) select.value = current;
+    if (current && booked.some(a => String(a.accommodation_id) === current)) select.value = current;
+    if (note) note.textContent = 'Only the rooms you have booked are listed here.';
   }
 
   function loadNotifications(){
@@ -495,6 +512,33 @@
       </button>
     </span>`;
   }
+  /* Home card: average guest rating (replaces the old favorites heart). */
+  function ratingWrapHtml(c){
+    if (c.avgRating == null){
+      return '<span class="rate-wrap none" title="No guest ratings yet"><span class="rate-star">&#9733;</span><span class="rate-none">No ratings yet</span></span>';
+    }
+    const n = c.ratingCount || 0;
+    return '<span class="rate-wrap" title="Average guest rating"><span class="rate-star">&#9733;</span>' +
+      '<span class="rate-val">' + c.avgRating.toFixed(1) + '</span>' +
+      '<span class="rate-count">(' + n + ')</span></span>';
+  }
+  /* Re-read the ratings from the server and refresh Home + Accommodation views. */
+  function refreshRatings(){
+    return apiCall('accommodations_list', {}).then(res => {
+      if (!res || !res.success) return;
+      const bySlug = {};
+      (res.accommodations || []).forEach(a => { bySlug[a.slug] = a; });
+      CABINS.forEach(c => {
+        const a = bySlug[c.id];
+        if (!a) return;
+        c.avgRating = a.avg_rating != null ? Number(a.avg_rating) : null;
+        c.ratingCount = Number(a.rating_count) || 0;
+      });
+      renderHomeCards();
+      const accomGrid = document.getElementById('accomGrid');
+      if (accomGrid && accomGrid.children.length) renderAccomGrid();
+    }).catch(() => {});
+  }
   function toggleFavorite(id){
     const cabin = CABINS.find(c => c.id === id);
     if (!cabin || !cabin.accId) return;
@@ -524,9 +568,14 @@
 
   function renderHomeCards(){
     const grid = document.getElementById('homeCardGrid');
-    // Most favorited accommodations first (ties keep the original order); show the top 4.
+    // Highest guest rating first. Ties: more reviews first, then the original
+    // order. Accommodations with no rating yet go to the end. Show the top 4.
     const ranked = CABINS.map((c, i) => ({ c, i }))
-      .sort((x, y) => ((state.favCounts[y.c.id] || 0) - (state.favCounts[x.c.id] || 0)) || (x.i - y.i))
+      .sort((x, y) => {
+        const rx = x.c.avgRating == null ? -1 : x.c.avgRating;
+        const ry = y.c.avgRating == null ? -1 : y.c.avgRating;
+        return (ry - rx) || ((y.c.ratingCount || 0) - (x.c.ratingCount || 0)) || (x.i - y.i);
+      })
       .slice(0, 4).map(x => x.c);
     grid.innerHTML = ranked.map(c => {
       return `
@@ -537,13 +586,12 @@
           <p class="cabin-note">${c.note}</p>
           <div class="cabin-foot">
             <span class="cabin-price">${peso(c.price)}/ ${c.unit}</span>
-            ${favWrapHtml(c)}
+            ${ratingWrapHtml(c)}
           </div>
           <button class="book-now-btn" type="button" data-booknow="${c.id}">Book now</button>
         </div>
       </div>`;
     }).join('');
-    bindFavButtons(grid);
     grid.querySelectorAll('[data-booknow]').forEach(btn => {
       btn.addEventListener('click', (e) => { e.stopPropagation(); bookNow(btn.dataset.booknow); });
     });
@@ -1092,7 +1140,7 @@
     });
   });
 
-  function openBookingModal(cabinId, dayIndex){
+  function openBookingModal(cabinId, dayIndex, skipRestore){
     const cabin = CABINS.find(c => c.id === cabinId);
     pendingBooking = { cabinId, dayIndex, cabin };
     document.getElementById('modalCabinSub').textContent = cabin.name + ' \u00b7 ' + DAYS[dayIndex] + ' \u00b7 ' + peso(cabin.price) + '/ ' + cabin.unit;
@@ -1126,15 +1174,91 @@
       amenList.appendChild(chip);
     });
     amenBox.style.display = (cabin.amenities && cabin.amenities.length) ? '' : 'none';
+    // Ibalik ang dating na-fill-up (draft) kung may naka-save para sa room na ito.
+    const restored = skipRestore ? false : restoreBookingDraft(cabinId);
+    const draftNote = document.getElementById('bkDraftNote');
+    if (draftNote) draftNote.hidden = !restored;
     document.getElementById('bookingModal').classList.add('open');
   }
   function closeBookingModal(){
     document.getElementById('bookingModal').classList.remove('open');
   }
   document.getElementById('modalCloseX').addEventListener('click', () => { closeBookingModal(); pendingBooking = null; });
-  document.getElementById('bookingModal').addEventListener('click', (e) => {
-    if (e.target.id === 'bookingModal'){ closeBookingModal(); pendingBooking = null; }
-  });
+  // Hindi na nagsasara ang booking form kapag napindot ang labas/gilid nito -
+  // X button lang ang magsasara, at naka-save pa rin ang na-fill-up (draft).
+
+  /* ---------- Booking form draft (naka-save habang nag-fill up) ---------- */
+  const DRAFT_PREFIX = 'campBookingDraft:';
+  const DRAFT_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+  function draftKey(cabinId){
+    const who = sessionUser ? (sessionUser.id || sessionUser.user_id || sessionUser.email || 'guest') : 'guest';
+    return DRAFT_PREFIX + who + ':' + cabinId;
+  }
+  function saveBookingDraft(){
+    try {
+      const modal = document.getElementById('bookingModal');
+      if (!pendingBooking || !modal || !modal.classList.contains('open')) return;
+      localStorage.setItem(draftKey(pendingBooking.cabinId), JSON.stringify({
+        ts: Date.now(),
+        name: document.getElementById('guestName').value,
+        phone: document.getElementById('guestPhone').value,
+        email: document.getElementById('guestEmail').value,
+        dates: Array.from(bk.dates),
+        y: bk.y, m: bk.m,
+        extra: { person: extraQty.person, ownTents: extraQty.ownTents, heads: extraQty.heads },
+        rentals: rentalQty
+      }));
+    } catch (e) { /* storage unavailable - ok lang */ }
+  }
+  function clearBookingDraft(cabinId){
+    try { localStorage.removeItem(draftKey(cabinId)); } catch (e) {}
+  }
+  function clearAllBookingDrafts(){
+    try {
+      Object.keys(localStorage).filter(k => k.indexOf(DRAFT_PREFIX) === 0).forEach(k => localStorage.removeItem(k));
+    } catch (e) {}
+  }
+  /* Returns true if a draft was found and applied. */
+  function restoreBookingDraft(cabinId){
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem(draftKey(cabinId)) || 'null'); } catch (e) { d = null; }
+    if (!d || !d.ts || Date.now() - d.ts > DRAFT_TTL_MS){ clearBookingDraft(cabinId); return false; }
+    document.getElementById('guestName').value = d.name || '';
+    document.getElementById('guestPhone').value = d.phone || '';
+    document.getElementById('guestEmail').value = d.email || '';
+    // Past/booked na ang ibang araw? Tanggalin lang ang mga iyon.
+    bk.dates = new Set((d.dates || []).filter(k => typeof k === 'string' && dayChoiceState(k) === 'ok'));
+    if (Number.isInteger(d.y) && Number.isInteger(d.m)){ bk.y = d.y; bk.m = d.m; }
+    const ex = d.extra || {};
+    extraQty.person = Math.min(STEP_MAX.person, Math.max(0, Number(ex.person) || 0));
+    extraQty.ownTents = Math.min(STEP_MAX.ownTents, Math.max(0, Number(ex.ownTents) || 0));
+    extraQty.heads = Math.min(STEP_MAX.heads, Math.max(1, Number(ex.heads) || 1));
+    document.getElementById('qtyPerson').textContent = extraQty.person;
+    document.getElementById('qtyOwnTents').textContent = extraQty.ownTents;
+    document.getElementById('qtyHeads').textContent = extraQty.heads;
+    Object.keys(extraQty).forEach(markAddon);
+    rentalQty = {};
+    Object.keys(d.rentals || {}).forEach(id => { const n = Number(d.rentals[id]) || 0; if (n > 0) rentalQty[id] = n; });
+    afterDaysChanged();   // redraws the calendar and clamps rentals to stock
+    renderRentalRows();   // redraws rental rows with the restored quantities
+    return true;
+  }
+  (function(){
+    const modal = document.getElementById('bookingModal');
+    const queueSave = (e) => {
+      if (e.target.closest && e.target.closest('#bkDraftNote')) return;
+      setTimeout(saveBookingDraft, 0); // after the click/input handlers have updated the state
+    };
+    modal.addEventListener('input', queueSave);
+    modal.addEventListener('click', queueSave);
+    const clearBtn = document.getElementById('bkClearDraft');
+    if (clearBtn) clearBtn.addEventListener('click', () => {
+      if (!pendingBooking) return;
+      clearBookingDraft(pendingBooking.cabinId);
+      openBookingModal(pendingBooking.cabinId, pendingBooking.dayIndex, true);
+      showToast('Form cleared');
+    });
+  })();
   document.getElementById('modalConfirm').addEventListener('click', () => {
     if (!pendingBooking) return;
     const name = document.getElementById('guestName').value.trim();
@@ -1432,6 +1556,7 @@
       renderNotifications();
       loadNotifications();
       closePaymentModal();
+      clearBookingDraft(cabinId);
 
       const first = saved[0];
       let msg = cabin.name + ', ' + saved.map(r => r.checkInLabel.split(' · ')[0] + (r.checkOutLabel ? ' to ' + r.checkOutLabel.split(' · ')[0] : '')).join('; ') +
@@ -1758,6 +1883,10 @@
     const accommodationId = accSelect ? accSelect.value : '';
     const accommodationName = accSelect && accSelect.value ? accSelect.options[accSelect.selectedIndex].text : '';
     const fbCategory = (document.getElementById('fbCategory') || {}).value || 'feedback';
+    if (fbCategory === 'feedback' && !accommodationId){
+      showToast(state.bookedAccIds.length ? 'Please pick the room you booked to rate.' : 'Book a room first so you can rate it.');
+      return;
+    }
     const fbSubjectEl = document.getElementById('fbSubject');
     const fbSubject = (fbSubjectEl && fbSubjectEl.value.trim()) || (fbCategory === 'concern' ? 'Guest concern' : 'Guest feedback');
     apiCall('feedback_create', { rating: currentRating, message, accommodation_id: accommodationId, subject: fbSubject, category: fbCategory }).then(res => {
@@ -1773,6 +1902,7 @@
       renderStars();
       renderFeedback();
       loadTrendingAccommodations();
+      refreshRatings();
       showToast('Feedback sent \u2014 thank you');
     }).catch(() => showToast('Could not send feedback. Please try again.'));
   });
@@ -2144,11 +2274,13 @@
     showToast('Changes discarded');
   });
   document.getElementById('logoutBtn').addEventListener('click', () => {
+    clearAllBookingDrafts();
     window.location.href = 'php/logout.php';
   });
   var dropdownLogoutBtn = document.getElementById('dropdownLogoutBtn');
   if (dropdownLogoutBtn) {
     dropdownLogoutBtn.addEventListener('click', () => {
+      clearAllBookingDrafts();
       window.location.href = 'php/logout.php';
     });
   }
@@ -2623,6 +2755,7 @@ dayPill.addEventListener('click', () => openNativePicker(dayInput));
 function confirmLogout() {
   const confirmAction = confirm("Are you sure you want to logout from your Camp Mayagay account?");
   if (confirmAction) {
+    try { Object.keys(localStorage).filter(k => k.indexOf('campBookingDraft:') === 0).forEach(k => localStorage.removeItem(k)); } catch (e) {}
     window.location.href = 'php/logout.php';
   }
 }
