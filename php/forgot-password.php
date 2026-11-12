@@ -132,8 +132,10 @@ try {
             $newPassword     = (string)($input['new_password'] ?? '');
             $confirmPassword = (string)($input['confirm_password'] ?? '');
 
-            if (strlen($newPassword) < 8) {
-                sendJson(['success' => false, 'message' => 'Password must be at least 8 characters.'], 422);
+            require_once __DIR__ . '/login_helpers.php';
+            $policyError = validatePasswordPolicy($newPassword);
+            if ($policyError !== null) {
+                sendJson(['success' => false, 'message' => $policyError], 422);
             }
             if ($newPassword !== $confirmPassword) {
                 sendJson(['success' => false, 'message' => 'Passwords do not match.'], 422);

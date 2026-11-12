@@ -2148,8 +2148,16 @@
       errorEl.textContent = 'Please fill in all password fields.';
       return;
     }
-    if (newPassword.length < 8) {
-      errorEl.textContent = 'New password must be at least 8 characters.';
+    var pwIssue = (function (pw) {
+      if (pw.length < 12) return 'New password must be at least 12 characters.';
+      if (!/[A-Z]/.test(pw)) return 'New password must include an uppercase letter.';
+      if (!/[a-z]/.test(pw)) return 'New password must include a lowercase letter.';
+      if (!/[0-9]/.test(pw)) return 'New password must include a number.';
+      if (!/[^A-Za-z0-9]/.test(pw)) return 'New password must include a special character (e.g. ! @ # $ %).';
+      return '';
+    })(newPassword);
+    if (pwIssue) {
+      errorEl.textContent = pwIssue;
       return;
     }
     if (newPassword !== confirmPassword) {

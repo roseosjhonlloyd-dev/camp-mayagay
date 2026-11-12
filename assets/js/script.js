@@ -1,3 +1,11 @@
+function passwordIssue(pw) {
+  if (pw.length < 12) return 'Password must be at least 12 characters.';
+  if (!/[A-Z]/.test(pw)) return 'Password must include an uppercase letter.';
+  if (!/[a-z]/.test(pw)) return 'Password must include a lowercase letter.';
+  if (!/[0-9]/.test(pw)) return 'Password must include a number.';
+  if (!/[^A-Za-z0-9]/.test(pw)) return 'Password must include a special character (e.g. ! @ # $ %).';
+  return '';
+}
 document.addEventListener('DOMContentLoaded', function () {
   initPasswordToggles();
   initLoginForm();
@@ -598,8 +606,8 @@ function initRegisterForm() {
 
     if (values.password === '') {
       setFieldError('password', 'Password is required.'); hasError = true;
-    } else if (values.password.length < 8) {
-      setFieldError('password', 'Password must be at least 8 characters.'); hasError = true;
+    } else if (passwordIssue(values.password)) {
+      setFieldError('password', passwordIssue(values.password)); hasError = true;
     }
 
     if (values.confirm_password === '') {

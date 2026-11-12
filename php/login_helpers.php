@@ -45,17 +45,14 @@ function detectDeviceInfo(string $userAgent): string
     return $os . '/' . $browser;
 }
 
-/** Validates a password against the "Password Policy" Account Security
- *  setting. When the policy is on, requires 8+ chars with at least one
- *  uppercase letter, one lowercase letter, and one number. Returns null
- *  when valid, or an error message string when invalid. */
-function validatePasswordPolicy(string $password, bool $policyEnabled): ?string
+/** Strong password rule used everywhere a password is set: at least 12
+ *  characters with an uppercase letter, a lowercase letter, a number and a
+ *  special character. (The old "Password Policy" toggle no longer weakens it.)
+ *  Returns null when valid, or an error message string. */
+function validatePasswordPolicy(string $password, bool $policyEnabled = true): ?string
 {
-    if (strlen($password) < 8) {
-        return 'Password must be at least 8 characters.';
-    }
-    if (!$policyEnabled) {
-        return null;
+    if (strlen($password) < 12) {
+        return 'Password must be at least 12 characters.';
     }
     if (!preg_match('/[A-Z]/', $password)) {
         return 'Password must include at least one uppercase letter.';
@@ -65,6 +62,9 @@ function validatePasswordPolicy(string $password, bool $policyEnabled): ?string
     }
     if (!preg_match('/[0-9]/', $password)) {
         return 'Password must include at least one number.';
+    }
+    if (!preg_match('/[^A-Za-z0-9]/', $password)) {
+        return 'Password must include at least one special character (e.g. ! @ # $ %).';
     }
     return null;
 }

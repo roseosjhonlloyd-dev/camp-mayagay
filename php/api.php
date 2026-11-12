@@ -1096,10 +1096,10 @@ try {
                 break;
             }
             if ($password === '') {
-                $password = bin2hex(random_bytes(4)); // temp password if none supplied
-            } elseif (strlen($password) < 8) {
+                $password = bin2hex(random_bytes(6)) . 'Aa!1'; // strong temp password if none supplied
+            } elseif (($pwErr = validatePasswordPolicy($password)) !== null) {
                 http_response_code(422);
-                echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters.']);
+                echo json_encode(['success' => false, 'message' => $pwErr]);
                 break;
             }
 
@@ -1160,9 +1160,9 @@ try {
                 $params['status'] = $input['status'];
             }
             if (!empty($input['password'])) {
-                if (strlen((string)$input['password']) < 8) {
+                if (($pwErr = validatePasswordPolicy((string)$input['password'])) !== null) {
                     http_response_code(422);
-                    echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters.']);
+                    echo json_encode(['success' => false, 'message' => $pwErr]);
                     break;
                 }
                 $fields[] = 'password = :password';
