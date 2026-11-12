@@ -1165,6 +1165,21 @@
   let uploadedReceiptName = null;
   let uploadedReceiptDataUrl = null;
 
+  /* Magkakasunod na araw = isang reservation (n nights); magkakahiwalay = kanya-kanyang reservation. */
+  function groupConsecutiveDates(keys){
+    const sorted = Array.from(keys).sort();
+    const runs = [];
+    sorted.forEach(k => {
+      const last = runs[runs.length - 1];
+      if (last){
+        const next = keyToDate(last.start); next.setDate(next.getDate() + last.nights);
+        if (keyOf(next.getFullYear(), next.getMonth(), next.getDate()) === k){ last.nights += 1; return; }
+      }
+      runs.push({ start: k, nights: 1 });
+    });
+    return runs;
+  }
+
   function openPaymentModal(){
     document.getElementById('gcashRef').value = '';
     uploadedReceiptName = null;
@@ -1180,7 +1195,8 @@
     const { total } = computeCharges(pendingBooking.cabin, pendingBooking.persons, pendingBooking.rentals || {}, pendingBooking.nights, pendingBooking.tent);
     const days = (pendingBooking.dates || []).length || 1;
     const grand = total * days;
-    document.getElementById('paymentTotalAmount').textContent = peso(grand) + (days > 1 ? ' (' + days + ' days x ' + peso(total) + ')' : '');
+    const runCount = groupConsecutiveDates(pendingBooking.dates || []).length || 1;
+    document.getElementById('paymentTotalAmount').textContent = peso(grand) + (days > 1 ? ' (' + days + ' nights x ' + peso(total) + (runCount > 1 ? ', ' + runCount + ' reservations' : '') + ')' : '');
     const downEl = document.getElementById('paymentDownAmount');
     if (downEl) downEl.textContent = peso(Math.ceil(grand / 2));
     setPayChoice(null);
@@ -1329,28 +1345,33 @@
 
     const pb = pendingBooking;
     const { cabinId, cabin, guest, checkIn: checkInTime, checkOut: checkOutTime, persons, rentals: pickedRentals, paymentMethod, tent } = pb;
-    const nights = 1;
-    const dates = (pb.dates && pb.dates.length) ? pb.dates : [keyOf(...(function(){ const d = getDateForDay(pb.dayIndex); return [d.getFullYear(), d.getMonth(), d.getDate()]; })())];
-    const { baseRate, extraGuestsCharge, totalAccommodation, addons, addonsTotal, total } = computeCharges(cabin, persons, pickedRentals || {}, nights, tent);
-
-    const lineItems = [
-      { label: cabin.name + ' - ' + cabin.note + ' (1 night)', price: baseRate },
-    ];
-    if (tent){
-      const tentParts = [];
-      if (tent.own > 0) tentParts.push(tent.own + ' own tent' + (tent.own > 1 ? 's' : '') + ' @ ₱' + TENT_OWN_PRICE);
-      if (tent.rent > 0) tentParts.push(tent.rent + ' rented tent' + (tent.rent > 1 ? 's' : '') + ' @ ₱' + tentRentPrice());
-      lineItems[0].label = cabin.name + ' - ' + tentParts.join(' + ') + ' (1 night)';
-      lineItems.push({ label: 'Entrance fee: ' + tent.heads + ' guest' + (tent.heads > 1 ? 's' : '') + ' @ ₱' + ENTRANCE_PER_HEAD, price: extraGuestsCharge });
-    } else if (persons > 0) lineItems.push({ label: persons + ' Extra Person' + (persons > 1 ? 's' : ''), price: extraGuestsCharge });
-    lineItems.push(...addons);
+    const dates0 = (pb.dates && pb.dates.length) ? pb.dates : [keyOf(...(function(){ const d = getDateForDay(pb.dayIndex); return [d.getFullYear(), d.getMonth(), d.getDate()]; })())];
+    const runs = groupConsecutiveDates(dates0);
+    const dates = runs; // one reservation per run of consecutive days
+    const one = computeCharges(cabin, persons, pickedRentals || {}, 1, tent);
+    const { addons } = one;
 
     // One reservation per picked day (own code and payment record); the
     // form is filled only once. Saved one after another so the server can
     // assign unique codes and re-check availability / stock each time.
     const saved = [];
     let failMsg = '';
-    function saveOne(dateKey){
+    function saveOne(run){
+      const dateKey = run.start;
+      const nights = run.nights;
+      const baseRate = one.baseRate * nights, extraGuestsCharge = one.extraGuestsCharge * nights;
+      const addonsTotal = one.addonsTotal * nights, totalAccommodation = baseRate + extraGuestsCharge;
+      const total = one.total * nights;
+      const nLabel = '(' + nights + ' night' + (nights > 1 ? 's' : '') + ')';
+      const lineItems = [{ label: cabin.name + ' - ' + cabin.note + ' ' + nLabel, price: baseRate }];
+      if (tent){
+        const tentParts = [];
+        if (tent.own > 0) tentParts.push(tent.own + ' own tent' + (tent.own > 1 ? 's' : '') + ' @ ₱' + TENT_OWN_PRICE);
+        if (tent.rent > 0) tentParts.push(tent.rent + ' rented tent' + (tent.rent > 1 ? 's' : '') + ' @ ₱' + tentRentPrice());
+        lineItems[0].label = cabin.name + ' - ' + tentParts.join(' + ') + ' ' + nLabel;
+        lineItems.push({ label: 'Entrance fee: ' + tent.heads + ' guest' + (tent.heads > 1 ? 's' : '') + ' @ ₱' + ENTRANCE_PER_HEAD, price: extraGuestsCharge });
+      } else if (persons > 0) lineItems.push({ label: persons + ' Extra Person' + (persons > 1 ? 's' : ''), price: extraGuestsCharge });
+      addons.forEach(a => lineItems.push({ label: a.label, price: a.price * nights }));
       const checkInDate = keyToDate(dateKey);
       const checkOutDate = new Date(checkInDate);
       checkOutDate.setDate(checkInDate.getDate() + nights);
@@ -1414,10 +1435,10 @@
       closePaymentModal();
 
       const first = saved[0];
-      let msg = cabin.name + ', ' + saved.map(r => r.checkInLabel.split(' · ')[0]).join('; ') +
+      let msg = cabin.name + ', ' + saved.map(r => r.checkInLabel.split(' · ')[0] + (r.checkOutLabel ? ' to ' + r.checkOutLabel.split(' · ')[0] : '')).join('; ') +
         ' · Ref ' + saved.map(r => r.code).join(', ') + ' · via ' + paymentMethod +
         '. Status: Pending until Camp Mayagay confirms your payment.';
-      if (saved.length < dates.length) msg += ' Hindi na-save ang ' + (dates.length - saved.length) + ' na araw: ' + failMsg;
+      if (saved.length < dates.length) msg += ' Hindi na-save ang ' + (dates.length - saved.length) + ' na reservation: ' + failMsg;
       document.getElementById('thankyouSummary').textContent = msg;
       document.getElementById('thankyouModal').classList.add('open');
       pendingBooking = null;
