@@ -1661,3 +1661,4 @@ body.dark-mode .pay-choice .gname{color:#5fb0ff;}
 body.dark-mode .pay-choice .bank-details,body.dark-mode .pay-choice .bank-details strong{color:#e6ece8;}
 body.dark-mode .pay-choice .pay-option .po-dot{border-color:#4fb36c;}
 body.dark-mode .pay-choice.active .pay-option .po-dot{background:radial-gradient(#4fb36c 55%,transparent 60%);}
+.acc2-filters .date-picker{display:none !important;}
