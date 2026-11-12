@@ -53,7 +53,7 @@
 
         <div class="form-group">
           <label for="contact_number">Contact Number</label>
-          <input type="tel" id="contact_number" name="contact_number" placeholder="09XXXXXXXXX" autocomplete="tel">
+          <input type="tel" id="contact_number" name="contact_number" placeholder="09XXXXXXXXX" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" autocomplete="tel">
           <span class="field-error" id="contact_numberError"></span>
         </div>
 
@@ -120,6 +120,6 @@
     </div>
   </div>
 
-<script src="assets/js/script.js?v=10"></script>
+<script src="assets/js/script.js?v=11"></script>
 </body>
 </html>

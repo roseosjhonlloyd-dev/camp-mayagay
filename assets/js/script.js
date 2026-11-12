@@ -568,8 +568,8 @@ function initRegisterForm() {
       setFieldError('username', '3-50 characters: letters, numbers, . and _ only.'); hasError = true;
     }
 
-    if (values.contact_number !== '' && !/^[0-9+\-\s]{7,20}$/.test(values.contact_number)) {
-      setFieldError('contact_number', 'Enter a valid contact number.'); hasError = true;
+    if (values.contact_number !== '' && !/^[0-9]{11}$/.test(values.contact_number)) {
+      setFieldError('contact_number', 'Enter an 11-digit contact number (e.g. 09XXXXXXXXX).'); hasError = true;
     }
 
     var idFile = validIdInput && validIdInput.files && validIdInput.files[0];
@@ -659,3 +659,12 @@ function getClientPosition() {
     } catch (e) { clearTimeout(timer); resolve(null); }
   });
 }
+// Contact number: digits only, max 11 (09XXXXXXXXX)
+(function () {
+  var cn = document.getElementById('contact_number');
+  if (!cn) return;
+  cn.addEventListener('input', function () {
+    var d = cn.value.replace(/\D/g, '').slice(0, 11);
+    if (cn.value !== d) cn.value = d;
+  });
+})();
