@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard | Camp Mayagay</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="assets/css/dashboard-admin.css?v=16">
+<link rel="stylesheet" href="assets/css/dashboard-admin.css?v=14">
 <script>
 // If nobody is logged in (for example after Log out, then pressing Back), leave the dashboard
 // right away and go to the login page instead of showing the old page.
@@ -62,6 +62,10 @@
     <button class="nav-item" data-view="notifications" type="button">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 10a6 6 0 1112 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 19a2 2 0 004 0" stroke="currentColor" stroke-width="1.6"/></svg>
       Notifications
+    </button>
+    <button class="nav-item" data-view="incidents" type="button">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L2.5 20h19L12 3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 10v4.5M12 17.2v.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Incident Reports
     </button>
     <button class="nav-item" data-view="feedback" type="button">
       <svg viewBox="0 0 24 24" fill="none"><path d="M4 5H20V16H9L4 20V5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
@@ -623,6 +627,37 @@
     </div>
   </section>
 
+  <div class="modal-overlay hidden" id="incidentModal">
+    <div class="modal-box" style="max-width:560px;width:94%;max-height:92vh;overflow:auto;">
+      <button class="modal-close-btn" id="incidentModalClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <p class="modal-title" id="incidentModalTitle">Report incident</p>
+      <form id="incidentForm" class="incident-form" autocomplete="off">
+        <input type="hidden" id="incId">
+        <label>Date &amp; time of incident<input type="datetime-local" id="incDate" required></label>
+        <label>Type of incident
+          <select id="incType"><option>Injury / Medical</option><option>Fire</option><option>Theft / Lost item</option><option>Property damage</option><option>Guest dispute</option><option>Weather / Calamity</option><option>Other</option></select>
+        </label>
+        <label>Location in the campsite<input type="text" id="incLocation" maxlength="120" placeholder="e.g. Nipa Hut 1, Tent Area"></label>
+        <label>Severity
+          <select id="incSeverity"><option>Low</option><option>Medium</option><option>High</option></select>
+        </label>
+        <label>What happened<textarea id="incDesc" rows="3" required placeholder="Describe the incident"></textarea></label>
+        <label>People involved<input type="text" id="incPeople" maxlength="255" placeholder="Guest or staff names"></label>
+        <label>Contact person (emergency)<input type="text" id="incContactName" maxlength="150" placeholder="Name of person to contact"></label>
+        <label>Contact number<input type="text" id="incContactNo" maxlength="40" placeholder="09XXXXXXXXX"></label>
+        <label>Action taken<textarea id="incAction" rows="2" placeholder="What was done about it"></textarea></label>
+        <label>Status
+          <select id="incStatus"><option>Open</option><option>In progress</option><option>Resolved</option></select>
+        </label>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="incidentCancelBtn" type="button">Cancel</button>
+          <button class="btn-primary" type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
   <div class="modal-overlay hidden" id="reservationModal">
     <div class="modal-box">
       <button class="modal-close-btn" id="reservationModalClose" type="button">
@@ -633,6 +668,7 @@
         <div>
           <p class="modal-section-title">Reservation Information</p>
           <div id="reservationModalInfo"></div>
+          <div id="reservationModalAttendance"></div>
         </div>
         <div>
           <p class="modal-section-title">Proof of Payment</p>
@@ -1321,6 +1357,23 @@
     </div>
   </div>
 
+  <section class="view" id="view-incidents">
+    <h2 class="page-title">Incident Reports</h2>
+    <div class="panel">
+      <div class="panel-head" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+        <p class="panel-title" style="margin:0;">Campsite incidents and emergencies</p>
+        <button class="btn-primary" id="addIncidentBtn" type="button">+ Report incident</button>
+      </div>
+      <p class="rental-hint" style="margin:6px 0 12px;">Record anything that happens at the campsite (injury, fire, lost item, damage, dispute) and who to contact.</p>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>Date &amp; time</th><th>Type</th><th>Location</th><th>Severity</th><th>Contact</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="incidentTableBody"><tr><td colspan="7" class="empty-cell">No incidents recorded.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
   <section class="view" id="view-reports">
     <h2 class="page-title">Reports</h2>
 
@@ -1568,7 +1621,7 @@
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="assets/js/dashboard-admin.js?v=33"></script>
+<script src="assets/js/dashboard-admin.js?v=29"></script>
 <script src="assets/js/dashboard-payments.js?v=4"></script>
 </body>
 </html>

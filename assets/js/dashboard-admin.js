@@ -169,6 +169,7 @@ document.addEventListener('DOMContentLoaded', function () {
   initAccommodationFilters();
   initAccommodationCrud();
   initRentalInventory();
+  initIncidentReports();
   initGuestFilters();
   initNotificationFilters();
   initUserManagement();
@@ -514,6 +515,8 @@ function openReservationModal(id) {
     '<div class="modal-info-row ref-highlight"><span>' + (r.payment_method === 'GCash' ? 'GCash Reference No.' : 'Payment Reference No.') + '</span><span><strong>' +
       ((r.data && r.data.gcashRef) ? r.data.gcashRef : 'Not provided') + '</strong></span></div>';
 
+  renderAttendance(r);
+
   var receiptImage = (r.data && r.data.receiptImage) ? r.data.receiptImage : null;
   var gcashRef = (r.data && r.data.gcashRef) ? r.data.gcashRef : null;
 
@@ -539,6 +542,147 @@ function openReservationModal(id) {
   }
 
   modal.classList.remove('hidden');
+}
+
+/* ---------------- GUEST ARRIVAL / DEPARTURE (actual check-in and check-out time) ---------------- */
+function toLocalInputValue(v) {
+  return v ? String(v).replace(' ', 'T').slice(0, 16) : '';
+}
+
+function renderAttendance(r) {
+  var box = document.getElementById('reservationModalAttendance');
+  if (!box) return;
+  if (r.status !== 'confirmed' && r.status !== 'completed') { box.innerHTML = ''; return; }
+  var d = r.data || {};
+  function block(field, label, actual) {
+    return '<div class="att-block">' +
+      '<div class="att-head"><span>' + label + '</span><strong>' + (actual ? formatDateTime(actual) : 'Not yet recorded') + '</strong></div>' +
+      '<div class="att-controls">' +
+      '<button type="button" class="btn-primary att-now" data-att="' + field + '">' + (actual ? 'Set to now' : 'Mark ' + label.toLowerCase() + ' now') + '</button>' +
+      '<input type="datetime-local" class="att-input" data-att-input="' + field + '" value="' + toLocalInputValue(actual) + '">' +
+      '<button type="button" class="btn-secondary att-save" data-att-save="' + field + '">Save time</button>' +
+      (actual ? '<button type="button" class="btn-secondary att-clear" data-att-clear="' + field + '">Clear</button>' : '') +
+      '</div></div>';
+  }
+  box.innerHTML = '<p class="modal-section-title" style="margin-top:14px;">Actual arrival and departure</p>' +
+    block('check_in', 'Check-in', d.actual_check_in) + block('check_out', 'Check-out', d.actual_check_out);
+
+  function send(field, time, clear) {
+    var body = { id: r.id, field: field };
+    if (clear) body.clear = true; else if (time) body.time = time.replace('T', ' ');
+    adminApiCall('reservation_checkinout', body).then(function (res) {
+      if (!res || !res.success) { alert((res && res.message) || 'Could not save the time.'); return; }
+      for (var i = 0; i < allReservations.length; i++) {
+        if (String(allReservations[i].id) === String(r.id)) { allReservations[i] = res.reservation; break; }
+      }
+      openReservationModal(r.id);
+    });
+  }
+  box.querySelectorAll('[data-att]').forEach(function (b) {
+    b.addEventListener('click', function () { send(b.getAttribute('data-att'), '', false); });
+  });
+  box.querySelectorAll('[data-att-save]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var f = b.getAttribute('data-att-save');
+      var inp = box.querySelector('[data-att-input="' + f + '"]');
+      if (!inp || !inp.value) { alert('Pick a date and time first.'); return; }
+      send(f, inp.value, false);
+    });
+  });
+  box.querySelectorAll('[data-att-clear]').forEach(function (b) {
+    b.addEventListener('click', function () { send(b.getAttribute('data-att-clear'), '', true); });
+  });
+}
+
+/* ---------------- INCIDENT REPORTS ---------------- */
+var incidentList = [];
+
+function loadIncidents() {
+  adminApiCall('incidents_list', {}).then(function (res) {
+    incidentList = (res && res.success && res.incidents) ? res.incidents : [];
+    renderIncidents();
+  });
+}
+
+function renderIncidents() {
+  var tbody = document.getElementById('incidentTableBody');
+  if (!tbody) return;
+  if (!incidentList.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-cell">No incidents recorded.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = incidentList.map(function (i) {
+    var contact = (i.contact_person || i.contact_number)
+      ? escapeHtml(i.contact_person || '') + (i.contact_number ? '<br><small>' + escapeHtml(i.contact_number) + '</small>' : '')
+      : '-';
+    var sev = String(i.severity || 'Low');
+    var st = String(i.status || 'Open');
+    return '<tr>' +
+      '<td>' + formatDateTime(i.incident_date) + '</td>' +
+      '<td>' + escapeHtml(i.incident_type) + '</td>' +
+      '<td>' + (escapeHtml(i.location) || '-') + '</td>' +
+      '<td><span class="status-pill ' + (sev === 'High' ? 'declined' : sev === 'Medium' ? 'pending' : 'confirmed') + '">' + escapeHtml(sev) + '</span></td>' +
+      '<td>' + contact + '</td>' +
+      '<td><span class="status-pill ' + (st === 'Resolved' ? 'completed' : st === 'In progress' ? 'pending' : 'declined') + '">' + escapeHtml(st) + '</span></td>' +
+      '<td><button class="row-action-btn" data-inc-edit="' + i.incident_id + '" type="button" title="View / edit">&#9998;</button> ' +
+      '<button class="row-action-btn" data-inc-del="' + i.incident_id + '" type="button" title="Delete">&#128465;</button></td></tr>';
+  }).join('');
+  tbody.querySelectorAll('[data-inc-edit]').forEach(function (b) {
+    b.addEventListener('click', function () { openIncidentModal(b.getAttribute('data-inc-edit')); });
+  });
+  tbody.querySelectorAll('[data-inc-del]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (!confirm('Delete this incident report?')) return;
+      adminApiCall('incident_delete', { id: Number(b.getAttribute('data-inc-del')) }).then(function (res) {
+        if (res && res.success) loadIncidents(); else alert((res && res.message) || 'Could not delete.');
+      });
+    });
+  });
+}
+
+function openIncidentModal(id) {
+  var modal = document.getElementById('incidentModal');
+  if (!modal) return;
+  var i = id ? incidentList.filter(function (x) { return String(x.incident_id) === String(id); })[0] : null;
+  function set(el, v) { document.getElementById(el).value = v == null ? '' : v; }
+  document.getElementById('incidentModalTitle').textContent = i ? 'Edit incident report' : 'Report incident';
+  var now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  set('incId', i ? i.incident_id : '');
+  set('incDate', i ? toLocalInputValue(i.incident_date) : now.toISOString().slice(0, 16));
+  set('incType', i ? i.incident_type : 'Injury / Medical');
+  set('incLocation', i ? i.location : '');
+  set('incSeverity', i ? i.severity : 'Low');
+  set('incDesc', i ? i.description : '');
+  set('incPeople', i ? i.people_involved : '');
+  set('incContactName', i ? i.contact_person : '');
+  set('incContactNo', i ? i.contact_number : '');
+  set('incAction', i ? i.action_taken : '');
+  set('incStatus', i ? i.status : 'Open');
+  modal.classList.remove('hidden');
+}
+
+function initIncidentReports() {
+  var modal = document.getElementById('incidentModal');
+  var form = document.getElementById('incidentForm');
+  var addBtn = document.getElementById('addIncidentBtn');
+  if (!modal || !form) return;
+  function close() { modal.classList.add('hidden'); }
+  if (addBtn) addBtn.addEventListener('click', function () { openIncidentModal(null); });
+  document.getElementById('incidentModalClose').addEventListener('click', close);
+  document.getElementById('incidentCancelBtn').addEventListener('click', close);
+  modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = function (id) { return document.getElementById(id).value; };
+    adminApiCall('incident_save', {
+      id: Number(v('incId')) || 0, incident_date: v('incDate').replace('T', ' '), incident_type: v('incType'),
+      location: v('incLocation'), severity: v('incSeverity'), description: v('incDesc'), people_involved: v('incPeople'),
+      contact_person: v('incContactName'), contact_number: v('incContactNo'), action_taken: v('incAction'), status: v('incStatus')
+    }).then(function (res) {
+      if (res && res.success) { close(); loadIncidents(); }
+      else alert((res && res.message) || 'Could not save the incident report.');
+    });
+  });
 }
 
 /* Full-screen receipt viewer: mouse wheel / + - buttons to zoom, drag to move. */
@@ -2329,6 +2473,8 @@ function goToView(viewName) {
   document.querySelectorAll('.nav-item[data-view]').forEach(function (btn) {
     btn.classList.toggle('active', btn.getAttribute('data-view') === viewName);
   });
+
+  if (viewName === 'incidents') loadIncidents();
 
   if (openPaymentsTab) {
     var payTab = document.querySelector('[data-restab="payments"]');

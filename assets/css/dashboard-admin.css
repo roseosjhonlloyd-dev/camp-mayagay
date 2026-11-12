@@ -1282,3 +1282,22 @@ body{
 .topbar .welcome-greet .wg-sub{font-size:1.15rem}
 .topbar .welcome-greet .wg-role{background:#8fbf6e;color:#10200f;font-weight:700;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase;padding:4px 14px;border-radius:999px}
 @media (max-width:600px){.topbar .welcome-greet{font-size:1.25rem}.topbar .welcome-greet .wg-sub{font-size:.95rem}}
+
+/* Reservation details: actual check-in / check-out */
+.att-block{border:1px solid rgba(0,0,0,.12);border-radius:12px;padding:10px 12px;margin-top:8px;}
+.att-head{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:8px;}
+.att-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.att-input{padding:7px 8px;border-radius:8px;border:1px solid rgba(0,0,0,.25);font-size:13px;max-width:100%;}
+.att-controls .btn-primary,.att-controls .btn-secondary{padding:7px 12px;font-size:12.5px;}
+/* Incident report form */
+.incident-form{display:grid;gap:10px;}
+.incident-form label{display:grid;gap:4px;font-size:13px;font-weight:600;}
+.incident-form input,.incident-form select,.incident-form textarea{padding:9px 10px;border-radius:8px;border:1px solid rgba(0,0,0,.25);font:inherit;font-weight:400;background:#fff;color:#1b2a1f;}
+body.dark-mode .att-block{border-color:rgba(255,255,255,.18);}
+body.dark-mode .att-input,body.dark-mode .incident-form input,body.dark-mode .incident-form select,body.dark-mode .incident-form textarea{background:#1d1d1d;color:#e8efe9;border-color:rgba(255,255,255,.22);}
+.att-head span{color:#4a5c4f;font-weight:600;}
+.att-head strong{color:#14301c;}
+.att-controls .btn-secondary{background:#e6ece7;color:#1f4a2c;border:1px solid #c9d6cc;}
+body.dark-mode .att-head span{color:#aab8ae;}
+body.dark-mode .att-head strong{color:#f1f5f2;}
+body.dark-mode .att-controls .btn-secondary{background:#26342b;color:#d7e6da;border-color:#3a4c40;}

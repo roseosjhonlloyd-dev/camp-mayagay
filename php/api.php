@@ -121,6 +121,32 @@ function ensureFavoritesTable(PDO $pdo): void
     );
 }
 
+/** Incident reports logged by admin/staff for things that happen at the campsite. */
+function ensureIncidentTable(PDO $pdo): void
+{
+    static $done = false;
+    if ($done) return;
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS incident_reports (
+            incident_id    INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            incident_date  DATETIME NOT NULL,
+            location       VARCHAR(120) NOT NULL DEFAULT '',
+            incident_type  VARCHAR(60)  NOT NULL DEFAULT 'Other',
+            severity       VARCHAR(20)  NOT NULL DEFAULT 'Low',
+            description    TEXT NOT NULL,
+            people_involved VARCHAR(255) NOT NULL DEFAULT '',
+            contact_person VARCHAR(150) NOT NULL DEFAULT '',
+            contact_number VARCHAR(40)  NOT NULL DEFAULT '',
+            action_taken   TEXT NULL,
+            status         VARCHAR(20)  NOT NULL DEFAULT 'Open',
+            reported_by    VARCHAR(150) NOT NULL DEFAULT '',
+            created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB"
+    );
+    $done = true;
+}
+
 function ensureAmenitiesColumn(PDO $pdo): void
 {
     static $done = false;
@@ -1763,6 +1789,96 @@ try {
             $stmt = $pdo->prepare(RESERVATION_SELECT . ' WHERE r.reservation_id = :id');
             $stmt->execute(['id' => $newId]);
             echo json_encode(['success' => true, 'reservation' => reservationRow($stmt->fetch())]);
+            break;
+
+        case 'reservation_checkinout':
+            // Records the actual time the guest arrived / left (kept inside reservations.data).
+            requireModuleAccess($pdo, $user, 'reservation');
+            $id     = (int)($input['id'] ?? 0);
+            $field  = (string)($input['field'] ?? '');      // 'check_in' or 'check_out'
+            $clear  = !empty($input['clear']);
+            $timeIn = trim((string)($input['time'] ?? ''));
+            if (!$id || !in_array($field, ['check_in', 'check_out'], true)) {
+                deny('Invalid request.', 422);
+            }
+            $key = $field === 'check_in' ? 'actual_check_in' : 'actual_check_out';
+            $cur = $pdo->prepare('SELECT reservation_status, data FROM reservations WHERE reservation_id = :id');
+            $cur->execute(['id' => $id]);
+            $row = $cur->fetch();
+            if (!$row) { deny('Reservation not found.', 404); }
+            if (!in_array($row['reservation_status'], ['confirmed', 'completed'], true)) {
+                deny('Only confirmed reservations can be checked in or out.', 409);
+            }
+            $data = $row['data'] ? json_decode((string)$row['data'], true) : [];
+            if (!is_array($data)) { $data = []; }
+            if ($clear) {
+                unset($data[$key]);
+            } else {
+                $stamp = $timeIn !== '' ? strtotime($timeIn) : time();
+                if ($stamp === false) { deny('Invalid date or time.', 422); }
+                $data[$key] = date('Y-m-d H:i:s', $stamp);
+            }
+            $pdo->prepare('UPDATE reservations SET data = :d WHERE reservation_id = :id')
+                ->execute(['d' => json_encode($data), 'id' => $id]);
+            $stmt = $pdo->prepare(RESERVATION_SELECT . ' WHERE r.reservation_id = :id');
+            $stmt->execute(['id' => $id]);
+            echo json_encode(['success' => true, 'reservation' => reservationRow($stmt->fetch())]);
+            break;
+
+        case 'incidents_list':
+            requireModuleAccess($pdo, $user, 'reservation');
+            ensureIncidentTable($pdo);
+            $rows = $pdo->query('SELECT * FROM incident_reports ORDER BY incident_date DESC, incident_id DESC LIMIT 500')->fetchAll();
+            echo json_encode(['success' => true, 'incidents' => $rows]);
+            break;
+
+        case 'incident_save':
+            requireModuleAccess($pdo, $user, 'reservation');
+            ensureIncidentTable($pdo);
+            $iid   = (int)($input['id'] ?? 0);
+            $when  = strtotime((string)($input['incident_date'] ?? ''));
+            $desc  = trim((string)($input['description'] ?? ''));
+            if ($when === false || $desc === '') {
+                deny('Date/time and description are required.', 422);
+            }
+            $types = ['Injury / Medical', 'Fire', 'Theft / Lost item', 'Property damage', 'Guest dispute', 'Weather / Calamity', 'Other'];
+            $sevs  = ['Low', 'Medium', 'High'];
+            $stats = ['Open', 'In progress', 'Resolved'];
+            $type  = in_array($input['incident_type'] ?? '', $types, true) ? $input['incident_type'] : 'Other';
+            $sev   = in_array($input['severity'] ?? '', $sevs, true) ? $input['severity'] : 'Low';
+            $stat  = in_array($input['status'] ?? '', $stats, true) ? $input['status'] : 'Open';
+            $vals = [
+                'd' => date('Y-m-d H:i:s', $when),
+                'loc' => mb_substr(trim((string)($input['location'] ?? '')), 0, 120),
+                't' => $type, 'sv' => $sev, 'ds' => $desc,
+                'pi' => mb_substr(trim((string)($input['people_involved'] ?? '')), 0, 255),
+                'cp' => mb_substr(trim((string)($input['contact_person'] ?? '')), 0, 150),
+                'cn' => mb_substr(trim((string)($input['contact_number'] ?? '')), 0, 40),
+                'at' => trim((string)($input['action_taken'] ?? '')),
+                'st' => $stat,
+            ];
+            if ($iid) {
+                $vals['id'] = $iid;
+                $pdo->prepare('UPDATE incident_reports SET incident_date=:d, location=:loc, incident_type=:t, severity=:sv, description=:ds,
+                               people_involved=:pi, contact_person=:cp, contact_number=:cn, action_taken=:at, status=:st WHERE incident_id=:id')
+                    ->execute($vals);
+            } else {
+                $vals['rb'] = trim(($user['firstname'] ?? '') . ' ' . ($user['lastname'] ?? ''));
+                $pdo->prepare('INSERT INTO incident_reports (incident_date, location, incident_type, severity, description, people_involved,
+                               contact_person, contact_number, action_taken, status, reported_by)
+                               VALUES (:d,:loc,:t,:sv,:ds,:pi,:cp,:cn,:at,:st,:rb)')
+                    ->execute($vals);
+            }
+            echo json_encode(['success' => true]);
+            break;
+
+        case 'incident_delete':
+            requireModuleAccess($pdo, $user, 'reservation');
+            ensureIncidentTable($pdo);
+            $iid = (int)($input['id'] ?? 0);
+            if (!$iid) { deny('Invalid id.', 422); }
+            $pdo->prepare('DELETE FROM incident_reports WHERE incident_id = :id')->execute(['id' => $iid]);
+            echo json_encode(['success' => true]);
             break;
 
         case 'reservations_update_status':
