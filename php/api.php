@@ -1825,6 +1825,30 @@ try {
             echo json_encode(['success' => true, 'reservation' => reservationRow($stmt->fetch())]);
             break;
 
+        case 'emergency_report':
+            // A logged-in guest reports an emergency; admin/staff see it in Incident Reports + a notification.
+            requireLogin($user);
+            ensureIncidentTable($pdo);
+            $desc = trim((string)($input['description'] ?? ''));
+            if ($desc === '') { deny('Please describe what is happening.', 422); }
+            $types = ['Injury / Medical', 'Fire', 'Theft / Lost item', 'Property damage', 'Guest dispute', 'Weather / Calamity', 'Other'];
+            $type  = in_array($input['incident_type'] ?? '', $types, true) ? $input['incident_type'] : 'Other';
+            $gname = trim(($user['firstname'] ?? '') . ' ' . ($user['lastname'] ?? ''));
+            $recent = $pdo->prepare("SELECT COUNT(*) FROM incident_reports WHERE reported_by = :rb AND created_at > (NOW() - INTERVAL 60 SECOND)");
+            $recent->execute(['rb' => 'Guest: ' . $gname]);
+            if ((int)$recent->fetchColumn() > 0) { deny('Your emergency report was just sent. Please wait a minute before sending another.', 429); }
+            $loc = mb_substr(trim((string)($input['location'] ?? '')), 0, 120);
+            $num = mb_substr(trim((string)($input['contact_number'] ?? '')), 0, 40);
+            $pdo->prepare("INSERT INTO incident_reports (incident_date, location, incident_type, severity, description, people_involved,
+                           contact_person, contact_number, action_taken, status, reported_by)
+                           VALUES (NOW(), :loc, :t, 'High', :ds, :pi, :cp, :cn, '', 'Open', :rb)")
+                ->execute(['loc' => $loc, 't' => $type, 'ds' => $desc, 'pi' => $gname, 'cp' => $gname, 'cn' => $num, 'rb' => 'Guest: ' . $gname]);
+            $msg = mb_substr($gname . ' - ' . $type . ($loc !== '' ? ' at ' . $loc : '') . ($num !== '' ? '. Contact: ' . $num : ''), 0, 250);
+            $pdo->prepare("INSERT INTO notifications (user_id, audience, notification_type, title, message) VALUES (NULL, 'admin', 'announcement', 'EMERGENCY reported by a guest', :m)")
+                ->execute(['m' => $msg]);
+            echo json_encode(['success' => true]);
+            break;
+
         case 'incidents_list':
             requireModuleAccess($pdo, $user, 'reservation');
             ensureIncidentTable($pdo);

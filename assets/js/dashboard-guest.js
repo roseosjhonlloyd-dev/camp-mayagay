@@ -2356,6 +2356,47 @@ dayPill.addEventListener('click', () => openNativePicker(dayInput));
     guide.addEventListener('click', (e) => { if (e.target.id === 'guideModal') closeGuide(); });
   })();
 
+  /* ---------------- EMERGENCY REPORT (guest tells admin/staff) ---------------- */
+  (function initEmergency(){
+    const modal = document.getElementById('emergencyModal');
+    const form = document.getElementById('emergencyForm');
+    const btn = document.getElementById('emergencyBtn');
+    if (!modal || !form || !btn) return;
+    const close = () => modal.classList.remove('open');
+    btn.addEventListener('click', () => {
+      document.getElementById('emContact').value = (typeof sessionUser !== 'undefined' && sessionUser && sessionUser.contact_number) ? sessionUser.contact_number : document.getElementById('emContact').value;
+      modal.classList.add('open');
+    });
+    document.getElementById('emergencyCloseX').addEventListener('click', close);
+    document.getElementById('emergencyCancel').addEventListener('click', close);
+    modal.addEventListener('click', (e) => { if (e.target.id === 'emergencyModal') close(); });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const desc = document.getElementById('emDesc').value.trim();
+      if (!desc) { showToast('Please describe what is happening.'); return; }
+      const send = document.getElementById('emergencySend');
+      send.disabled = true;
+      try {
+        const res = await apiCall('emergency_report', {
+          incident_type: document.getElementById('emType').value,
+          location: document.getElementById('emLocation').value.trim(),
+          description: desc,
+          contact_number: document.getElementById('emContact').value.trim()
+        });
+        if (res && res.success) {
+          showToast('Emergency report sent. The camp staff has been notified.');
+          form.reset();
+          close();
+        } else {
+          showToast((res && res.message) || 'Could not send the report. Please call the camp directly.');
+        }
+      } catch (err) {
+        showToast('Could not send the report. Please call the camp directly.');
+      }
+      send.disabled = false;
+    });
+  })();
+
   let pendingAvatarPhoto = null; 
 
   let toastTimer = null;

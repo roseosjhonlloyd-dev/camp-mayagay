@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Guest Dashboard | Camp Mayagay</title>
 
-<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=40">
+<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=41">
 <link rel="stylesheet" href="assets/css/dashboard-guest-v2.css?v=12">
 <script>
 // If nobody is logged in (for example after Log out, then pressing Back), leave the dashboard
@@ -133,6 +133,7 @@
         <span class="theme-switch-thumb"></span>
       </span>
     </label>
+    <button class="icon-btn emergency-btn" id="emergencyBtn" type="button" aria-label="Report an emergency" title="Report an emergency">SOS</button>
     <button class="icon-btn" id="textSizeBtn" type="button" aria-label="Larger text" title="Larger text" style="font-weight:700;font-size:14px;">A+</button>
     <button class="icon-btn" id="helpGuideBtn" type="button" aria-label="How to book" title="How to book" style="font-weight:700;font-size:16px;">?</button>
     <button class="icon-btn" id="notifBtn" aria-label="Notifications">
@@ -730,6 +731,28 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="emergencyModal">
+  <div class="modal has-close">
+    <button class="close-x" id="emergencyCloseX" type="button" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <div class="modal-title-row"><h3>Report an emergency</h3></div>
+    <p class="emerg-note"><strong>In danger or a life-threatening emergency? Call 911 first.</strong> Then tell the camp staff using this form.</p>
+    <form id="emergencyForm" class="emerg-form" autocomplete="off">
+      <label>What kind of emergency?
+        <select id="emType"><option>Injury / Medical</option><option>Fire</option><option>Theft / Lost item</option><option>Property damage</option><option>Guest dispute</option><option>Weather / Calamity</option><option>Other</option></select>
+      </label>
+      <label>Where are you? <input type="text" id="emLocation" maxlength="120" placeholder="e.g. Nipa Hut 1, Tent Area"></label>
+      <label>What is happening? <textarea id="emDesc" rows="3" required placeholder="Tell us what happened"></textarea></label>
+      <label>Your contact number <input type="text" id="emContact" maxlength="40" placeholder="09XXXXXXXXX"></label>
+      <div class="emerg-actions">
+        <button type="button" class="btn-ghost" id="emergencyCancel">Cancel</button>
+        <button type="submit" class="emerg-send" id="emergencySend">Send emergency report</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="modal-overlay" id="guideModal">
   <div class="modal wide has-close">
     <button class="close-x" id="guideCloseX" type="button" aria-label="Close">
@@ -810,7 +833,7 @@
   <a class="auth-switch" href="php/logout.php">Log out</a>
 </div>
 
-<script src="assets/js/dashboard-guest.js?v=51"></script>
+<script src="assets/js/dashboard-guest.js?v=52"></script>
 <script>
   (function () {
     var okBtn = document.getElementById('passwordOkBtn');

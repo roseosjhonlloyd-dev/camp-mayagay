@@ -619,7 +619,7 @@ function renderIncidents() {
     var st = String(i.status || 'Open');
     return '<tr>' +
       '<td>' + formatDateTime(i.incident_date) + '</td>' +
-      '<td>' + escapeHtml(i.incident_type) + '</td>' +
+      '<td>' + escapeHtml(i.incident_type) + (i.reported_by ? '<br><small>' + escapeHtml(i.reported_by) + '</small>' : '') + '</td>' +
       '<td>' + (escapeHtml(i.location) || '-') + '</td>' +
       '<td><span class="status-pill ' + (sev === 'High' ? 'declined' : sev === 'Medium' ? 'pending' : 'confirmed') + '">' + escapeHtml(sev) + '</span></td>' +
       '<td>' + contact + '</td>' +

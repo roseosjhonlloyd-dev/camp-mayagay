@@ -1668,3 +1668,15 @@ body.dark-mode .pay-choice.active .pay-option .po-dot{background:radial-gradient
 .resv-actions{flex-wrap:wrap;}
 .cancel-note{display:block;width:100%;flex:1 0 100%;font-size:12px;opacity:.8;margin:0;}
 .resv-actions .btn-cancel-resv{flex:2 1 220px;white-space:nowrap;padding:12px 28px;}
+
+/* Emergency report (guest) */
+.emergency-btn{background:#c62828 !important; color:#fff !important; font-weight:800; font-size:12px; letter-spacing:.04em; border-color:#c62828 !important;}
+.emerg-note{font-size:13px; line-height:1.45; margin:0 0 12px; padding:10px 12px; border-radius:10px; background:#fdeceb; color:#8f1d1d;}
+.emerg-form{display:grid; gap:10px;}
+.emerg-form label{display:grid; gap:4px; font-size:13px; font-weight:600;}
+.emerg-form input,.emerg-form select,.emerg-form textarea{padding:10px 12px; border-radius:10px; border:1.5px solid rgba(0,0,0,.22); font:inherit; font-weight:400; background:#fff; color:#1b2a1f; width:100%; box-sizing:border-box;}
+.emerg-actions{display:flex; gap:10px; justify-content:flex-end; margin-top:4px; flex-wrap:wrap;}
+.emerg-send{background:#c62828; color:#fff; border:0; border-radius:12px; padding:12px 18px; font-weight:800; cursor:pointer;}
+.emerg-send:disabled{opacity:.6; cursor:default;}
+body.dark-mode .emerg-note{background:rgba(198,40,40,.2); color:#ffb4b0;}
+body.dark-mode .emerg-form input,body.dark-mode .emerg-form select,body.dark-mode .emerg-form textarea{background:#1d1d1d; color:#e8efe9; border-color:rgba(255,255,255,.22);}
