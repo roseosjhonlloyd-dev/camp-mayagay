@@ -801,6 +801,62 @@ function initWalkInModal() {
 var calendarViewDate = new Date();      // buwan na ipinapakita sa calendar
 var calendarSelectedDate = new Date();  // aktwal na napiling araw
 var calendarDetailMode = 'date';        // 'date' = napiling araw lang, 'all' = lahat ng pending
+var calendarHighlightedId = null;       // reservation_id ng guest na napili sa "Booked Guests" list
+
+function escapeCalHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+// Confirmed (o completed) na reservations lang - kapareho ng rule ng calendar.
+function getCalendarBookedReservations() {
+  return allReservations
+    .filter(function (r) { return (r.status === 'confirmed' || r.status === 'completed') && r.check_in && r.check_out; })
+    .sort(function (a, b) { return String(a.check_in).localeCompare(String(b.check_in)); });
+}
+
+function renderCalendarGuestList() {
+  var list = document.getElementById('calGuestList');
+  if (!list) return;
+
+  var booked = getCalendarBookedReservations();
+  if (!booked.length) {
+    list.innerHTML = '<p class="calendar-detail-empty">No confirmed reservations yet.</p>';
+    return;
+  }
+
+  function shortDate(dateStr) {
+    var d = new Date(String(dateStr).slice(0, 10) + 'T00:00');
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  list.innerHTML = booked.map(function (r) {
+    var active = String(r.reservation_id) === String(calendarHighlightedId);
+    return '<button type="button" class="calendar-guest-item' + (active ? ' active' : '') + '" data-res-id="' + escapeCalHtml(r.reservation_id) + '">' +
+      '<span class="guest-name">' + escapeCalHtml(r.guest_name) + '</span>' +
+      '<span class="guest-meta">' + escapeCalHtml(r.cabin_name) + ' &middot; ' + shortDate(r.check_in) + ' - ' + shortDate(r.check_out) + '</span>' +
+      '</button>';
+  }).join('');
+
+  list.querySelectorAll('.calendar-guest-item').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-res-id');
+      if (String(calendarHighlightedId) === String(id)) {
+        calendarHighlightedId = null; // kinlik ulit = tanggalin ang highlight
+      } else {
+        calendarHighlightedId = id;
+        // Lumipat sa buwan ng check-in ng guest para makita agad ang stay niya.
+        var res = booked.filter(function (r) { return String(r.reservation_id) === String(id); })[0];
+        if (res) {
+          var p = String(res.check_in).slice(0, 10).split('-');
+          calendarViewDate = new Date(Number(p[0]), Number(p[1]) - 1, 1);
+        }
+      }
+      renderReservationCalendar();
+    });
+  });
+}
 
 function toDateKey(d) {
   var y = d.getFullYear();
@@ -853,6 +909,16 @@ function renderReservationCalendar() {
     if (r.check_out) checkoutDays[String(r.check_out).slice(0, 10)] = true;
   });
 
+  // Stay ng napiling guest (check-in hanggang check-out) para i-highlight.
+  var stayStart = null, stayEnd = null;
+  if (calendarHighlightedId !== null) {
+    var hl = allReservations.filter(function (r) { return String(r.reservation_id) === String(calendarHighlightedId); })[0];
+    if (hl && hl.check_in && hl.check_out) {
+      stayStart = String(hl.check_in).slice(0, 10);
+      stayEnd = String(hl.check_out).slice(0, 10);
+    }
+  }
+
   var html = '';
   for (var i = 0; i < startWeekday; i++) {
     html += '<div class="calendar-day empty"></div>';
@@ -863,6 +929,11 @@ function renderReservationCalendar() {
     var classes = 'calendar-day';
     if (key === todayKey) classes += ' today';
     if (key === selectedKey) classes += ' selected';
+    if (stayStart && key >= stayStart && key <= stayEnd) {
+      classes += ' guest-stay';
+      if (key === stayStart) classes += ' guest-stay-start';
+      if (key === stayEnd) classes += ' guest-stay-end';
+    }
 
     var dots = '';
     if (checkinDays[key] || checkoutDays[key]) {
@@ -885,6 +956,7 @@ function renderReservationCalendar() {
     });
   });
 
+  renderCalendarGuestList();
   renderCalendarDayDetails();
 }
 
