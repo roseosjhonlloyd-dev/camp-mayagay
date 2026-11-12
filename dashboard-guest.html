@@ -7,6 +7,29 @@
 
 <link rel="stylesheet" href="assets/css/dashboard-guest.css?v=37">
 <link rel="stylesheet" href="assets/css/dashboard-guest-v2.css?v=11">
+<script>
+// If nobody is logged in (for example after Log out, then pressing Back), leave the dashboard
+// right away and go to the login page instead of showing the old page.
+(function () {
+  var root = document.documentElement;
+  function check() {
+    fetch('php/api.php?action=session', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin', cache: 'no-store', body: '{}'
+    }).then(function (r) {
+      if (r.status === 401) return { success: true, user: null };
+      return r.json();
+    }).then(function (d) {
+      if (d && d.success && !d.user) { window.location.replace('index.html'); }
+      else { root.style.visibility = ''; }
+    }).catch(function () { root.style.visibility = ''; });
+  }
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) { root.style.visibility = 'hidden'; check(); }   // page restored by Back/Forward
+  });
+  check();
+})();
+</script>
 </head>
 <body>
 
