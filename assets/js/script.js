@@ -336,6 +336,26 @@ function initRegisterForm() {
     stopPolling();
   }
 
+  // Sign Up is enabled only after the email is verified AND the guest agreed to the terms.
+  var consentEl = document.getElementById('consent');
+  function refreshSubmit() {
+    var agreed = !consentEl || consentEl.checked;
+    submitBtn.disabled = !(emailVerified && agreed);
+    if (!emailVerified) {
+      hintEl.textContent = 'Verify your email to enable Sign Up.';
+      hintEl.classList.remove('is-hidden');
+    } else if (!agreed) {
+      hintEl.textContent = 'Tick the agreement box to enable Sign Up.';
+      hintEl.classList.remove('is-hidden');
+    } else {
+      hintEl.classList.add('is-hidden');
+    }
+  }
+  if (consentEl) consentEl.addEventListener('change', function () {
+    setFieldError('consent', '');
+    refreshSubmit();
+  });
+
   function setEmailVerified(ok) {
     emailVerified = ok;
     statusEl.textContent = ok ? 'Email verified ✓' : 'Email not verified';
@@ -346,8 +366,7 @@ function initRegisterForm() {
     verifyBtnText.textContent = ok ? 'Change' : 'Verify';
     verifyBtn.classList.toggle('is-verified', ok);
     verifyBtn.disabled = false;
-    submitBtn.disabled = !ok;
-    hintEl.classList.toggle('is-hidden', ok);
+    refreshSubmit();
     if (ok) {
       closeModal();
       stopResendTimer();
@@ -575,7 +594,10 @@ function initRegisterForm() {
       setFieldError('confirm_password', 'Passwords do not match.'); hasError = true;
     }
 
+    if (consentEl && !consentEl.checked) { setFieldError('consent', 'Please agree to the Terms and Conditions.'); hasError = true; }
+
     if (hasError) return;
+    values.consent = true;
 
     submitBtn.disabled = true;
     var originalText = submitBtn.textContent;
@@ -613,7 +635,7 @@ function initRegisterForm() {
         showAlert(alertEl, 'Unable to reach the server. Please try again.', 'error');
       })
       .finally(function () {
-        submitBtn.disabled = !emailVerified;
+        refreshSubmit();
         submitBtn.textContent = originalText;
       });
   });

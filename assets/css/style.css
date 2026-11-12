@@ -1212,3 +1212,7 @@ body.modal-open { overflow: hidden; }
   .gd-topbar-welcome { font-size: 0.9rem; }
   .gd-accom-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 }
+/* Sign-up: agreement to the terms / data collection */
+.consent-group { margin: 6px 0 14px; }
+.consent-label { display: flex; align-items: flex-start; gap: 10px; font-size: 0.85rem; line-height: 1.4; cursor: pointer; color: inherit; }
+.consent-label input[type="checkbox"] { width: 18px; height: 18px; margin-top: 2px; flex: none; accent-color: #8fcf8a; cursor: pointer; }

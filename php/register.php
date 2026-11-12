@@ -30,6 +30,10 @@ $validIdImage    = (string)($input['valid_id_image'] ?? '');
 
 $errors = [];
 
+if (empty($input['consent'])) {
+    $errors['consent'] = 'Please agree to the Terms and Conditions.';
+}
+
 $validIdMatches = [];
 if ($validIdImage === '') {
     // Valid ID is optional at sign-up; the guest can upload it later in Settings.

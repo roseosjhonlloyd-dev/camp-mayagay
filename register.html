@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sign Up | Camp Mayagay</title>
 
-<link rel="stylesheet" href="assets/css/style.css?v=4">
+<link rel="stylesheet" href="assets/css/style.css?v=5">
 </head>
 <body>
       <img src="assets/images/Background.png" alt="" class="bg-image">
@@ -75,6 +75,14 @@
           <span class="field-error" id="confirm_passwordError"></span>
         </div>
 
+        <div class="form-group consent-group">
+          <label class="consent-label" for="consent">
+            <input type="checkbox" id="consent" name="consent">
+            <span>I agree to the Terms and Conditions and allow Camp Mayagay to collect and use my personal information (name, email and contact number) for my account and bookings.</span>
+          </label>
+          <span class="field-error" id="consentError"></span>
+        </div>
+
         <button type="submit" class="btn-primary" id="registerSubmitBtn" disabled>Sign Up</button>
         <p class="verify-hint" id="verifyHint">Verify your email to enable Sign Up.</p>
       </form>
@@ -112,6 +120,6 @@
     </div>
   </div>
 
-<script src="assets/js/script.js?v=9"></script>
+<script src="assets/js/script.js?v=10"></script>
 </body>
 </html>
