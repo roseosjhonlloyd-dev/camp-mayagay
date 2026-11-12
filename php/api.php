@@ -1219,7 +1219,18 @@ try {
             applyBundledAccommodationPhotos($pdo);
             $stmt = $pdo->query('SELECT * FROM accommodations ORDER BY accommodation_id ASC');
             $accRows = $stmt->fetchAll();
+            // Average guest rating (from submitted feedback) for each accommodation.
+            $ratingMap = [];
+            foreach ($pdo->query("SELECT accommodation_id, ROUND(AVG(rating), 1) AS avg_rating, COUNT(*) AS rating_count
+                                  FROM feedback_concerns
+                                  WHERE category = 'feedback' AND rating IS NOT NULL AND accommodation_id IS NOT NULL
+                                  GROUP BY accommodation_id")->fetchAll() as $rt) {
+                $ratingMap[(int)$rt['accommodation_id']] = $rt;
+            }
             foreach ($accRows as &$accRow) {
+                $rtRow = $ratingMap[(int)($accRow['accommodation_id'] ?? 0)] ?? null;
+                $accRow['avg_rating']   = $rtRow ? (float)$rtRow['avg_rating'] : null;
+                $accRow['rating_count'] = $rtRow ? (int)$rtRow['rating_count'] : 0;
                 // If there is no image, or the saved upload no longer exists on disk
                 // (Railway wipes uploads on deploy), use the bundled photo for that name.
                 $img = (string)($accRow['image'] ?? '');

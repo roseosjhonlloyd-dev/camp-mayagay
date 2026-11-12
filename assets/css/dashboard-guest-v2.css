@@ -328,3 +328,13 @@ body.dark-mode .hero{min-height:0 !important;}
 body.dark-mode #accDetailsModal .close-x{background:#14291c; color:#fff; border:1px solid rgba(255,255,255,0.25);}
 body .hero{padding-bottom:28px !important;}
 body .explore-panel{margin-top:12px !important;}
+
+/* Accommodation cards: guest rating (replaces the favorite heart) */
+.acc2-rating{display:inline-flex; align-items:center; gap:5px; flex-shrink:0; background:#fff4d6; color:#8a5a00; border-radius:999px; font-size:12.5px; font-weight:700; padding:4px 11px;}
+.acc2-rating small{font-weight:600; opacity:.75; font-size:11px;}
+.acc2-rating .acc2-star{color:#f5a623; font-size:14px; line-height:1;}
+.acc2-rating.none{background:#eef0ec; color:#6a766d; font-weight:600;}
+.acc2-rating.none .acc2-star{color:#b9c0ba;}
+body.dark-mode .acc2-rating{background:rgba(245,166,35,.16); color:#ffd27a;}
+body.dark-mode .acc2-rating.none{background:rgba(255,255,255,.08); color:#aab8ae;}
+body.dark-mode .acc2-rating.none .acc2-star{color:#6c776f;}

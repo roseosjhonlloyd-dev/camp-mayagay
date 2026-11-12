@@ -39,6 +39,8 @@
       icon: icon,
       code: (a.slug || 'CMY').slice(0, 3).toUpperCase(),
       image: a.image || null,
+      avgRating: a.avg_rating != null ? Number(a.avg_rating) : null,
+      ratingCount: Number(a.rating_count) || 0,
       amenities: Array.isArray(a.amenities) ? a.amenities : ['Complete beddings', 'Kettle', 'Plates', 'Mugs']
     };
   }
@@ -826,17 +828,14 @@
         <div class="accom-art" style="background:${ART_BG[c.icon]}${c.image ? ";--art-img:url('" + encodeURI(c.image).replace(/'/g, '%27') + "')" : ''}">
           ${accomSlider(c)}
           <span class="acc2-badge${weekAvailCount(c) === 0 ? ' none' : ''}">${badge}</span>
-          <button class="acc2-heart${on ? ' active' : ''}" data-fav="${c.id}" aria-label="Save ${escHtml(c.name)}" type="button">
-            <svg viewBox="0 0 24 24" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8"><path d="${HEART_PATH}"/></svg>
-          </button>
           <div class="acc2-price"><b>${peso(c.price)}</b> / ${c.unit}</div>
         </div>
         <div class="acc2-body">
           <div class="acc2-titlerow">
             <p class="accom-name">${c.name}</p>
-            <span class="acc2-favcount" title="Guests who favorited this">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="${HEART_PATH}"/></svg>${state.favCounts[c.id] || 0}
-            </span>
+            ${c.avgRating != null
+              ? '<span class="acc2-rating" title="Average guest rating"><span class="acc2-star">&#9733;</span>' + c.avgRating.toFixed(1) + ' <small>(' + c.ratingCount + ')</small></span>'
+              : '<span class="acc2-rating none" title="No guest ratings yet"><span class="acc2-star">&#9733;</span>No ratings yet</span>'}
           </div>
           <p class="accom-note">${c.note || ''}</p>
           <div class="acc2-amenities">${chips}</div>
