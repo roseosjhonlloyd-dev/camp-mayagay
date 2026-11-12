@@ -2597,9 +2597,9 @@ function drawWeeklyChart(svgId, values) {
   var svgParts = [];
 
   svgParts.push(
-    '<defs><linearGradient id="trendAreaGradient" x1="0" y1="0" x2="0" y2="1">' +
-    '<stop offset="0%" stop-color="#8fbf6e" stop-opacity="0.38"></stop>' +
-    '<stop offset="100%" stop-color="#8fbf6e" stop-opacity="0"></stop>' +
+    '<defs><linearGradient id="trendBarGradient" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0%" stop-color="#a6d17f" stop-opacity="0.95"></stop>' +
+    '<stop offset="100%" stop-color="#4f7d54" stop-opacity="0.85"></stop>' +
     '</linearGradient></defs>'
   );
 
@@ -2619,19 +2619,14 @@ function drawWeeklyChart(svgId, values) {
     return { x: x, y: y, value: value };
   });
 
-  var linePath = points.map(function (p, i) {
-    return (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ' ' + p.y.toFixed(1);
-  }).join(' ');
-
-  var areaPath = linePath +
-    ' L' + points[points.length - 1].x.toFixed(1) + ' ' + (paddingTop + plotHeight) +
-    ' L' + points[0].x.toFixed(1) + ' ' + (paddingTop + plotHeight) + ' Z';
-
-  svgParts.push('<path class="chart-area" d="' + areaPath + '"></path>');
-  svgParts.push('<path class="chart-line" d="' + linePath + '"></path>');
-
+  var baseY = paddingTop + plotHeight;
   points.forEach(function (p, i) {
-    svgParts.push('<circle class="chart-dot" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="4.5"></circle>');
+    var h = Math.max(0, baseY - p.y);
+    var bx = p.x - barWidth / 2;
+    if (p.value > 0) {
+      svgParts.push('<rect class="chart-bar" x="' + bx.toFixed(1) + '" y="' + p.y.toFixed(1) + '" width="' + barWidth.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="6" fill="url(#trendBarGradient)"><title>' + weekDays[i] + ': ' + p.value + '</title></rect>');
+      svgParts.push('<text class="chart-axis-label chart-bar-value" x="' + p.x.toFixed(1) + '" y="' + (p.y - 6).toFixed(1) + '" text-anchor="middle">' + p.value + '</text>');
+    }
     svgParts.push('<text class="chart-axis-label" x="' + p.x.toFixed(1) + '" y="' + (chartHeight - 8) + '" text-anchor="middle">' + weekDays[i] + '</text>');
   });
 
