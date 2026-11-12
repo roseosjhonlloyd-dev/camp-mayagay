@@ -134,6 +134,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var r = document.getElementById('settingsProfileRole'); if (r) r.textContent = u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1) : '';
     var wn = document.getElementById('welcomeName');
     if (wn) wn.textContent = (u.firstname || u.username || (u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1) : 'there'));
+    var wr = document.getElementById('welcomeRole');
+    if (wr) wr.textContent = u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1) : '';
     var a = document.getElementById('settingsProfileAvatar'); if (a) a.textContent = (full.charAt(0) || 'A').toUpperCase();
   }).catch(function () {});
   initSidebarNavigation();
