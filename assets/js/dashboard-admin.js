@@ -979,13 +979,8 @@ function renderReservationCalendar() {
     });
     if (guestDots) guestDots = '<span class="calendar-day-guestdots">' + guestDots + (dotCount > 4 ? '<em>+' + (dotCount - 4) + '</em>' : '') + '</span>';
 
+    // Wala nang IN/OUT badges sa calendar - colored dots na lang ng mga guest.
     var dots = '';
-    if (checkinDays[key] || checkoutDays[key]) {
-      dots = '<span class="calendar-day-dots">';
-      if (checkinDays[key]) dots += '<span class="cal-badge cal-badge-in">IN</span>';
-      if (checkoutDays[key]) dots += '<span class="cal-badge cal-badge-out">OUT</span>';
-      dots += '</span>';
-    }
 
     var cellStyle = classes.indexOf('guest-stay') !== -1 ? ' style="--gc:' + stayColor + '"' : '';
     html += '<button type="button" class="' + classes + '" data-date="' + key + '"' + cellStyle + '>' + day + guestDots + dots + '</button>';
