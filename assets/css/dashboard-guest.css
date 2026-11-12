@@ -1664,3 +1664,7 @@ body.dark-mode .pay-choice.active .pay-option .po-dot{background:radial-gradient
 .acc2-filters .date-picker{display:none !important;}
 
 .cancel-note{display:block;font-size:11.5px;opacity:.75;margin-top:6px;}
+
+.resv-actions{flex-wrap:wrap;}
+.cancel-note{display:block;width:100%;flex:1 0 100%;font-size:12px;opacity:.8;margin:0;}
+.resv-actions .btn-cancel-resv{flex:2 1 220px;white-space:nowrap;padding:12px 28px;}
