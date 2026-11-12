@@ -52,8 +52,8 @@ if ($email === '') {
 } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     $errors['email'] = 'Enter a valid email address.';
 }
-if ($contact_number !== '' && !preg_match('/^[0-9]{11}$/', $contact_number)) {
-    $errors['contact_number'] = 'Enter an 11-digit contact number (e.g. 09XXXXXXXXX).';
+if ($contact_number !== '' && !preg_match('/^([0-9]{11}|\+[0-9]{7,17})$/', $contact_number)) {
+    $errors['contact_number'] = 'Enter a valid contact number (11 digits for PH, or +country code).';
 }
 if ($password === '') {
     $errors['password'] = 'Password is required.';

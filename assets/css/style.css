@@ -1216,3 +1216,8 @@ body.modal-open { overflow: hidden; }
 .consent-group { margin: 6px 0 14px; }
 .consent-label { display: flex; align-items: flex-start; gap: 10px; font-size: 0.85rem; line-height: 1.4; cursor: pointer; color: inherit; }
 .consent-label input[type="checkbox"] { width: 18px; height: 18px; margin-top: 2px; flex: none; accent-color: #8fcf8a; cursor: pointer; }
+
+.phone-row{display:flex; gap:8px;}
+.phone-row select{flex:0 0 auto; max-width:132px; padding:0 8px; border:1px solid rgba(255,255,255,.3); border-radius:12px; font:inherit; background:rgba(255,255,255,.16); color:#fff;}
+.phone-row select option{color:#132419; background:#fff;}
+.phone-row input{flex:1; min-width:0;}

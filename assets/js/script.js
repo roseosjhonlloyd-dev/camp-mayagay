@@ -568,8 +568,22 @@ function initRegisterForm() {
       setFieldError('username', '3-50 characters: letters, numbers, . and _ only.'); hasError = true;
     }
 
-    if (values.contact_number !== '' && !/^[0-9]{11}$/.test(values.contact_number)) {
-      setFieldError('contact_number', 'Enter an 11-digit contact number (e.g. 09XXXXXXXXX).'); hasError = true;
+    if (values.contact_number !== '') {
+      var ccSel = document.getElementById('contact_country');
+      var ccode = ccSel ? ccSel.value : 'PH';
+      if (ccode === 'PH') {
+        if (!/^[0-9]{11}$/.test(values.contact_number)) {
+          setFieldError('contact_number', 'Enter an 11-digit contact number (e.g. 09XXXXXXXXX).'); hasError = true;
+        }
+      } else {
+        var national = values.contact_number.replace(/^0+/, '');
+        if (!/^[0-9]{6,14}$/.test(national)) {
+          setFieldError('contact_number', 'Enter a valid phone number for the selected country.'); hasError = true;
+        } else {
+          var dial = ccSel.options[ccSel.selectedIndex].getAttribute('data-dial');
+          values.contact_number = '+' + dial + national;
+        }
+      }
     }
 
     var idFile = validIdInput && validIdInput.files && validIdInput.files[0];
@@ -659,12 +673,20 @@ function getClientPosition() {
     } catch (e) { clearTimeout(timer); resolve(null); }
   });
 }
-// Contact number: digits only, max 11 (09XXXXXXXXX)
+// Contact number: country code picker. Philippines = 11 digits (09XXXXXXXXX);
+// other countries = digits only, saved as +<country code><number>.
 (function () {
   var cn = document.getElementById('contact_number');
+  var cc = document.getElementById('contact_country');
   if (!cn) return;
-  cn.addEventListener('input', function () {
-    var d = cn.value.replace(/\D/g, '').slice(0, 11);
+  function isPH() { return !cc || cc.value === 'PH'; }
+  function apply() {
+    var d = cn.value.replace(/\D/g, '').slice(0, isPH() ? 11 : 14);
     if (cn.value !== d) cn.value = d;
-  });
+    cn.maxLength = isPH() ? 11 : 14;
+    cn.placeholder = isPH() ? '09XXXXXXXXX' : 'Phone number';
+  }
+  cn.addEventListener('input', apply);
+  if (cc) cc.addEventListener('change', apply);
+  apply();
 })();
