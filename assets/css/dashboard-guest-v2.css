@@ -188,6 +188,8 @@ body.dark-mode .accom-card.acc2-card{background:var(--v2-card); border-color:var
 .acc2-bar::before{content:''; position:absolute; inset:-9px 0;}   /* bigger tap target than the thin bar */
 .acc2-bar.avail{background:var(--v2-avail);}
 .acc2-bar.avail:hover{filter:brightness(1.15);}
+.acc2-bar.past{background:#c9c9c4; cursor:not-allowed;}
+:root[data-theme="dark"] .acc2-bar.past, body.dark-mode .acc2-bar.past{background:#55554f;}
 .acc2-bar.booked{background:var(--v2-booked); cursor:not-allowed;}
 
 .acc2-actions{display:flex; align-items:center; gap:8px; margin-top:auto; padding-top:4px;}

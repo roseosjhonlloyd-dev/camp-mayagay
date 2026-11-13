@@ -755,19 +755,23 @@
       case 'nipa':      return c.icon === 'hut';
       case 'rooms':     return c.icon === 'glass' || c.icon === 'house';
       case 'tent':      return c.icon === 'tent';
-      case 'available': return DAYS.some((d, i) => state.availability[availKey(c.id, i)]);
+      case 'available': return DAYS.some((d, i) => !isPastDay(i) && state.availability[availKey(c.id, i)]);
       default:          return true;
     }
   }
   function filteredCabins(){ return CABINS.filter(cabinMatchesFilter); }
+  /* A day that is already over (before today) is greyed out and can no longer be booked. */
+  function isPastDay(i){ return toLocalDateKey(getDateForDay(i)) < todayKey(); }
   function weekAvailCount(c){
     let n = 0;
-    DAYS.forEach((d, i) => { if (state.availability[availKey(c.id, i)]) n++; });
+    DAYS.forEach((d, i) => { if (!isPastDay(i) && state.availability[availKey(c.id, i)]) n++; });
     return n;
   }
   function availBadgeText(c){
     const n = weekAvailCount(c);
-    if (n === DAYS.length) return 'Fully available';
+    const remaining = DAYS.filter((d, i) => !isPastDay(i)).length;
+    if (remaining === 0) return 'Week ended';
+    if (n === remaining) return 'Fully available';
     if (n === 0) return 'Fully booked';
     return n + ' day' + (n === 1 ? '' : 's') + ' left';
   }
@@ -810,9 +814,13 @@
     } else grid.innerHTML = pageItems.map(c => {
       const chips = (c.amenities || []).slice(0, 3).map(a => '<span class="acc2-amenity">' + escHtml(a) + '</span>').join('');
       const bars = DAYS.map((d, i) => {
-        const avail = state.availability[availKey(c.id, i)];
-        return '<div class="acc2-day"><button type="button" class="acc2-bar ' + (avail ? 'avail' : 'booked') + '" data-cabin="' + c.id + '" data-day="' + i +
-               '" aria-label="' + d + (avail ? ' - available' : ' - booked') + '"' + (avail ? '' : ' disabled') + '></button><span>' + d.charAt(0) + '</span></div>';
+        const past = isPastDay(i);
+        const free = state.availability[availKey(c.id, i)];
+        const avail = free && !past;
+        const cls = past && free ? 'past' : (free ? 'avail' : 'booked');
+        const label = past && free ? ' - day has passed' : (free ? ' - available' : ' - booked');
+        return '<div class="acc2-day"><button type="button" class="acc2-bar ' + cls + '" data-cabin="' + c.id + '" data-day="' + i +
+               '" aria-label="' + d + label + '"' + (avail ? '' : ' disabled') + '></button><span>' + d.charAt(0) + '</span></div>';
       }).join('');
       const badge = availBadgeText(c);
       return `
