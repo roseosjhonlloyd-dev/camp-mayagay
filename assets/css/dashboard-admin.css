@@ -387,14 +387,6 @@ nav.primary-nav{
 .pill.status-inactive{background:var(--status-red-bg); color:var(--status-red);}
 .pill.status-success{background:var(--status-green-bg); color:var(--status-green);}
 .pill.status-failed{background:var(--status-red-bg); color:var(--status-red);}
-.pill.id-not-submitted{background:var(--sand-dim); color:var(--ink-soft);}
-.pill.id-pending{background:var(--status-yellow-bg); color:var(--status-yellow);}
-.pill.id-verified{background:var(--status-green-bg); color:var(--status-green);}
-.pill.id-rejected{background:var(--status-red-bg); color:var(--status-red);}
-.id-verify-img-wrap{background:var(--sand); border-radius:10px; padding:12px; text-align:center; margin-bottom:6px; overflow:hidden;}
-.id-verify-img-wrap img{max-width:100%; max-height:360px; border-radius:6px; object-fit:contain; cursor:zoom-in; transition:transform .08s ease-out; transform-origin:center center;}
-#idVerifyRejectBtn{background:#fff; color:var(--status-red); border:1.5px solid var(--status-red); font-weight:700;}
-#idVerifyRejectBtn:hover{background:var(--status-red); color:#fff;}
 
 .row-actions{display:flex; gap:6px;}
 .row-action-btn{

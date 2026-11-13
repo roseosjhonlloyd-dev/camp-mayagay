@@ -267,35 +267,6 @@ function initRegisterForm() {
   var submitBtn = form.querySelector('button[type="submit"]');
 
   var fieldIds = ['firstname', 'lastname', 'email', 'username', 'contact_number', 'password', 'confirm_password'];
-  var validIdInput = document.getElementById('valid_id');
-
-  if (validIdInput) {
-    validIdInput.addEventListener('change', function (e) {
-      setFieldError('valid_id', '');
-      var file = e.target.files && e.target.files[0];
-      if (!file) return;
-      if (!/image\/(jpeg|png)/.test(file.type)) {
-        setFieldError('valid_id', 'Please upload a JPEG or PNG file.');
-        validIdInput.value = '';
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        setFieldError('valid_id', 'File is larger than 5MB.');
-        validIdInput.value = '';
-        return;
-      }
-      var filenameEl = document.getElementById('idUploadFilename');
-      if (filenameEl) filenameEl.textContent = file.name;
-
-      var reader = new FileReader();
-      reader.onload = function () {
-        var preview = document.getElementById('idUploadPreview');
-        if (preview) preview.innerHTML = '<img src="' + reader.result + '" alt="Valid ID preview">';
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-
   /* ---------- Email verification (link sent before the account is created) ---------- */
   var emailInput    = document.getElementById('email');
   var verifyBtn     = document.getElementById('verifyEmailBtn');
@@ -547,7 +518,7 @@ function initRegisterForm() {
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     hideAlert(alertEl);
-    clearErrors(fieldIds.concat(['valid_id']));
+    clearErrors(fieldIds);
 
     var values = {};
     fieldIds.forEach(function (id) {
@@ -594,16 +565,6 @@ function initRegisterForm() {
       }
     }
 
-    var idFile = validIdInput && validIdInput.files && validIdInput.files[0];
-    // Valid ID is optional - only validate it when a file was chosen.
-    if (!idFile) {
-      // no file: allowed
-    } else if (!/image\/(jpeg|png)/.test(idFile.type)) {
-      setFieldError('valid_id', 'Please upload a JPEG or PNG file.'); hasError = true;
-    } else if (idFile.size > 5 * 1024 * 1024) {
-      setFieldError('valid_id', 'File is larger than 5MB.'); hasError = true;
-    }
-
     if (values.password === '') {
       setFieldError('password', 'Password is required.'); hasError = true;
     } else if (passwordIssue(values.password)) {
@@ -625,8 +586,7 @@ function initRegisterForm() {
     var originalText = submitBtn.textContent;
     submitBtn.textContent = 'Creating account...';
 
-    (idFile ? readFileAsDataUrl(idFile) : Promise.resolve('')).then(function (dataUrl) {
-      if (dataUrl) values.valid_id_image = dataUrl;
+    Promise.resolve().then(function () {
       return fetch('php/register.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

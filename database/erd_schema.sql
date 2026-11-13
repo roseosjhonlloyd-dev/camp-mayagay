@@ -30,8 +30,6 @@ CREATE TABLE users (
     password        VARCHAR(255) NOT NULL,
     role            ENUM('guest','staff','admin') NOT NULL DEFAULT 'guest',
     profile_image   VARCHAR(255) NULL,
-    valid_id_image  VARCHAR(255) NULL,
-    id_verification_status ENUM('not_submitted','pending','verified','rejected') NOT NULL DEFAULT 'not_submitted',
     status          ENUM('active','disabled') NOT NULL DEFAULT 'active',
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -149,13 +147,6 @@ CREATE TABLE notifications (
     FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
-
-CREATE TABLE accommodation_favorites (
-    user_id          INT UNSIGNED NOT NULL,
-    accommodation_id INT UNSIGNED NOT NULL,
-    created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, accommodation_id)
-) ENGINE=InnoDB;
 
 CREATE TABLE feedback_concerns (
     feedback_id   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

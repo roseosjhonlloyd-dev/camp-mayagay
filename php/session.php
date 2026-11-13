@@ -101,7 +101,5 @@ function currentUser(): ?array
         'contact_number' => $_SESSION['contact_number'] ?? '',
         'address'        => $_SESSION['address'] ?? '',
         'profile_image'  => $_SESSION['profile_image'] ?? null,
-        'valid_id_image' => $_SESSION['valid_id_image'] ?? null,
-        'id_verification_status' => $_SESSION['id_verification_status'] ?? 'not_submitted',
     ];
 }

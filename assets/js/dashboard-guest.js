@@ -46,8 +46,6 @@
   }
 
   const state = {
-    favorites: new Set(),
-    favCounts: {},
     selectedDate: '',
     availability: {},
     reservations: [],
@@ -122,17 +120,6 @@
       const settingsLocation = document.getElementById('settingsLocation');
       if (settingsLocation) settingsLocation.value = res.user.address || '';
 
-      const validIdStatusEl = document.getElementById('validIdStatus');
-      const validIdPreviewEl = document.getElementById('validIdPreview');
-      const statusLabels = { not_submitted: 'Not submitted', pending: 'Pending review', verified: 'Verified', rejected: 'Rejected — please resubmit' };
-      const idStatus = res.user.id_verification_status || 'not_submitted';
-      if (validIdStatusEl) {
-        validIdStatusEl.textContent = statusLabels[idStatus] || 'Not submitted';
-        validIdStatusEl.className = 'valid-id-status status-' + idStatus;
-      }
-      if (validIdPreviewEl && res.user.valid_id_image) {
-        validIdPreviewEl.innerHTML = `<img src="${res.user.valid_id_image}?t=${Date.now()}" alt="Valid ID">`;
-      }
     }).catch(() => {});
   }
   function loadReservations(){
@@ -503,16 +490,6 @@
   state.selectedDate = today.toISOString().slice(0,10);
 
  
-  const HEART_PATH = 'M12 21s-7.5-4.7-10-9.3C.5 8.2 2.5 5 6 5c2 0 3.6 1.1 4.5 2.6.9-1.5 2.5-2.6 4.5-2.6 3.5 0 5.5 3.2 4 6.7C19.5 16.3 12 21 12 21z';
-  function favWrapHtml(c){
-    const on = state.favorites.has(c.id);
-    return `<span class="fav-wrap">
-      <span class="fav-count" title="Guests who favorited this">${state.favCounts[c.id] || 0}</span>
-      <button class="fav-btn ${on?'active':''}" data-fav="${c.id}" aria-label="Save ${c.name}" type="button">
-        <svg viewBox="0 0 24 24" fill="${on?'currentColor':'none'}" stroke="currentColor" stroke-width="1.6"><path d="${HEART_PATH}"/></svg>
-      </button>
-    </span>`;
-  }
   /* Home card: average guest rating (replaces the old favorites heart). */
   function ratingWrapHtml(c){
     if (c.avgRating == null){
@@ -540,33 +517,6 @@
       if (accomGrid && accomGrid.children.length) renderAccomGrid();
     }).catch(() => {});
   }
-  function toggleFavorite(id){
-    const cabin = CABINS.find(c => c.id === id);
-    if (!cabin || !cabin.accId) return;
-    const wasFav = state.favorites.has(id);
-    wasFav ? state.favorites.delete(id) : state.favorites.add(id);
-    state.favCounts[id] = Math.max(0, (state.favCounts[id] || 0) + (wasFav ? -1 : 1));
-    refreshFavoriteViews();
-    apiCall('favorites_toggle', { accommodation_id: cabin.accId }).then(res => {
-      if (res && res.success) {
-        state.favCounts[id] = Number(res.count);
-        refreshFavoriteViews();
-      } else {
-        loadFavorites();
-      }
-    }).catch(() => loadFavorites());
-  }
-  function bindFavButtons(root){
-    root.querySelectorAll('[data-fav]').forEach(btn => {
-      btn.addEventListener('click', (e) => { e.stopPropagation(); toggleFavorite(btn.dataset.fav); });
-    });
-  }
-  function refreshFavoriteViews(){
-    renderHomeCards();
-    const accomGrid = document.getElementById('accomGrid');
-    if (accomGrid && accomGrid.children.length) renderAccomGrid();
-  }
-
   /* Rating pill (kapareho ng nasa Accommodation page). */
   function ratingPillHtml(c){
     return c.avgRating != null
@@ -673,21 +623,6 @@
     const m = document.getElementById('accDetailsModal');
     if (m) m.addEventListener('click', (e) => { if (e.target.id === 'accDetailsModal') closeAccDetails(); });
   })();
-
-  function loadFavorites(){
-    return apiCall('favorites_list', {}).then(res => {
-      if (!res || !res.success) return;
-      const idToSlug = {};
-      CABINS.forEach(c => { if (c.accId) idToSlug[c.accId] = c.id; });
-      state.favorites = new Set((res.favorites || []).map(id => idToSlug[id]).filter(Boolean));
-      state.favCounts = {};
-      (res.counts || []).forEach(r => {
-        const slug = idToSlug[Number(r.accommodation_id)];
-        if (slug) state.favCounts[slug] = Number(r.total);
-      });
-      refreshFavoriteViews();
-    }).catch(() => {});
-  }
 
   let TRENDING = [];
   function loadTrendingAccommodations(){
@@ -873,7 +808,6 @@
     if (!pageItems.length){
       grid.innerHTML = '<p class="acc2-empty">No accommodations match this filter.</p>';
     } else grid.innerHTML = pageItems.map(c => {
-      const on = state.favorites.has(c.id);
       const chips = (c.amenities || []).slice(0, 3).map(a => '<span class="acc2-amenity">' + escHtml(a) + '</span>').join('');
       const bars = DAYS.map((d, i) => {
         const avail = state.availability[availKey(c.id, i)];
@@ -921,7 +855,6 @@
         openBookingModal(id, fd < 0 ? 0 : fd);
       }
     };
-    bindFavButtons(grid);
     try { initAccomSliders(grid); } catch (err) { console.error(err); }
     updatePaginationButtons();
     updateAccSummary();
@@ -2369,27 +2302,6 @@
     };
     reader.readAsDataURL(file);
   });
-  const validIdInput = document.getElementById('validIdInput');
-  if (validIdInput) {
-    validIdInput.addEventListener('change', (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      if (!/image\/(jpeg|png)/.test(file.type)) { showToast('Please upload a JPEG or PNG file'); return; }
-      if (file.size > 5 * 1024 * 1024) { showToast('File is larger than 5MB'); return; }
-      const reader = new FileReader();
-      reader.onload = () => {
-        apiCall('valid_id_upload', { photo: reader.result }).then(res => {
-          if (res && res.success) {
-            showToast('Valid ID submitted for review');
-            loadSession();
-          } else {
-            showToast((res && res.message) || 'Could not upload your ID. Please try again.');
-          }
-        }).catch(() => showToast('Could not upload your ID. Please try again.'));
-      };
-      reader.readAsDataURL(file);
-    });
-  }
   const themeToggleInput = document.getElementById('themeToggleInput');
   const THEME_KEY = 'campMayagayTheme';
 
@@ -2628,7 +2540,6 @@ dayPill.addEventListener('click', () => openNativePicker(dayInput));
 
   loadAccommodationsForGuest().then(() => {
     renderHomeCards();
-    loadFavorites();
     return Promise.all([loadAvailability(), loadInventory()]);
   }).then(() => {
     state.availability = buildAvailability();

@@ -26,19 +26,11 @@ $username        = trim((string)($input['username'] ?? ''));
 $contact_number  = trim((string)($input['contact_number'] ?? ''));
 $password        = (string)($input['password'] ?? '');
 $confirmPassword = (string)($input['confirm_password'] ?? '');
-$validIdImage    = (string)($input['valid_id_image'] ?? '');
 
 $errors = [];
 
 if (empty($input['consent'])) {
     $errors['consent'] = 'Please agree to the Terms and Conditions.';
-}
-
-$validIdMatches = [];
-if ($validIdImage === '') {
-    // Valid ID is optional at sign-up; the guest can upload it later in Settings.
-} elseif (!preg_match('/^data:image\/(jpeg|png);base64,(.+)$/', $validIdImage, $validIdMatches)) {
-    $errors['valid_id'] = 'Please upload a JPEG or PNG image.';
 }
 
 if ($firstname === '')       $errors['firstname'] = 'First name is required.';
@@ -136,27 +128,6 @@ try {
         $_SESSION['signup_sent_at'],
         $_SESSION['signup_verified_email']
     );
-
-    // Save the valid ID photo the guest uploaded during sign-up, so it's
-    // ready for the admin to review (Security Management > User
-    // Management). Registration already failed above if this was
-    // missing, so it should always be present here.
-    if (isset($validIdMatches[2])) {
-        $idBinary = base64_decode($validIdMatches[2], true);
-        if ($idBinary !== false && strlen($idBinary) <= 5 * 1024 * 1024) {
-            $idExtension = $validIdMatches[1] === 'jpeg' ? 'jpg' : 'png';
-            $idUploadDir = __DIR__ . '/../assets/uploads/valid_ids';
-            if (!is_dir($idUploadDir)) {
-                mkdir($idUploadDir, 0755, true);
-            }
-            $idFilename = 'user' . $newUserId . '_' . time() . '.' . $idExtension;
-            if (file_put_contents($idUploadDir . '/' . $idFilename, $idBinary) !== false) {
-                $idRelativePath = 'assets/uploads/valid_ids/' . $idFilename;
-                $pdo->prepare("UPDATE users SET valid_id_image = :img, id_verification_status = 'pending' WHERE user_id = :id")
-                    ->execute(['img' => $idRelativePath, 'id' => $newUserId]);
-            }
-        }
-    }
 
     // Record the sign-up itself as a security log entry, with device and
     // approximate location, same as a login attempt.

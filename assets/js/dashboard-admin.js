@@ -176,7 +176,6 @@ document.addEventListener('DOMContentLoaded', function () {
   initTogglePasswordIcons();
   initEditAdminProfile();
   initFeedbackResponseModal();
-  initIdVerifyModal();
   initAccommodationReservationsModal();
   initAddMessageModal();
   initLoginLocationModal();
@@ -2340,68 +2339,6 @@ function closeFeedbackResponseModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-var currentIdVerifyUserId = null;
-
-var idVerifyZoom = 1;
-
-function openIdVerifyModal(userId) {
-  var u = users.filter(function (row) { return String(row.id) === String(userId); })[0];
-  if (!u) return;
-  currentIdVerifyUserId = u.id;
-  document.getElementById('idVerifyInfo').innerHTML = '<strong>' + u.name + '</strong> &mdash; ' + u.email;
-  var img = document.getElementById('idVerifyImage');
-  img.src = u.valid_id_image + '?t=' + Date.now();
-  idVerifyZoom = 1;
-  img.style.transform = 'scale(1)';
-  var modal = document.getElementById('idVerifyModal');
-  if (modal) modal.classList.remove('hidden');
-}
-
-function closeIdVerifyModal() {
-  var modal = document.getElementById('idVerifyModal');
-  if (modal) modal.classList.add('hidden');
-  currentIdVerifyUserId = null;
-}
-
-function initIdVerifyModal() {
-  var closeBtn = document.getElementById('idVerifyModalClose');
-  if (closeBtn) closeBtn.addEventListener('click', closeIdVerifyModal);
-
-  var modal = document.getElementById('idVerifyModal');
-  if (modal) {
-    modal.addEventListener('click', function (e) { if (e.target === modal) closeIdVerifyModal(); });
-  }
-
-  var idImg = document.getElementById('idVerifyImage');
-  if (idImg) {
-    idImg.addEventListener('wheel', function (e) {
-      e.preventDefault();
-      idVerifyZoom += (e.deltaY < 0 ? 0.2 : -0.2);
-      if (idVerifyZoom < 1) idVerifyZoom = 1;
-      if (idVerifyZoom > 4) idVerifyZoom = 4;
-      idImg.style.transform = 'scale(' + idVerifyZoom + ')';
-      idImg.style.cursor = idVerifyZoom > 1 ? 'zoom-out' : 'zoom-in';
-    }, { passive: false });
-  }
-
-  function decide(status) {
-    if (!currentIdVerifyUserId) return;
-    adminApiCall('id_verify_review', { id: currentIdVerifyUserId, status: status }).then(function (res) {
-      if (res && res.success) {
-        closeIdVerifyModal();
-        loadUsers();
-      } else {
-        alert((res && res.message) || 'Could not update ID status.');
-      }
-    });
-  }
-
-  var approveBtn = document.getElementById('idVerifyApproveBtn');
-  if (approveBtn) approveBtn.addEventListener('click', function () { decide('verified'); });
-
-  var rejectBtn = document.getElementById('idVerifyRejectBtn');
-  if (rejectBtn) rejectBtn.addEventListener('click', function () { decide('rejected'); });
-}
 function initFeedbackResponseModal() {
   var closeBtn = document.getElementById('feedbackResponseModalClose');
   var cancelBtn = document.getElementById('feedbackResponseCancelBtn');
@@ -3007,42 +2944,8 @@ function loadUsers() {
     renderUserTable();
     renderRoleTable();
     updateSecuritySummaryGrid('users');
-    renderSettingsIdTable();
   }).catch(function () {
     if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="empty-admin-note">Could not load users.</td></tr>';
-  });
-}
-
-function renderSettingsIdTable() {
-  var tbody = document.getElementById('settingsIdTableBody');
-  if (!tbody) return;
-  var guestUsers = users.filter(function (u) { return u.role === 'guest'; });
-  if (!guestUsers.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-admin-note">No guest accounts found.</td></tr>';
-    return;
-  }
-  var idLabels = { not_submitted: 'Not submitted', pending: 'Pending', verified: 'Verified', rejected: 'Rejected' };
-  var html = '';
-  guestUsers.forEach(function (u) {
-    var status = u.id_verification_status || 'not_submitted';
-    html += '<tr>';
-    html += '  <td>' + u.name + '</td>';
-    html += '  <td>' + u.email + '</td>';
-    html += '  <td>' + (u.valid_id_image ? '<img src="' + u.valid_id_image + '" alt="Valid ID" style="width:44px;height:32px;object-fit:cover;border-radius:6px;">' : '\u2014') + '</td>';
-    html += '  <td><span class="pill id-' + status.replace('_', '-') + '">' + (idLabels[status] || 'Not submitted') + '</span></td>';
-    html += '  <td>';
-    if (u.valid_id_image) {
-      html += '<button class="row-action-btn" data-settings-view-id="' + u.id + '" title="View / Review" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12C4 7 8 4.5 12 4.5S20 7 22 12C20 17 16 19.5 12 19.5S4 17 2 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.6"/></svg></button>';
-    } else {
-      html += '<span style="color:var(--ink-soft); font-size:12px;">\u2014</span>';
-    }
-    html += '  </td>';
-    html += '</tr>';
-  });
-  tbody.innerHTML = html;
-
-  tbody.querySelectorAll('[data-settings-view-id]').forEach(function (btn) {
-    btn.addEventListener('click', function () { openIdVerifyModal(btn.getAttribute('data-settings-view-id')); });
   });
 }
 
@@ -3078,11 +2981,6 @@ function renderUserTable() {
   });
   tbody.innerHTML = html;
 
-  tbody.querySelectorAll('[data-view-id]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      openIdVerifyModal(btn.getAttribute('data-view-id'));
-    });
-  });
   tbody.querySelectorAll('[data-edit-id]').forEach(function (btn) {
     btn.addEventListener('click', function () { openUserModal(btn.getAttribute('data-edit-id')); });
   });
