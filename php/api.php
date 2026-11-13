@@ -109,18 +109,6 @@ const DEFAULT_ACCESS_MATRIX = [
 /** Seeds any module/role row that doesn't exist yet in role_permissions,
  *  using DEFAULT_ACCESS_MATRIX. Safe to call every time - it never
  *  overwrites a row an admin already edited. */
-function ensureFavoritesTable(PDO $pdo): void
-{
-    $pdo->exec(
-        "CREATE TABLE IF NOT EXISTS accommodation_favorites (
-            user_id          INT UNSIGNED NOT NULL,
-            accommodation_id INT UNSIGNED NOT NULL,
-            created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (user_id, accommodation_id)
-        ) ENGINE=InnoDB"
-    );
-}
-
 /** Incident reports logged by admin/staff for things that happen at the campsite. */
 function ensureIncidentTable(PDO $pdo): void
 {
@@ -857,72 +845,6 @@ try {
             break;
 
         /* ------------------------------------------------------------
-           VALID ID UPLOAD: guest submits a photo of a government ID
-           from Settings. Saved server-side (not localStorage) and
-           marked 'pending' so it's ready for future admin review.
-        ------------------------------------------------------------ */
-        case 'valid_id_upload':
-            requireLogin($user);
-            requireModuleAccess($pdo, $user, 'settings');
-            $photo = (string)($input['photo'] ?? '');
-
-            if ($photo === '' || !preg_match('/^data:image\/(jpeg|png);base64,(.+)$/', $photo, $matches)) {
-                http_response_code(422);
-                echo json_encode(['success' => false, 'message' => 'Please choose a JPEG or PNG image.']);
-                break;
-            }
-
-            $extension = $matches[1] === 'jpeg' ? 'jpg' : 'png';
-            $binary    = base64_decode($matches[2], true);
-
-            if ($binary === false) {
-                http_response_code(422);
-                echo json_encode(['success' => false, 'message' => 'Could not read that image. Please try another file.']);
-                break;
-            }
-
-            if (strlen($binary) > 5 * 1024 * 1024) {
-                http_response_code(422);
-                echo json_encode(['success' => false, 'message' => 'Image is larger than 5MB. Please choose a smaller photo.']);
-                break;
-            }
-
-            $uploadDir = __DIR__ . '/../assets/uploads/valid_ids';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
-
-            $filename = 'user' . $user['id'] . '_' . time() . '.' . $extension;
-            $fullPath = $uploadDir . '/' . $filename;
-
-            if (file_put_contents($fullPath, $binary) === false) {
-                http_response_code(500);
-                echo json_encode(['success' => false, 'message' => 'Could not save the ID on the server.']);
-                break;
-            }
-
-            $oldStmt = $pdo->prepare('SELECT valid_id_image FROM users WHERE user_id = :id');
-            $oldStmt->execute(['id' => $user['id']]);
-            $oldPath = $oldStmt->fetchColumn();
-            if ($oldPath) {
-                $oldFullPath = __DIR__ . '/../' . $oldPath;
-                if (is_file($oldFullPath)) {
-                    @unlink($oldFullPath);
-                }
-            }
-
-            $relativePath = 'assets/uploads/valid_ids/' . $filename;
-
-            $stmt = $pdo->prepare("UPDATE users SET valid_id_image = :img, id_verification_status = 'pending' WHERE user_id = :id");
-            $stmt->execute(['img' => $relativePath, 'id' => $user['id']]);
-
-            $_SESSION['valid_id_image'] = $relativePath;
-            $_SESSION['id_verification_status'] = 'pending';
-
-            echo json_encode(['success' => true, 'valid_id_image' => $relativePath, 'user' => currentUser()]);
-            break;
-
-        /* ------------------------------------------------------------
            CHANGE PASSWORD: guest confirms their current password, then
            sets a new one. Uses password_verify() against the stored
            hash - never compares plain text.
@@ -1052,10 +974,10 @@ try {
             break;
 
         case 'users_list':
-            // Admin: all accounts. Staff: guest accounts only (needed to review guest valid IDs in Settings).
+            // Admin: all accounts. Staff: guest accounts only.
             if (!isStaffOrAdmin($user)) deny('Admins only.', 403);
             $usersWhere = $user['role'] === 'admin' ? '' : " WHERE role = 'guest'";
-            $stmt = $pdo->query('SELECT user_id, firstname, lastname, username, email, contact_number, role, status, created_at, valid_id_image, id_verification_status FROM users' . $usersWhere . ' ORDER BY user_id ASC');
+            $stmt = $pdo->query('SELECT user_id, firstname, lastname, username, email, contact_number, role, status, created_at FROM users' . $usersWhere . ' ORDER BY user_id ASC');
             $rows = array_map(function ($u) {
                 return [
                     'id'             => (int)$u['user_id'],
@@ -1069,48 +991,9 @@ try {
                     'role'           => $u['role'],
                     'status'         => $u['status'],
                     'created_at'     => $u['created_at'],
-                    'valid_id_image' => $u['valid_id_image'],
-                    'id_verification_status' => $u['id_verification_status'],
                 ];
             }, $stmt->fetchAll());
             echo json_encode(['success' => true, 'users' => $rows]);
-            break;
-
-        case 'id_verify_review':
-            if (!isStaffOrAdmin($user)) deny('Admins only.', 403);
-            $targetId = (int)($input['id'] ?? 0);
-            if ($user['role'] === 'staff') {
-                $roleChk = $pdo->prepare('SELECT role FROM users WHERE user_id = :id');
-                $roleChk->execute(['id' => $targetId]);
-                if ($roleChk->fetchColumn() !== 'guest') deny('Staff can only review guest IDs.', 403);
-            }
-            $decision = (string)($input['status'] ?? '');
-            if (!$targetId || !in_array($decision, ['verified', 'rejected'], true)) {
-                http_response_code(422);
-                echo json_encode(['success' => false, 'message' => 'Invalid request.']);
-                break;
-            }
-
-            $stmt = $pdo->prepare('UPDATE users SET id_verification_status = :status WHERE user_id = :id');
-            $stmt->execute(['status' => $decision, 'id' => $targetId]);
-
-            $title = $decision === 'verified' ? 'Valid ID Verified' : 'Valid ID Rejected';
-            $desc  = $decision === 'verified'
-                ? 'Your submitted ID has been verified. Thank you!'
-                : 'Your submitted ID was not accepted. Please upload a clearer photo of a valid government ID in Settings.';
-            addNotification($pdo, $targetId, 'guest', 'announcement', $title, $desc);
-
-            $emailStmt = $pdo->prepare('SELECT email FROM users WHERE user_id = :id');
-            $emailStmt->execute(['id' => $targetId]);
-            $targetEmail = $emailStmt->fetchColumn();
-
-            respondNow(['success' => true]);
-
-            if ($targetEmail) {
-                require_once __DIR__ . '/mailer.php';
-                $mailError = null;
-                sendNotificationEmail($targetEmail, $title, $desc, $mailError);
-            }
             break;
 
         case 'users_create':
@@ -1313,46 +1196,6 @@ try {
                  LIMIT 10"
             );
             echo json_encode(['success' => true, 'accommodations' => $stmt->fetchAll()]);
-            break;
-
-        case 'favorites_list':
-            requireLogin($user);
-            ensureFavoritesTable($pdo);
-            $mine = $pdo->prepare('SELECT accommodation_id FROM accommodation_favorites WHERE user_id = :u');
-            $mine->execute(['u' => $user['id']]);
-            $counts = $pdo->query('SELECT accommodation_id, COUNT(*) AS total FROM accommodation_favorites GROUP BY accommodation_id')->fetchAll();
-            echo json_encode([
-                'success'   => true,
-                'favorites' => array_map('intval', $mine->fetchAll(PDO::FETCH_COLUMN)),
-                'counts'    => $counts,
-            ]);
-            break;
-
-        case 'favorites_toggle':
-            requireLogin($user);
-            ensureFavoritesTable($pdo);
-            $favAccId = (int)($input['accommodation_id'] ?? 0);
-            $chk = $pdo->prepare('SELECT 1 FROM accommodations WHERE accommodation_id = :id');
-            $chk->execute(['id' => $favAccId]);
-            if ($favAccId <= 0 || !$chk->fetchColumn()) {
-                http_response_code(422);
-                echo json_encode(['success' => false, 'message' => 'Accommodation not found.']);
-                break;
-            }
-            $has = $pdo->prepare('SELECT 1 FROM accommodation_favorites WHERE user_id = :u AND accommodation_id = :a');
-            $has->execute(['u' => $user['id'], 'a' => $favAccId]);
-            if ($has->fetchColumn()) {
-                $pdo->prepare('DELETE FROM accommodation_favorites WHERE user_id = :u AND accommodation_id = :a')
-                    ->execute(['u' => $user['id'], 'a' => $favAccId]);
-                $nowFav = false;
-            } else {
-                $pdo->prepare('INSERT INTO accommodation_favorites (user_id, accommodation_id) VALUES (:u, :a)')
-                    ->execute(['u' => $user['id'], 'a' => $favAccId]);
-                $nowFav = true;
-            }
-            $cnt = $pdo->prepare('SELECT COUNT(*) FROM accommodation_favorites WHERE accommodation_id = :a');
-            $cnt->execute(['a' => $favAccId]);
-            echo json_encode(['success' => true, 'favorited' => $nowFav, 'count' => (int)$cnt->fetchColumn()]);
             break;
 
         case 'accommodation_reviews':

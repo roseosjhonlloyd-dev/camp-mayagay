@@ -179,11 +179,6 @@ body.dark-mode .accom-card.acc2-card{background:var(--v2-card); border-color:var
 .acc2-titlerow{display:flex; justify-content:space-between; align-items:center; gap:8px;}
 .acc2-card .accom-name{font-size:17px; font-weight:700; color:var(--v2-text); margin:0;}
 .acc2-card .accom-note{color:var(--v2-muted); font-size:13px; margin:0;}
-.acc2-favcount{
-  display:inline-flex; align-items:center; gap:4px; flex-shrink:0;
-  background:#fde8e8; color:#c1343a; border-radius:999px; font-size:12px; font-weight:700; padding:3px 10px;
-}
-.acc2-favcount svg{width:11px; height:11px;}
 .acc2-amenities{display:flex; gap:7px; flex-wrap:wrap; min-height:26px;}
 .acc2-amenity{font-size:11.5px; padding:4px 10px; border-radius:7px; background:var(--v2-chip); color:var(--v2-chip-text);}
 

@@ -122,7 +122,7 @@ try {
             exit;
         }
 
-        $stmt = $pdo->prepare('SELECT user_id AS id, role, firstname, lastname, username, email, contact_number, address, status, profile_image, valid_id_image, id_verification_status FROM users WHERE user_id = :id LIMIT 1');
+        $stmt = $pdo->prepare('SELECT user_id AS id, role, firstname, lastname, username, email, contact_number, address, status, profile_image FROM users WHERE user_id = :id LIMIT 1');
         $stmt->execute(['id' => $_SESSION['pending_2fa_user_id']]);
         $user = $stmt->fetch();
         unset($_SESSION['pending_2fa_user_id'], $_SESSION['pending_2fa_code'], $_SESSION['pending_2fa_expires'], $_SESSION['pending_2fa_loc']);
@@ -145,8 +145,6 @@ try {
         $_SESSION['contact_number']= $user['contact_number'];
         $_SESSION['address']       = $user['address'];
         $_SESSION['profile_image'] = $user['profile_image'];
-        $_SESSION['valid_id_image'] = $user['valid_id_image'];
-        $_SESSION['id_verification_status'] = $user['id_verification_status'];
         $_SESSION['last_activity'] = time();
         $redirect = 'dashboard-guest.html';
         if ($user['role'] === 'admin') $redirect = 'dashboard-admin.html';
@@ -158,7 +156,7 @@ try {
 
    ensureEmailVerifyColumns($pdo);
    $stmt = $pdo->prepare(
-    'SELECT user_id AS id, role, firstname, lastname, username, email, contact_number, address, password, status, profile_image, valid_id_image, id_verification_status, email_verified
+    'SELECT user_id AS id, role, firstname, lastname, username, email, contact_number, address, password, status, profile_image, email_verified
      FROM users
      WHERE username = :identifier1 OR email = :identifier2
      LIMIT 1'
@@ -256,8 +254,6 @@ $stmt->execute([
     $_SESSION['contact_number']= $user['contact_number'];
     $_SESSION['address']       = $user['address'];
     $_SESSION['profile_image'] = $user['profile_image'];
-    $_SESSION['valid_id_image'] = $user['valid_id_image'];
-    $_SESSION['id_verification_status'] = $user['id_verification_status'];
     $_SESSION['last_activity'] = time();
 
     $redirect = 'dashboard-guest.html';

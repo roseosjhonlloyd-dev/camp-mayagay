@@ -520,12 +520,6 @@
   .cabin-note{font-size:11.5px; color:var(--ink-soft); margin:0 0 10px;}
   .cabin-foot{display:flex; align-items:center; justify-content:space-between;}
   .cabin-price{font-size:13px; font-weight:600; color:var(--leaf-deep);}
-  .fav-btn{background:none; border:none; cursor:pointer; color:#E5484D; padding:2px;}
-  .fav-btn svg{width:24px;height:24px;}
-  .fav-wrap{display:inline-flex; align-items:center; gap:6px;}
-  .fav-count{font-size:15px; font-weight:700; color:var(--ink);}
-   body.dark-mode .fav-count{color:rgba(244,241,230,0.9);}
-  .fav-btn.active{color:#E5484D;}
   .rate-wrap{display:inline-flex; align-items:center; gap:4px; font-size:15px; font-weight:700; color:var(--ink);}
   .rate-star{color:#F5A524; font-size:20px; line-height:1;}
   .rate-count{font-size:12px; font-weight:500; color:var(--ink-soft);}
@@ -1170,7 +1164,6 @@
   body.dark-mode .cabin-name, body.dark-mode .accom-name{ color:var(--on-dark-text); }
   body.dark-mode .cabin-note, body.dark-mode .accom-note{ color:rgba(244,241,230,0.65); }
   body.dark-mode .cabin-price, body.dark-mode .accom-price{ color:var(--leaf); }
-  body.dark-mode .fav-btn{color:#E5484D;}
   body.dark-mode .btn-secondary, body.dark-mode .btn-discard{background:var(--dark-carbon); border-color:var(--dark-wine-ash); color:var(--ink);}
   body.dark-mode .star-box{background:var(--dark-violet);}
   body.dark-mode .help-support{border-color:var(--dark-wine-ash);}
@@ -1466,9 +1459,7 @@ body.dark-mode .gm-icon-btn:hover{background:rgba(255,255,255,0.12);}
 .compose-actions{display:flex; gap:10px; align-items:center;}
 .gm-reply-row{margin-top:22px;}
 
-/* Most-favorited accommodations are highlighted on Home */
 .cabin-card{position:relative;}
-.accom-fav{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
 
 /* Book now, details modal, availability line, quick dates, large text, guide */
 .book-now-btn{margin-top:10px;width:100%;padding:9px 12px;border:0;border-radius:10px;background:#2f5d3a;color:#fff;font-weight:700;cursor:pointer;}

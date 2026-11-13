@@ -347,10 +347,6 @@ input.input-error {
   height: 100%;
   object-fit: cover;
 }
-#valid_id{
-  color: var(--color-white);
-  font-size: 0.85rem;
-}
 
 .form-row-between {
   display: flex;
