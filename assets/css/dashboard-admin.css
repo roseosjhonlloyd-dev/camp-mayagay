@@ -1323,3 +1323,16 @@ body.dark-mode .att-controls .btn-secondary{background:#26342b;color:#d7e6da;bor
 .wi-lg.wi-ok{ background:#b5c7ab; } .wi-lg.wi-sel{ background:#2f5d3a; } .wi-lg.wi-no{ background:#d98d80; }
 .wi-cal-summary{ font-size:12.5px; color:var(--ink,#222); margin:2px 0 4px; font-weight:600; }
 .wi-cal-summary.warn{ color:#c0392b; }
+
+/* Dark mode: readable (white) small labels that were dim green/grey */
+body.dark-mode .calendar-detail-heading,
+body.dark-mode .calendar-legend,
+body.dark-mode .calendar-legend span,
+body.dark-mode .calendar-detail-item .cabin-tag,
+body.dark-mode .avail-sub,
+body.dark-mode .summary-sub,
+body.dark-mode .setting-desc{color:#fff !important;}
+body.dark-mode .calendar-detail-heading::before{background:var(--leaf, #8fbf6e);}
+body.dark-mode #view-roles .card > p,
+body.dark-mode #view-roles p[style*="ink-soft"],
+body.dark-mode p[style*="--ink-soft"]{color:#fff !important;}
