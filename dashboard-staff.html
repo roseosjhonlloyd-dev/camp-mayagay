@@ -63,10 +63,6 @@
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 10a6 6 0 1112 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 19a2 2 0 004 0" stroke="currentColor" stroke-width="1.6"/></svg>
       Notifications
     </button>
-    <button class="nav-item" data-view="incidents" type="button">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L2.5 20h19L12 3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 10v4.5M12 17.2v.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      Incident Reports
-    </button>
     <button class="nav-item" data-view="feedback" type="button">
       <svg viewBox="0 0 24 24" fill="none"><path d="M4 5H20V16H9L4 20V5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
       Feedback and Concern
@@ -1187,6 +1183,7 @@
     <div class="tab-row" id="feedbackTabs">
       <button class="tab-btn active" data-fbtab="records" type="button">Feedback &amp; Concern</button>
       <button class="tab-btn" data-fbtab="sent" type="button">Replies &amp; Messages Sent</button>
+      <button class="tab-btn" data-fbtab="incidents" type="button">Incident Reports</button>
     </div>
 
     <div class="fbtab-panel active" id="fbtab-records">
@@ -1317,6 +1314,22 @@
         </div>
       </div>
     </div>
+
+    <div class="fbtab-panel" id="fbtab-incidents">
+      <div class="panel">
+        <div class="panel-head" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+          <p class="panel-title" style="margin:0;">Campsite incidents and emergencies</p>
+          <button class="btn-primary" id="addIncidentBtn" type="button">+ Report incident</button>
+        </div>
+        <p class="rental-hint" style="margin:6px 0 12px;">Record anything that happens at the campsite (injury, fire, lost item, damage, dispute) and who to contact.</p>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead><tr><th>Date &amp; time</th><th>Type</th><th>Location</th><th>Severity</th><th>Contact</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="incidentTableBody"><tr><td colspan="7" class="empty-cell">No incidents recorded.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </section>
 
   <div class="modal-overlay hidden" id="payRecordModal">
@@ -1336,23 +1349,6 @@
       </form>
     </div>
   </div>
-
-  <section class="view" id="view-incidents">
-    <h2 class="page-title">Incident Reports</h2>
-    <div class="panel">
-      <div class="panel-head" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-        <p class="panel-title" style="margin:0;">Campsite incidents and emergencies</p>
-        <button class="btn-primary" id="addIncidentBtn" type="button">+ Report incident</button>
-      </div>
-      <p class="rental-hint" style="margin:6px 0 12px;">Record anything that happens at the campsite (injury, fire, lost item, damage, dispute) and who to contact.</p>
-      <div style="overflow-x:auto;">
-        <table class="data-table">
-          <thead><tr><th>Date &amp; time</th><th>Type</th><th>Location</th><th>Severity</th><th>Contact</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody id="incidentTableBody"><tr><td colspan="7" class="empty-cell">No incidents recorded.</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-  </section>
 
   <section class="view" id="view-reports">
     <h2 class="page-title">Reports</h2>
@@ -1573,7 +1569,7 @@
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="assets/js/dashboard-admin.js?v=31"></script>
+<script src="assets/js/dashboard-admin.js?v=32"></script>
 <script src="assets/js/dashboard-payments.js?v=4"></script>
 <script src="assets/js/dashboard-staff-permissions.js?v=6"></script>
 </body>

@@ -2575,6 +2575,9 @@ function goToView(viewName) {
   // Payment Transactions now lives as a tab inside Reservation; keep old links working.
   var openPaymentsTab = false;
   if (viewName === 'payments') { viewName = 'reservation'; openPaymentsTab = true; }
+  // Incident Reports now lives as a tab inside Feedback and Concern; keep old links working.
+  var openIncidentsTab = false;
+  if (viewName === 'incidents') { viewName = 'feedback'; openIncidentsTab = true; }
   document.querySelectorAll('.view').forEach(function (section) {
     section.classList.remove('active');
   });
@@ -2587,7 +2590,10 @@ function goToView(viewName) {
     btn.classList.toggle('active', btn.getAttribute('data-view') === viewName);
   });
 
-  if (viewName === 'incidents') loadIncidents();
+  if (openIncidentsTab) {
+    var incTab = document.querySelector('[data-fbtab="incidents"]');
+    if (incTab) incTab.click();
+  }
 
   if (openPaymentsTab) {
     var payTab = document.querySelector('[data-restab="payments"]');
@@ -4172,6 +4178,7 @@ function initFeedbackTabs() {
       });
       closeSentMessage();
       if (tab === 'sent') loadSentMessages();
+      if (tab === 'incidents') loadIncidents();
     });
   });
 
