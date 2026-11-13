@@ -1806,8 +1806,8 @@ try {
             $cur->execute(['id' => $id]);
             $row = $cur->fetch();
             if (!$row) { deny('Reservation not found.', 404); }
-            if (!in_array($row['reservation_status'], ['confirmed', 'completed'], true)) {
-                deny('Only confirmed reservations can be checked in or out.', 409);
+            if ($row['reservation_status'] !== 'confirmed') {
+                deny('Arrival and departure times can only be set while the reservation is confirmed.', 409);
             }
             $data = $row['data'] ? json_decode((string)$row['data'], true) : [];
             if (!is_array($data)) { $data = []; }
