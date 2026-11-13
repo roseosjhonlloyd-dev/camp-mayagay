@@ -151,6 +151,7 @@
         return Object.assign({}, saved, {
           id: 'r' + row.id,
           dbId: row.id,
+          accId: row.accommodation_id ? Number(row.accommodation_id) : null,
           code: saved.code || row.code || '',
           status: row.status.charAt(0).toUpperCase() + row.status.slice(1),
           createdAt: row.created_at || '',
@@ -566,27 +567,36 @@
     if (accomGrid && accomGrid.children.length) renderAccomGrid();
   }
 
+  /* Rating pill (kapareho ng nasa Accommodation page). */
+  function ratingPillHtml(c){
+    return c.avgRating != null
+      ? '<span class="acc2-rating" title="Average guest rating"><span class="acc2-star">&#9733;</span>' + c.avgRating.toFixed(1) + ' <small>(' + c.ratingCount + ')</small></span>'
+      : '<span class="acc2-rating none" title="No guest ratings yet"><span class="acc2-star">&#9733;</span>No ratings yet</span>';
+  }
+
   function renderHomeCards(){
     const grid = document.getElementById('homeCardGrid');
-    // Highest guest rating first. Ties: more reviews first, then the original
-    // order. Accommodations with no rating yet go to the end. Show the top 4.
+    // Ranked by guest rating: pinakamataas na average muna, tapos mas maraming
+    // reviews, tapos original order. Walang rating = nasa dulo. Top 4 ang ipinapakita.
     const ranked = CABINS.map((c, i) => ({ c, i }))
       .sort((x, y) => {
-        const rx = x.c.avgRating == null ? -1 : x.c.avgRating;
-        const ry = y.c.avgRating == null ? -1 : y.c.avgRating;
-        return (ry - rx) || ((y.c.ratingCount || 0) - (x.c.ratingCount || 0)) || (x.i - y.i);
+        const rx = x.c.avgRating, ry = y.c.avgRating;
+        if ((rx == null) !== (ry == null)) return rx == null ? 1 : -1;
+        if (rx != null && ry != null && ry !== rx) return ry - rx;
+        return ((y.c.ratingCount || 0) - (x.c.ratingCount || 0)) || (x.i - y.i);
       })
       .slice(0, 4).map(x => x.c);
-    grid.innerHTML = ranked.map(c => {
+    grid.innerHTML = ranked.map((c, idx) => {
+      const rank = c.avgRating != null ? '<span class="home-rank" title="Rating rank">#' + (idx + 1) + '</span>' : '';
       return `
       <div class="cabin-card">
         <div class="cabin-art" style="background:${ART_BG[c.icon]}">${artContent(c)}</div>
         <div class="cabin-body">
-          <p class="cabin-name">${c.name}</p>
+          <p class="cabin-name">${rank}${c.name}</p>
           <p class="cabin-note">${c.note}</p>
           <div class="cabin-foot">
             <span class="cabin-price">${peso(c.price)}/ ${c.unit}</span>
-            ${ratingWrapHtml(c)}
+            ${ratingPillHtml(c)}
           </div>
           <button class="book-now-btn" type="button" data-booknow="${c.id}">Book now</button>
         </div>

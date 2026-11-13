@@ -2602,6 +2602,21 @@ try {
                     $accStmt->execute(['id' => $accommodationId]);
                     $accommodationName = $accStmt->fetchColumn() ?: null;
                     if (!$accommodationName) $accommodationId = null; // ignore unknown/stale ids
+                    // Room ratings are only for rooms the guest has really booked
+                    // (confirmed or completed stay).
+                    if ($accommodationId) {
+                        $bookedChk = $pdo->prepare(
+                            "SELECT 1 FROM reservations
+                             WHERE user_id = :uid AND accommodation_id = :aid
+                               AND reservation_status IN ('confirmed', 'completed') LIMIT 1"
+                        );
+                        $bookedChk->execute(['uid' => $user['id'], 'aid' => $accommodationId]);
+                        if (!$bookedChk->fetchColumn()) {
+                            http_response_code(403);
+                            echo json_encode(['success' => false, 'message' => 'You can only rate a room you have booked.']);
+                            break;
+                        }
+                    }
                 } catch (\Throwable $e) {
                     error_log('[camp-mayagay/api.php] feedback_create accommodation lookup failed: ' . $e->getMessage());
                     $accommodationId = null;
