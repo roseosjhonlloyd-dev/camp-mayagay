@@ -554,18 +554,22 @@ function renderAttendance(r) {
   if (!box) return;
   if (r.status !== 'confirmed' && r.status !== 'completed') { box.innerHTML = ''; return; }
   var d = r.data || {};
+  var editable = r.status === 'confirmed';   // completed (past) stays are read-only
   function block(field, label, actual) {
     return '<div class="att-block">' +
       '<div class="att-head"><span>' + label + '</span><strong>' + (actual ? formatDateTime(actual) : 'Not yet recorded') + '</strong></div>' +
+      (editable ?
       '<div class="att-controls">' +
       '<button type="button" class="btn-primary att-now" data-att="' + field + '">' + (actual ? 'Set to now' : 'Mark ' + label.toLowerCase() + ' now') + '</button>' +
       '<input type="datetime-local" class="att-input" data-att-input="' + field + '" value="' + toLocalInputValue(actual) + '">' +
       '<button type="button" class="btn-secondary att-save" data-att-save="' + field + '">Save time</button>' +
       (actual ? '<button type="button" class="btn-secondary att-clear" data-att-clear="' + field + '">Clear</button>' : '') +
-      '</div></div>';
+      '</div>' : '') +
+      '</div>';
   }
   box.innerHTML = '<p class="modal-section-title" style="margin-top:14px;">Actual arrival and departure</p>' +
-    block('check_in', 'Check-in', d.actual_check_in) + block('check_out', 'Check-out', d.actual_check_out);
+    block('check_in', 'Check-in', d.actual_check_in) + block('check_out', 'Check-out', d.actual_check_out) +
+    (editable ? '' : '<p class="proof-hint">This stay is already completed, so the times can no longer be changed.</p>');
 
   function send(field, time, clear) {
     var body = { id: r.id, field: field };
