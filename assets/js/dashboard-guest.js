@@ -585,10 +585,6 @@
   function openAccDetails(cabinId, simple){
     const c = CABINS.find(x => x.id === cabinId);
     if (!c) return;
-    const days = DAYS.map((d, i) => {
-      const ok = state.availability[availKey(c.id, i)];
-      return `<button type="button" class="day-pill ${ok ? 'avail' : 'booked'}" data-detail-day="${i}" ${ok ? '' : 'disabled'}>${d}</button>`;
-    }).join('');
     const body = document.getElementById('accDetailsBody');
     body.innerHTML = `
       <div class="accom-art acc-details-art" style="background:${ART_BG[c.icon]}">${accomSlider(c)}</div>
@@ -600,17 +596,12 @@
         <div class="amenity-list">${(c.amenities || []).map(a => `<span class="amenity-chip">${a}</span>`).join('')}</div>
         <p class="ro-label" style="margin:14px 0 6px;">Check-in and check-out</p>
         <div class="amenity-list"><span class="amenity-chip">Check-in: 2:00 PM</span><span class="amenity-chip">Check-out: 12:00 NN</span></div>
-        ${simple ? '' : `<p class="ro-label" style="margin:14px 0 6px;">This week</p>
-        <div class="day-row">${days}</div>
-        <button class="btn-primary acc-details-book" type="button" data-booknow="${c.id}">Book now</button>`}
+        ${simple ? '' : `<button class="btn-primary acc-details-book" type="button" data-booknow="${c.id}">Book now</button>`}
       </div>`;
     initAccomSliders(body);
     body.querySelectorAll('.accom-art').forEach(refreshSlider);
     const bookBtn = body.querySelector('[data-booknow]');
     if (bookBtn) bookBtn.addEventListener('click', () => bookNow(c.id));
-    body.querySelectorAll('[data-detail-day]').forEach(btn => {
-      btn.addEventListener('click', () => { closeAccDetails(); openBookingModal(c.id, Number(btn.dataset.detailDay)); });
-    });
     document.getElementById('accDetailsModal').classList.add('open');
   }
   function closeAccDetails(){
