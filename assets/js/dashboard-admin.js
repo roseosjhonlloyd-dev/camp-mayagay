@@ -3826,7 +3826,19 @@ function refreshSettingsLastLogin() {
     if (lastLoginEl) lastLoginEl.textContent = formatLoginTimestamp(latest.login_time || latest.created_at);
     if (deviceEl) deviceEl.textContent = latest.device;
     if (ipEl) ipEl.textContent = latest.ip_address || 'Unknown';
+    return;
   }
+  // Staff cannot read the full login log, so load only their own latest login.
+  if (refreshSettingsLastLogin.loading) return;
+  refreshSettingsLastLogin.loading = true;
+  adminApiCall('my_last_login', {}).then(function (res) {
+    refreshSettingsLastLogin.loading = false;
+    var l = res && res.success ? res.login : null;
+    if (!l) return;
+    if (lastLoginEl) lastLoginEl.textContent = formatLoginTimestamp(l.login_time || l.created_at);
+    if (deviceEl) deviceEl.textContent = l.device;
+    if (ipEl) ipEl.textContent = l.ip_address || 'Unknown';
+  }).catch(function () { refreshSettingsLastLogin.loading = false; });
 }
 
 /* ---- Settings page ---- */

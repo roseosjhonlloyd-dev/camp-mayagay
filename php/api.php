@@ -2665,6 +2665,25 @@ try {
         /* ------------------------------------------------------------
            SECURITY LOGS
         ------------------------------------------------------------ */
+        case 'my_last_login':
+            // The signed-in user's own latest successful login (used by Settings > Account Security for staff).
+            requireLogin($user);
+            $stmt = $pdo->prepare(
+                "SELECT login_time, created_at, device_info, ip_address
+                 FROM security_logs
+                 WHERE user_id = :u AND status = 'success'
+                 ORDER BY log_id DESC LIMIT 1"
+            );
+            $stmt->execute(['u' => (int)$user['id']]);
+            $row = $stmt->fetch();
+            echo json_encode(['success' => true, 'login' => $row ? [
+                'login_time' => $row['login_time'],
+                'created_at' => $row['created_at'],
+                'device'     => $row['device_info'] ?: 'Unknown Device',
+                'ip_address' => $row['ip_address'],
+            ] : null]);
+            break;
+
         case 'security_logs_list':
             requireAdmin($user);
             $stmt = $pdo->query(
