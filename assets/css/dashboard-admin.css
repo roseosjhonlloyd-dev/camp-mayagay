@@ -1336,3 +1336,11 @@ body.dark-mode .calendar-detail-heading::before{background:var(--leaf, #8fbf6e);
 body.dark-mode #view-roles .card > p,
 body.dark-mode #view-roles p[style*="ink-soft"],
 body.dark-mode p[style*="--ink-soft"]{color:#fff !important;}
+
+/* Readability: calendar section headings in light green, legend text in white */
+.calendar-detail-heading,
+body.dark-mode .calendar-detail-heading{color:var(--leaf) !important;}
+.calendar-legend,
+.calendar-legend span,
+body.dark-mode .calendar-legend,
+body.dark-mode .calendar-legend span{color:#ffffff !important;}
