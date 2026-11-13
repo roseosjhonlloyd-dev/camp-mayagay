@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sign Up | Camp Mayagay</title>
 
-<link rel="stylesheet" href="assets/css/style.css?v=7">
+<link rel="stylesheet" href="assets/css/style.css?v=8">
 </head>
 <body>
       <img src="assets/images/Background.png" alt="" class="bg-image">
@@ -60,7 +60,7 @@
         <div class="form-group">
           <label for="password">Password</label>
           <div class="password-wrapper">
-            <input type="password" id="password" name="password" placeholder="12+ chars, upper, lower, number, symbol" autocomplete="new-password">
+            <input type="password" id="password" name="password" placeholder="Password" autocomplete="new-password">
             <button type="button" class="toggle-password" data-target="password" aria-label="Show password">Show</button>
           </div>
           <span class="field-error" id="passwordError"></span>
@@ -78,7 +78,7 @@
         <div class="form-group consent-group">
           <label class="consent-label" for="consent">
             <input type="checkbox" id="consent" name="consent">
-            <span>I agree to the Terms and Conditions and allow Camp Mayagay to collect and use my personal information (name, email and contact number) for my account and bookings.</span>
+            <span>I agree to the <a href="#" class="terms-link" id="termsLink">Terms and Conditions</a> and allow Camp Mayagay to collect and use my personal information (name, email and contact number) for my account and bookings.</span>
           </label>
           <span class="field-error" id="consentError"></span>
         </div>
@@ -92,6 +92,33 @@
   </main>
 
   <!-- Popup shown after the guest presses Verify -->
+  <div class="verify-modal" id="termsModal" hidden role="dialog" aria-modal="true" aria-labelledby="termsModalTitle">
+    <div class="verify-modal-card terms-card">
+      <button type="button" class="verify-modal-close" id="termsModalClose" aria-label="Close">&times;</button>
+      <h2 id="termsModalTitle">Terms and Conditions</h2>
+      <div class="terms-body">
+        <h3>1. Information we collect</h3>
+        <p>When you sign up and book, we collect your name, email address, contact number, username, your booking details, and the payment reference or receipt you submit.</p>
+        <h3>2. How we use your information</h3>
+        <p>We use it to create and manage your account, process your reservations and payments, send verification emails and booking updates, and contact you if there is an emergency or incident at the campsite.</p>
+        <h3>3. Who can see it</h3>
+        <p>Your information is used only by Camp Mayagay and its authorized admin and staff for the purposes above. We do not sell it.</p>
+        <h3>4. Updating your information</h3>
+        <p>You can view and update your personal information (such as your name, contact number and profile photo) anytime in <strong>Settings</strong> after you log in.</p>
+        <h3>5. Booking policies</h3>
+        <ul>
+          <li>Check-in is at 2:00 PM and check-out is at 12:00 NN.</li>
+          <li>A 50% down payment is needed to confirm a booking.</li>
+          <li>Payments are non-refundable once your booking is confirmed.</li>
+          <li>A booking can only be cancelled within 24 hours after it is made.</li>
+        </ul>
+        <h3>6. Your agreement</h3>
+        <p>By ticking the box on the sign-up form, you agree to these terms and allow Camp Mayagay to collect and use your information as described.</p>
+      </div>
+      <button type="button" class="btn-primary" id="termsModalOk">Close</button>
+    </div>
+  </div>
+
   <div class="verify-modal" id="verifyModal" hidden role="dialog" aria-modal="true" aria-labelledby="verifyModalTitle">
     <div class="verify-modal-card">
       <button type="button" class="verify-modal-close" id="verifyModalClose" aria-label="Close">&times;</button>
@@ -120,6 +147,6 @@
     </div>
   </div>
 
-<script src="assets/js/script.js?v=13"></script>
+<script src="assets/js/script.js?v=14"></script>
 </body>
 </html>

@@ -6,6 +6,21 @@ function passwordIssue(pw) {
   if (!/[^A-Za-z0-9]/.test(pw)) return 'Password must include a special character (e.g. ! @ # $ %).';
   return '';
 }
+/* Terms and Conditions popup on the sign-up page */
+(function () {
+  document.addEventListener('DOMContentLoaded', function () {
+    var link = document.getElementById('termsLink');
+    var modal = document.getElementById('termsModal');
+    if (!link || !modal) return;
+    function open(e) { e.preventDefault(); e.stopPropagation(); modal.hidden = false; }
+    function close() { modal.hidden = true; }
+    link.addEventListener('click', open);
+    document.getElementById('termsModalClose').addEventListener('click', close);
+    document.getElementById('termsModalOk').addEventListener('click', close);
+    modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+  });
+})();
+
 document.addEventListener('DOMContentLoaded', function () {
   initPasswordToggles();
   initLoginForm();

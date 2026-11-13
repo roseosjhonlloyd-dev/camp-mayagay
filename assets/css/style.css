@@ -1217,3 +1217,13 @@ body.modal-open { overflow: hidden; }
 .phone-row select{flex:0 0 auto; max-width:132px; padding:0 8px; border:1px solid rgba(255,255,255,.3); border-radius:12px; font:inherit; background:rgba(255,255,255,.16); color:#fff;}
 .phone-row select option{color:#132419; background:#fff;}
 .phone-row input{flex:1; min-width:0;}
+
+/* Sign-up: Terms and Conditions link + popup */
+.terms-link { color: #8fcf8a; font-weight: 700; text-decoration: underline; }
+.terms-link:hover { color: #b6e8b1; }
+.terms-card { max-width: 520px; width: calc(100% - 32px); text-align: left; max-height: 86vh; display: flex; flex-direction: column; }
+.terms-card h2 { text-align: center; margin-bottom: 12px; }
+.terms-body { overflow-y: auto; padding-right: 6px; margin-bottom: 14px; font-size: 0.9rem; line-height: 1.5; }
+.terms-body h3 { font-size: 0.95rem; margin: 14px 0 4px; color: #b6e8b1; }
+.terms-body p, .terms-body li { margin: 0 0 6px; opacity: .92; }
+.terms-body ul { padding-left: 18px; margin: 4px 0; }
