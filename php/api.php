@@ -2623,6 +2623,28 @@ try {
                     $accommodationName = null;
                 }
             }
+            // Guests can only rate a room they actually booked (a confirmed or
+            // completed reservation under their own account).
+            if (($user['role'] ?? '') === 'guest') {
+                if ($category === 'feedback' && !$accommodationId) {
+                    http_response_code(422);
+                    echo json_encode(['success' => false, 'message' => 'Please pick a room you booked to rate.']);
+                    break;
+                }
+                if ($accommodationId) {
+                    $bookedStmt = $pdo->prepare(
+                        "SELECT 1 FROM reservations
+                         WHERE user_id = :uid AND accommodation_id = :aid
+                           AND reservation_status IN ('confirmed', 'completed') LIMIT 1"
+                    );
+                    $bookedStmt->execute(['uid' => $user['id'], 'aid' => $accommodationId]);
+                    if (!$bookedStmt->fetchColumn()) {
+                        http_response_code(403);
+                        echo json_encode(['success' => false, 'message' => 'You can only rate a room you have booked.']);
+                        break;
+                    }
+                }
+            }
             // Ito ang pangunahing pag-save ng feedback - dapat gumana ito
             // kahit mabigo ang notification sa ibaba, kaya hiwalay ito sa
             // try/catch ng addNotification() (hindi dapat ma-block ang
