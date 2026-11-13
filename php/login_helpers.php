@@ -69,6 +69,20 @@ function validatePasswordPolicy(string $password, bool $policyEnabled = true): ?
     return null;
 }
 
+/** Sign-up password rule: only a minimum (12) and a maximum (64) length.
+ *  Returns null when valid, or an error message string. */
+function validateSignupPassword(string $password): ?string
+{
+    $len = mb_strlen($password);
+    if ($len < 12) {
+        return 'Password must be at least 12 characters.';
+    }
+    if ($len > 64) {
+        return 'Password must not be more than 64 characters.';
+    }
+    return null;
+}
+
 /** Reads every row from system_settings into an assoc array with sane
  *  defaults, so callers never have to worry about a missing table/row
  *  (e.g. before the migration has been run). */

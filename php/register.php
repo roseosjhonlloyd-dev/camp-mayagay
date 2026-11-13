@@ -50,7 +50,7 @@ if ($contact_number !== '' && !preg_match('/^([0-9]{11}|\+[0-9]{7,17})$/', $cont
 if ($password === '') {
     $errors['password'] = 'Password is required.';
 } else {
-    $policyError = validatePasswordPolicy($password, getSystemSettings($pdo)['password_policy_enabled'] === '1');
+    $policyError = validateSignupPassword($password);
     if ($policyError !== null) {
         $errors['password'] = $policyError;
     }

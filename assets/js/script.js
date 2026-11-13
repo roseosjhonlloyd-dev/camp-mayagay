@@ -1,9 +1,9 @@
+// Sign-up password rule: only a minimum and a maximum length.
+var PASSWORD_MIN = 12;
+var PASSWORD_MAX = 64;
 function passwordIssue(pw) {
-  if (pw.length < 12) return 'Password must be at least 12 characters.';
-  if (!/[A-Z]/.test(pw)) return 'Password must include an uppercase letter.';
-  if (!/[a-z]/.test(pw)) return 'Password must include a lowercase letter.';
-  if (!/[0-9]/.test(pw)) return 'Password must include a number.';
-  if (!/[^A-Za-z0-9]/.test(pw)) return 'Password must include a special character (e.g. ! @ # $ %).';
+  if (pw.length < PASSWORD_MIN) return 'Password must be at least ' + PASSWORD_MIN + ' characters.';
+  if (pw.length > PASSWORD_MAX) return 'Password must not be more than ' + PASSWORD_MAX + ' characters.';
   return '';
 }
 /* Terms and Conditions popup on the sign-up page */
