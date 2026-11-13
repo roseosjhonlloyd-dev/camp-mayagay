@@ -918,7 +918,6 @@
   const extraQty = { person:0, nights:1, ownTents:0, heads:1 };
   const STEP_MAX = { person:5, ownTents:5, heads:20 };
   let rentalQty = {};            // rental item id -> quantity picked
-  const RENT_LIMIT = 5;          // most of one rental item per booking day
   const STEP_LIMIT = 5; // most blankets / pillows / extra persons per booking day
   const STEP_MIN = { nights:1, heads:1 };
   // Tent Area pricing (per the camp owner): own tent 250/tent, rented tent 500/tent,
@@ -1020,7 +1019,7 @@
     const unit = isTent ? '/tent' : ' each';
     const safe = String(it.name).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     return '<div class="addon-row" data-rent-row="' + it.id + '"><div class="addon-info"><span class="addon-name">' + (isTent ? name : safe) + '</span>' +
-      '<span class="addon-meta">₱' + Number(it.price).toLocaleString() + unit + ' <span class="stock-note" id="rn-' + it.id + '">max ' + RENT_LIMIT + '</span></span></div>' +
+      '<span class="addon-meta">₱' + Number(it.price).toLocaleString() + unit + ' <span class="stock-note" id="rn-' + it.id + '">checking stock...</span></span></div>' +
       '<div class="stepper"><button type="button" data-rent-id="' + it.id + '" data-rent-step="-1" aria-label="Fewer">−</button>' +
       '<span id="rq-' + it.id + '">' + (rentalQty[it.id] || 0) + '</span>' +
       '<button type="button" data-rent-id="' + it.id + '" data-rent-step="1" aria-label="More">+</button></div></div>';
@@ -1039,7 +1038,7 @@
     updateStockLimits();
   }
   function stepRental(id, delta){
-    const max = Math.min(RENT_LIMIT, rentalLeft(id));
+    const max = rentalLeft(id);
     const next = (rentalQty[id] || 0) + delta;
     if (next > max){ showToast(max === 0 ? 'Out of stock for your selected day(s)' : 'Maximum of ' + max + ' only'); return; }
     rentalQty[id] = Math.max(0, next);
@@ -1048,11 +1047,11 @@
     const row = q && q.closest('.addon-row');
     if (row) row.classList.toggle('has-qty', rentalQty[id] > 0);
   }
-  /* Max per item = smaller of 5 and what is left on every chosen night. */
+  /* Max per item = what is still in stock on every chosen night (no fixed cap). */
   function updateStockLimits(){
     (inventory.items || []).forEach(it => {
       const left = rentalLeft(it.id);
-      const max = Math.min(RENT_LIMIT, left);
+      const max = left;
       if ((rentalQty[it.id] || 0) > max) rentalQty[it.id] = max;
       const q = document.getElementById('rq-' + it.id);
       if (q){
@@ -1061,7 +1060,7 @@
         if (row) row.classList.toggle('has-qty', (rentalQty[it.id] || 0) > 0);
       }
       const note = document.getElementById('rn-' + it.id);
-      if (note) note.textContent = left <= 0 ? 'out of stock' : (left < RENT_LIMIT ? 'only ' + left + ' left' : 'max ' + RENT_LIMIT);
+      if (note) note.textContent = left <= 0 ? 'out of stock' : (left <= 5 ? 'only ' + left + ' left' : left + ' available');
     });
   }
   document.getElementById('calPrev').addEventListener('click', () => { bk.m--; if (bk.m < 0){ bk.m = 11; bk.y--; } renderCalendar(); });
@@ -1082,7 +1081,14 @@
     });
   });
 
+  let stockTimer = null;
   function openBookingModal(cabinId, dayIndex, skipRestore){
+    loadInventory();
+    clearInterval(stockTimer);
+    stockTimer = setInterval(() => {
+      const m = document.getElementById('bookingModal');
+      if (m && m.classList.contains('open')) loadInventory(); else clearInterval(stockTimer);
+    }, 20000);
     const cabin = CABINS.find(c => c.id === cabinId);
     pendingBooking = { cabinId, dayIndex, cabin };
     document.getElementById('modalCabinSub').textContent = cabin.name + ' \u00b7 ' + DAYS[dayIndex] + ' \u00b7 ' + peso(cabin.price) + '/ ' + cabin.unit;
