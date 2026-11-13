@@ -378,6 +378,29 @@ function initReservationFilters() {
   });
 }
 
+/** Extra-safe delete confirmation: the user must type DELETE, so an accidental tap can't remove anything. */
+function confirmTypedDelete(message) {
+  var typed = window.prompt(message + '\n\nType DELETE (in capital letters) to confirm.');
+  if (typed === null) return false;
+  if (String(typed).trim().toUpperCase() === 'DELETE') return true;
+  if (typeof showAdminToast === 'function') showAdminToast('Nothing was deleted. You need to type DELETE to confirm.', true);
+  return false;
+}
+
+/** Actual arrival / departure time recorded by staff (reservations.data), e.g. "Nov 13, 2026 2:05 PM". */
+function actualTimeValue(r, field) {
+  var v = r && r.data && r.data[field];
+  if (!v) return '';
+  var d = new Date(String(v).replace(' ', 'T'));
+  if (isNaN(d.getTime())) return String(v);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' +
+         d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+function actualTimeCell(r, field) {
+  var t = actualTimeValue(r, field);
+  return t ? adminEsc(t) : '<span style="opacity:.55">Not yet recorded</span>';
+}
+
 function renderReservationTable() {
   var tbody = document.getElementById('reservationTableBody');
   if (!tbody) return;
@@ -385,7 +408,7 @@ function renderReservationTable() {
   var filtered = getFilteredReservations();
 
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="empty-admin-note">No matching reservations found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="empty-admin-note">No matching reservations found.</td></tr>';
     return;
   }
 
@@ -399,6 +422,8 @@ function renderReservationTable() {
     html += '  <td>' + r.cabin_name + '</td>';
     html += '  <td>' + formatDateTime(r.check_in) + '</td>';
     html += '  <td>' + formatDateTime(r.check_out) + '</td>';
+    html += '  <td>' + actualTimeCell(r, 'actual_check_in') + '</td>';
+    html += '  <td>' + actualTimeCell(r, 'actual_check_out') + '</td>';
     html += '  <td>' + r.guests_count + '</td>';
     html += '  <td>' + peso2(r.total_amount) + '</td>';
     html += '  <td><span class="status-pill ' + pillClass + '">' + statusLabel + '</span></td>';
@@ -452,7 +477,7 @@ function renderReservationTable() {
       }
 
       if (action === 'delete') {
-        if (!confirm('Delete this reservation permanently?')) return;
+        if (!confirmTypedDelete('Delete this reservation permanently?')) return;
         btn.disabled = true;
         adminApiCall('reservations_delete', { id: id }).then(function (res) {
           if (res && res.success) {
@@ -635,7 +660,7 @@ function renderIncidents() {
   });
   tbody.querySelectorAll('[data-inc-del]').forEach(function (b) {
     b.addEventListener('click', function () {
-      if (!confirm('Delete this incident report?')) return;
+      if (!confirmTypedDelete('Delete this incident report?')) return;
       adminApiCall('incident_delete', { id: Number(b.getAttribute('data-inc-del')) }).then(function (res) {
         if (res && res.success) loadIncidents(); else alert((res && res.message) || 'Could not delete.');
       });
@@ -1539,7 +1564,7 @@ function renderAccommodationTable() {
   });
   tbody.querySelectorAll('[data-delete-acc-id]').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      if (!confirm('Delete this accommodation permanently?')) return;
+      if (!confirmTypedDelete('Delete this accommodation permanently?')) return;
       adminApiCall('accommodations_delete', { accommodation_id: btn.getAttribute('data-delete-acc-id') }).then(function (res) {
         if (res && res.success) { loadAccommodations(); }
         else { alert((res && res.message) || 'Could not delete accommodation.'); }
@@ -1628,7 +1653,7 @@ function initRentalInventory() {
       var it = rentalItemsList.filter(function (x) { return x.id === ed.getAttribute('data-rental-edit'); })[0];
       if (it) openRentalModal(it);
     } else if (del) {
-      if (!confirm('Remove this rental item? Guests will no longer see it.')) return;
+      if (!confirmTypedDelete('Remove this rental item? Guests will no longer see it.')) return;
       adminApiCall('rental_item_delete', { id: del.getAttribute('data-rental-del') }).then(function (res) {
         if (res && res.success) { rentalItemsList = res.items || []; renderRentalItems(); showAdminToast('Item removed'); }
         else showAdminToast((res && res.message) || 'Could not remove the item.', true);
@@ -2050,7 +2075,7 @@ function renderNotificationTable() {
     });
   });
     btn.addEventListener('click', function () {
-      if (!confirm('Delete this notification?')) return;
+      if (!confirmTypedDelete('Delete this notification?')) return;
       adminApiCall('notifications_delete', { ids: [btn.getAttribute('data-delete-notif')] }).then(loadAdminNotifications);
     });
   });
@@ -2305,7 +2330,7 @@ function renderFeedbackTable(list) {
   tbody.innerHTML = html;
   tbody.querySelectorAll('[data-fid]').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      if (!confirm('Delete this feedback entry?')) return;
+      if (!confirmTypedDelete('Delete this feedback entry?')) return;
       adminApiCall('feedback_delete', { id: btn.getAttribute('data-fid') }).then(loadFeedback);
     });
   });
@@ -2986,7 +3011,7 @@ function renderUserTable() {
   });
   tbody.querySelectorAll('[data-delete-id]').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      if (!confirm('Delete this user permanently?')) return;
+      if (!confirmTypedDelete('Delete this user permanently?')) return;
       adminApiCall('users_delete', { id: btn.getAttribute('data-delete-id') }).then(function (res) {
         if (res && res.success) { loadUsers(); }
         else { alert((res && res.message) || 'Could not delete user.'); }
@@ -3669,6 +3694,7 @@ function detailedReportRow(key, type, total, details, generatedAt) {
     '  <td>' +
     '    <button class="row-action-btn report-view-btn" data-report="' + key + '" title="View" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12C4 7 8 4.5 12 4.5S20 7 22 12C20 17 16 19.5 12 19.5S4 17 2 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.6"/></svg></button>' +
     '    <button class="row-action-btn report-download-btn" data-report="' + key + '" title="Download" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3V15M12 15L7 10M12 15L17 10M5 19H19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+    '    <button class="row-action-btn report-pdf-btn" data-report="' + key + '" title="Download PDF" type="button" style="width:auto;padding:0 10px;font-size:11px;font-weight:700;">PDF</button>' +
     '  </td>' +
     '</tr>';
 }
@@ -3687,14 +3713,14 @@ function reportDateTime(raw) {
 function reportCap(v) { v = String(v || ''); return v ? v.charAt(0).toUpperCase() + v.slice(1) : '-'; }
 function reportPeso(n) { return '\u20b1' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-function buildReportTable(key) {
-  var d = lastReportsData || {};
+function buildReportTable(key, data) {
+  var d = data || lastReportsData || {};
   if (key === 'reservation') {
     return {
       title: 'Reservation Report',
-      headers: ['Code', 'Guest Name', 'Accommodation', 'Check-in', 'Check-out', 'Guests', 'Status', 'Total Amount'],
+      headers: ['Code', 'Guest Name', 'Accommodation', 'Check-in', 'Check-out', 'Actual Check-in', 'Actual Check-out', 'Guests', 'Status', 'Total Amount'],
       rows: (d.reservation_rows || []).map(function (r) {
-        return [r.code || '', r.guest_name || '', r.cabin_name || '', reportDateTime(r.check_in), reportDateTime(r.check_out), r.guests_count || 0, reportCap(r.status), reportPeso(r.total_amount)];
+        return [r.code || '', r.guest_name || '', r.cabin_name || '', reportDateTime(r.check_in), reportDateTime(r.check_out), actualTimeValue(r, 'actual_check_in') || '-', actualTimeValue(r, 'actual_check_out') || '-', r.guests_count || 0, reportCap(r.status), reportPeso(r.total_amount)];
       })
     };
   }
@@ -3752,6 +3778,8 @@ function initDetailedReportActions() {
     body.addEventListener('click', function (e) {
       var viewBtn = e.target.closest('.report-view-btn');
       var dlBtn = e.target.closest('.report-download-btn');
+      var pdfBtn = e.target.closest('.report-pdf-btn');
+      if (pdfBtn) { if (window.downloadReportsPdf) window.downloadReportsPdf('single', pdfBtn.getAttribute('data-report')); return; }
       if (viewBtn) openReportDetail(viewBtn.getAttribute('data-report'));
       else if (dlBtn) downloadReportCsv(dlBtn.getAttribute('data-report'));
     });
@@ -3761,6 +3789,8 @@ function initDetailedReportActions() {
     var el = document.getElementById(id);
     if (el) el.addEventListener('click', closeDetail);
   });
+  var dlPdf = document.getElementById('reportDetailPdfBtn');
+  if (dlPdf) dlPdf.addEventListener('click', function () { if (window.downloadReportsPdf) window.downloadReportsPdf('single', openReportKey); });
   var dl = document.getElementById('reportDetailDownloadBtn');
   if (dl) dl.addEventListener('click', function () { downloadReportCsv(openReportKey); });
 }
@@ -4163,7 +4193,7 @@ function initFeedbackTabs() {
   var delBtn = document.getElementById('sentDeleteBtn');
   if (delBtn) delBtn.addEventListener('click', function () {
     var ids = Object.keys(sentSelected).map(Number);
-    if (!ids.length || !confirm('Delete ' + ids.length + ' selected message(s) from this list?')) return;
+    if (!ids.length || !confirmTypedDelete('Delete ' + ids.length + ' selected message(s) from this list?')) return;
     adminApiCall('sent_messages_delete', { ids: ids }).then(function (res) {
       var ok = res && res.success;
       if (typeof showAdminToast === 'function') showAdminToast(ok ? 'Selected messages deleted.' : 'Could not delete messages.', !ok);

@@ -563,11 +563,11 @@
         <thead>
           <tr>
             <th>Booking Code</th><th>Guest Name</th><th>Accommodation</th><th>Check-in</th><th>Check-out</th>
-            <th>Guests</th><th>Total Amount</th><th>Status</th><th>Actions</th>
+            <th>Actual Check-in</th><th>Actual Check-out</th><th>Guests</th><th>Total Amount</th><th>Status</th><th>Actions</th>
           </tr>
         </thead>
         <tbody id="reservationTableBody">
-          <tr><td colspan="9" class="empty-admin-note">Loading reservations...</td></tr>
+          <tr><td colspan="11" class="empty-admin-note">Loading reservations...</td></tr>
         </tbody>
       </table>
     </div>
@@ -694,7 +694,8 @@
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" id="reportDetailCloseBtn" type="button">Close</button>
-        <button class="btn-primary" id="reportDetailDownloadBtn" type="button">Download CSV</button>
+        <button class="btn-primary" id="reportDetailPdfBtn" type="button">Download PDF</button>
+        <button class="btn-secondary" id="reportDetailDownloadBtn" type="button">Download CSV</button>
       </div>
     </div>
   </div>
@@ -1382,7 +1383,12 @@
           <h3 style="margin-bottom:2px;">Reports Overview</h3>
           <p style="font-size:12.5px; color:#ffffff; margin:0;">View and analyze data summary of reservations, guests, accommodations and feedback.</p>
         </div>
-        <button class="view-all-link" id="downloadCsvBtn" type="button" style="background:none;border:none;cursor:pointer;">Download CSV Report</button>
+        <div class="report-dl-row" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+          <button class="btn-primary" id="downloadWeeklyPdfBtn" type="button">Weekly PDF</button>
+          <button class="btn-primary" id="downloadMonthlyPdfBtn" type="button">Monthly PDF</button>
+          <button class="btn-primary" id="downloadAllPdfBtn" type="button">All Reports PDF</button>
+          <button class="view-all-link" id="downloadCsvBtn" type="button" style="background:none;border:none;cursor:pointer;">Download CSV Report</button>
+        </div>
       </div>
 
       <div class="filter-row">
@@ -1617,7 +1623,10 @@
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="assets/js/dashboard-admin.js?v=30"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="assets/js/dashboard-admin.js?v=31"></script>
+<script src="assets/js/reports-pdf.js?v=1"></script>
 <script src="assets/js/dashboard-payments.js?v=4"></script>
 </body>
 </html>
