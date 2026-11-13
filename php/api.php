@@ -689,7 +689,7 @@ function addonUsedByNight(PDO $pdo, string $from, string $to): array
         $qty = reservationRentalQty(is_array($d) ? $d : []);
         if (!$qty) { continue; }
         $day = new DateTime(substr((string)$r['check_in_date'], 0, 10));
-        $end = new DateTime(substr((string)$r['check_out_date'], 0, 10));
+        $end = new DateTime(substr(effectiveCheckOut((string)$r['check_out_date'], $r['data']), 0, 10));
         for ($i = 0; $day < $end && $i < 120; $i++, $day->modify('+1 day')) {
             $k = $day->format('Y-m-d');
             foreach ($qty as $id => $n) { $used[$k][$id] = ($used[$k][$id] ?? 0) + $n; }
@@ -714,22 +714,39 @@ function reservationRentalQty(array $d): array
     return array_filter($out);
 }
 
+/** Scheduled check-out, or the earlier date the guest actually checked out
+ *  (reservations.data.actual_check_out). Once an actual check-out time is
+ *  recorded the room is free again from that day, so it never extends a stay. */
+function effectiveCheckOut(string $checkOut, $dataJson): string
+{
+    $d = is_string($dataJson) && $dataJson !== '' ? json_decode($dataJson, true) : null;
+    $act = is_array($d) ? (string)($d['actual_check_out'] ?? '') : '';
+    if ($act === '') { return $checkOut; }
+    $ts = strtotime($act);
+    if ($ts === false) { return $checkOut; }
+    $actDate = date('Y-m-d', $ts);
+    return $actDate < substr($checkOut, 0, 10) ? $actDate . substr($checkOut, 10) : $checkOut;
+}
+
 /** True when another active reservation (pending/confirmed/completed) already
  *  occupies this accommodation during [$checkIn, $checkOut). $excludeId skips
  *  the reservation being edited. */
 function reservationOverlaps(PDO $pdo, int $accommodationId, string $checkIn, string $checkOut, int $excludeId = 0): bool
 {
     $stmt = $pdo->prepare(
-        "SELECT reservation_id FROM reservations
+        "SELECT check_in_date, check_out_date, data FROM reservations
          WHERE accommodation_id = :aid
            AND reservation_id <> :ex
            AND reservation_status IN ('pending', 'confirmed', 'completed')
            AND check_in_date < :check_out
-           AND check_out_date > :check_in
-         LIMIT 1"
+           AND check_out_date > :check_in"
     );
     $stmt->execute(['aid' => $accommodationId, 'ex' => $excludeId, 'check_in' => $checkIn, 'check_out' => $checkOut]);
-    return (bool)$stmt->fetch();
+    foreach ($stmt->fetchAll() as $r) {
+        // Skip stays whose guest already checked out early: the room is free again.
+        if (effectiveCheckOut((string)$r['check_out_date'], $r['data']) > $checkIn) { return true; }
+    }
+    return false;
 }
 
 const RESERVATION_SELECT = 'SELECT r.*, a.slug, a.accommodation_name FROM reservations r
@@ -1524,19 +1541,23 @@ try {
             requireLogin($user);
             requireModuleAccess($pdo, $user, 'reservation');
             $stmt = $pdo->query(
-                "SELECT a.slug, r.check_in_date, r.check_out_date
+                "SELECT a.slug, r.check_in_date, r.check_out_date, r.data
                  FROM reservations r
                  JOIN accommodations a ON a.accommodation_id = r.accommodation_id
                  WHERE r.reservation_status IN ('pending', 'confirmed', 'completed')"
             );
             $rows = $stmt->fetchAll();
-            $bookings = array_map(function ($row) {
-                return [
+            $bookings = [];
+            foreach ($rows as $row) {
+                // Once the guest's actual check-out is recorded, the room is available again.
+                $out = effectiveCheckOut((string)$row['check_out_date'], $row['data']);
+                if ($out <= (string)$row['check_in_date']) { continue; }
+                $bookings[] = [
                     'slug'      => $row['slug'],
                     'check_in'  => $row['check_in_date'],
-                    'check_out' => $row['check_out_date'],
+                    'check_out' => $out,
                 ];
-            }, $rows);
+            }
             echo json_encode(['success' => true, 'bookings' => $bookings]);
             break;
 
@@ -1694,7 +1715,7 @@ try {
                 }
 
                 $overlapStmt = $pdo->prepare(
-                    "SELECT reservation_id FROM reservations
+                    "SELECT check_in_date, check_out_date, data FROM reservations
                      WHERE accommodation_id = :accommodation_id
                        AND reservation_status IN ('pending', 'confirmed', 'completed')
                        AND check_in_date < :check_out
@@ -1707,7 +1728,11 @@ try {
                     'check_out'        => $checkOut,
                 ]);
 
-                if ($overlapStmt->fetch()) {
+                $isTaken = false;
+                foreach ($overlapStmt->fetchAll() as $ov) {
+                    if (effectiveCheckOut((string)$ov['check_out_date'], $ov['data']) > $checkIn) { $isTaken = true; break; }
+                }
+                if ($isTaken) {
                     $pdo->rollBack();
                     http_response_code(409);
                     echo json_encode([
