@@ -144,6 +144,7 @@
         return Object.assign({}, saved, {
           id: 'r' + row.id,
           dbId: row.id,
+          accId: row.accommodation_id ? Number(row.accommodation_id) : null,
           code: saved.code || row.code || '',
           status: row.status.charAt(0).toUpperCase() + row.status.slice(1),
           createdAt: row.created_at || '',
@@ -224,18 +225,30 @@
     `).join('');
   }
 
-  /** Fills the "Which room are you rating?" select with the rooms this
-   *  guest has actually booked, newest stay first, deduplicated. */
+  /** Fills the "Which room are you rating?" select with ONLY the rooms this
+   *  guest has actually booked (confirmed or completed stays), deduplicated,
+   *  newest stay first. Pending / cancelled / declined bookings do not count. */
   function populateFeedbackAccommodationSelect(){
     const select = document.getElementById('fbAccommodation');
     if (!select) return;
     const current = select.value;
+    const seen = new Set();
+    const bookedIds = [];
+    state.reservations
+      .filter(r => (r.status === 'Confirmed' || r.status === 'Completed') && r.accId)
+      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+      .forEach(r => { if (!seen.has(r.accId)) { seen.add(r.accId); bookedIds.push(r.accId); } });
     let options = '<option value="">General / overall stay (no specific room)</option>';
-    ACCOMMODATIONS_RAW.forEach(a => {
-      options += `<option value="${a.accommodation_id}">${a.accommodation_name}</option>`;
+    bookedIds.forEach(id => {
+      const a = ACCOMMODATIONS_RAW.find(x => Number(x.accommodation_id) === id);
+      if (a) options += `<option value="${a.accommodation_id}">${escHtml(a.accommodation_name)}</option>`;
     });
     select.innerHTML = options;
-    if (current) select.value = current;
+    if (current && seen.has(Number(current))) select.value = current;
+    const hint = document.getElementById('fbRoomHint');
+    if (hint) hint.textContent = bookedIds.length
+      ? 'Only rooms you have booked are listed (optional).'
+      : 'You can rate a room once you have a confirmed booking for it. For now you can leave a general feedback.';
   }
 
   function loadNotifications(){
@@ -522,28 +535,41 @@
     if (accomGrid && accomGrid.children.length) renderAccomGrid();
   }
 
+  /* Rating pill (kapareho ng nasa Accommodation page). */
+  function ratingPillHtml(c){
+    return c.avgRating != null
+      ? '<span class="acc2-rating" title="Average guest rating"><span class="acc2-star">&#9733;</span>' + c.avgRating.toFixed(1) + ' <small>(' + c.ratingCount + ')</small></span>'
+      : '<span class="acc2-rating none" title="No guest ratings yet"><span class="acc2-star">&#9733;</span>No ratings yet</span>';
+  }
+
   function renderHomeCards(){
     const grid = document.getElementById('homeCardGrid');
-    // Most favorited accommodations first (ties keep the original order); show the top 4.
+    // Ranked by guest rating: pinakamataas na average muna, tapos mas maraming
+    // reviews, tapos original order. Walang rating = nasa dulo. Top 4 ang ipinapakita.
     const ranked = CABINS.map((c, i) => ({ c, i }))
-      .sort((x, y) => ((state.favCounts[y.c.id] || 0) - (state.favCounts[x.c.id] || 0)) || (x.i - y.i))
+      .sort((x, y) => {
+        const rx = x.c.avgRating, ry = y.c.avgRating;
+        if ((rx == null) !== (ry == null)) return rx == null ? 1 : -1;
+        if (rx != null && ry != null && ry !== rx) return ry - rx;
+        return ((y.c.ratingCount || 0) - (x.c.ratingCount || 0)) || (x.i - y.i);
+      })
       .slice(0, 4).map(x => x.c);
-    grid.innerHTML = ranked.map(c => {
+    grid.innerHTML = ranked.map((c, idx) => {
+      const rank = c.avgRating != null ? '<span class="home-rank" title="Rating rank">#' + (idx + 1) + '</span>' : '';
       return `
       <div class="cabin-card">
         <div class="cabin-art" style="background:${ART_BG[c.icon]}">${artContent(c)}</div>
         <div class="cabin-body">
-          <p class="cabin-name">${c.name}</p>
+          <p class="cabin-name">${rank}${c.name}</p>
           <p class="cabin-note">${c.note}</p>
           <div class="cabin-foot">
             <span class="cabin-price">${peso(c.price)}/ ${c.unit}</span>
-            ${favWrapHtml(c)}
+            ${ratingPillHtml(c)}
           </div>
           <button class="book-now-btn" type="button" data-booknow="${c.id}">Book now</button>
         </div>
       </div>`;
     }).join('');
-    bindFavButtons(grid);
     grid.querySelectorAll('[data-booknow]').forEach(btn => {
       btn.addEventListener('click', (e) => { e.stopPropagation(); bookNow(btn.dataset.booknow); });
     });

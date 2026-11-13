@@ -6,7 +6,7 @@
 <title>Guest Dashboard | Camp Mayagay</title>
 
 <link rel="stylesheet" href="assets/css/dashboard-guest.css?v=41">
-<link rel="stylesheet" href="assets/css/dashboard-guest-v2.css?v=12">
+<link rel="stylesheet" href="assets/css/dashboard-guest-v2.css?v=13">
 <script>
 // If nobody is logged in (for example after Log out, then pressing Back), leave the dashboard
 // right away and go to the login page instead of showing the old page.
@@ -264,7 +264,7 @@
         <div class="star-box"><div class="star-row" id="starRow"></div><p class="star-label" id="starLabel">Tap stars to select rating</p></div>
 
         <h4 class="fb-panel-title" style="margin-top:26px;">Which room are you rating?</h4>
-        <p class="sub" style="margin:2px 0 12px;">Pick a stay so we know which room your rating is for (optional).</p>
+        <p class="sub" id="fbRoomHint" style="margin:2px 0 12px;">Only rooms you have booked are listed (optional).</p>
         <div class="field">
           <select id="fbAccommodation">
             <option value="">General / overall stay (no specific room)</option>
@@ -833,7 +833,7 @@
   <a class="auth-switch" href="php/logout.php">Log out</a>
 </div>
 
-<script src="assets/js/dashboard-guest.js?v=52"></script>
+<script src="assets/js/dashboard-guest.js?v=53"></script>
 <script>
   (function () {
     var okBtn = document.getElementById('passwordOkBtn');
