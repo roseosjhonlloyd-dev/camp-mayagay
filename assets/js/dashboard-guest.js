@@ -1625,6 +1625,7 @@
 
     const rowsHtml = state.reservations.map(r => {
       const bal = resBalance(r);
+      const fullyPaid = r.status !== 'Cancelled' && r.status !== 'Declined' && r.payStatus !== 'refunded' && (r.payStatus === 'paid' || ((Number(r.total) || 0) > 0 && (Number(r.amountPaid) || 0) >= Number(r.total)));
       const label = r.cancelRequested ? 'Cancel requested' : r.status;
       const cls = r.cancelRequested ? 'pending' : String(r.status).toLowerCase();
       const code = r.code || ('RES-' + String(r.dbId || '').padStart(4, '0'));
@@ -1634,7 +1635,7 @@
           <td class="hist2-acc" data-label="Accommodation">${escHtml(String(r.cabin || ''))}</td>
           <td data-label="Check-in">${escHtml(String(r.checkInLabel || ''))}</td>
           <td data-label="Check-out">${escHtml(String(r.checkOutLabel || ''))}</td>
-          <td class="hist2-bal${bal > 0 ? ' due' : ''}" data-label="Balance">${peso(bal)}</td>
+          <td class="hist2-bal${bal > 0 ? ' due' : (fullyPaid ? ' paid' : '')}" data-label="Balance">${fullyPaid && bal === 0 ? 'Fully paid' : peso(bal)}</td>
           <td data-label="Status"><span class="hist2-pill ${cls}">${escHtml(label)}</span></td>
           <td class="hist2-act"><button type="button" class="hist2-view" data-row="${r.id}" aria-expanded="false">View</button></td>
         </tr>

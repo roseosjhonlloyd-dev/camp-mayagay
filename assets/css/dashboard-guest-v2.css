@@ -237,7 +237,14 @@ body.dark-mode .accom-card.acc2-card{background:var(--v2-card); border-color:var
 .hist2-row:last-of-type td{border-bottom:0;}
 .hist2-code{color:var(--v2-muted) !important; letter-spacing:0.02em;}
 .hist2-acc{font-weight:700;}
-.hist2-bal.due{color:var(--v2-due); font-weight:700;}
+.hist2-bal.due{color:#d93025; font-weight:700;}
+.hist2-bal.paid{color:#2e8b3d; font-weight:700;}
+body.dark-mode .hist2-bal.due{color:#ff6b61;}
+body.dark-mode .hist2-bal.paid{color:#6fd27f;}
+.resv-balance.due{background:rgba(217,48,37,.16); color:#d93025;}
+.resv-balance.paid{background:rgba(46,139,61,.18); color:#2e8b3d;}
+body.dark-mode .resv-balance.due{background:rgba(255,107,97,.18); color:#ff8a82;}
+body.dark-mode .resv-balance.paid{background:rgba(111,210,127,.18); color:#7fe08f;}
 .hist2-pill{display:inline-block; padding:5px 13px; border-radius:999px; font-size:12px; font-weight:600;}
 .hist2-pill.confirmed{background:var(--v2-pill-confirmed-bg); color:var(--v2-pill-confirmed);}
 .hist2-pill.completed{background:var(--v2-pill-completed-bg); color:var(--v2-pill-completed);}
