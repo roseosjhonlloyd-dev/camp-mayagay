@@ -1315,13 +1315,31 @@
     const ref = document.getElementById('gcashRef').value.trim();
     const tncOk = document.getElementById('tncCheck').checked;
     let ready = false;
-    if (payChoice === 'GCash') ready = !!ref;
+    if (payChoice === 'GCash') ready = /^\d{13}$/.test(ref);
     else if (payChoice === 'Bank Transfer') ready = !!uploadedReceiptName;
     document.getElementById('paymentConfirm').disabled = !(ready && tncOk);
     if (pendingBooking) pendingBooking.paymentMethod = payChoice;
   }
   document.getElementById('tncCheck').addEventListener('change', updatePaymentConfirmState);
+  function markGcashRef(){
+    const el = document.getElementById('gcashRef');
+    const v = el.value.trim();
+    const bad = v.length > 0 && (!/^\d+$/.test(v) || v.length > 13);   // too long or not digits -> red
+    el.classList.toggle('ref-invalid', bad);
+    el.style.borderColor = bad ? '#e5484d' : '';
+    el.style.color = bad ? '#e5484d' : '';
+    el.style.boxShadow = bad ? '0 0 0 2px rgba(229,72,77,.35)' : '';
+    let msg = document.getElementById('gcashRefMsg');
+    if (!msg){
+      msg = document.createElement('div');
+      msg.id = 'gcashRefMsg';
+      msg.style.cssText = 'color:#e5484d;font-size:12px;margin-top:6px;';
+      el.insertAdjacentElement('afterend', msg);
+    }
+    msg.textContent = bad ? 'GCash reference number must be exactly 13 digits.' : '';
+  }
   document.getElementById('gcashRef').addEventListener('input', () => {
+    markGcashRef();
     if (pendingBooking) pendingBooking.gcashRef = document.getElementById('gcashRef').value.trim();
     updatePaymentConfirmState();
   });

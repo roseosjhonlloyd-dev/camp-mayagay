@@ -1489,6 +1489,9 @@ try {
             }
             $data       = $input['data'] ?? null;
             $gcashRef   = is_array($data) ? trim((string)($data['gcashRef'] ?? '')) : '';
+            if (!$isAdmin && stripos($payment, 'gcash') !== false && !preg_match('/^\d{13}$/', $gcashRef)) {
+                deny('GCash reference number must be exactly 13 digits.', 422);
+            }
             try { $pdo->query("SELECT GET_LOCK('cmy_reservation_code', 5)")->fetch(); } catch (PDOException $e) { /* best effort */ }
 
             if ($guestName === '' || $cabinId === '' || $checkIn === '' || $checkOut === '') {
