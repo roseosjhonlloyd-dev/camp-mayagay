@@ -652,7 +652,7 @@ function renderIncidents() {
       '<td>' + (escapeHtml(i.location) || '-') + '</td>' +
       '<td><span class="status-pill ' + (sev === 'High' ? 'declined' : sev === 'Medium' ? 'pending' : 'confirmed') + '">' + escapeHtml(sev) + '</span></td>' +
       '<td>' + contact + '</td>' +
-      '<td><span class="status-pill ' + (st === 'Resolved' ? 'completed' : st === 'In progress' ? 'pending' : 'declined') + '">' + escapeHtml(st) + '</span></td>' +
+      '<td><span class="status-pill ' + (st === 'Resolved' ? 'completed' : st === 'In progress' ? 'pending' : 'confirmed') + '">' + escapeHtml(st) + '</span></td>' +
       '<td><button class="row-action-btn" data-inc-edit="' + i.incident_id + '" type="button" title="View / edit">&#9998;</button> ' +
       '<button class="row-action-btn" data-inc-del="' + i.incident_id + '" type="button" title="Delete">&#128465;</button></td></tr>';
   }).join('');
