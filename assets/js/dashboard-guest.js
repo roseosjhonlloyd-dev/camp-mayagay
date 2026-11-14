@@ -1430,7 +1430,7 @@
     if (confirmBtn.disabled) return;
     const originalBtnText = confirmBtn.textContent;
     confirmBtn.disabled = true;
-    confirmBtn.textContent = 'Sinasave ang booking...';
+    confirmBtn.textContent = 'Saving your booking...';
 
     const pb = pendingBooking;
     const { cabinId, cabin, guest, checkIn: checkInTime, checkOut: checkOutTime, persons, rentals: pickedRentals, paymentMethod, tent } = pb;
