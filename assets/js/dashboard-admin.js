@@ -1608,12 +1608,14 @@ function addAccAmenityFromInput() {
 
 /* ---------- Rental inventory (blankets, pillows, tents, extra items) ---------- */
 var rentalItemsList = [];
+var rentalRemaining = {};
 function escapeHtml(v) {
   return String(v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
 }
 function loadRentalItems() {
   adminApiCall('inventory_list', {}).then(function (res) {
     rentalItemsList = (res && res.success && res.items) ? res.items : [];
+    rentalRemaining = (res && res.success && res.remaining && !Array.isArray(res.remaining)) ? res.remaining : {};
     renderRentalItems();
   });
 }
@@ -1621,12 +1623,18 @@ function renderRentalItems() {
   var body = document.getElementById('rentalTableBody');
   if (!body) return;
   if (!rentalItemsList.length) {
-    body.innerHTML = '<tr><td colspan="4" class="empty-admin-note">No rental items yet.</td></tr>';
+    body.innerHTML = '<tr><td colspan="6" class="empty-admin-note">No rental items yet.</td></tr>';
     return;
   }
+  var n = new Date();
+  var todayKey = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0') + '-' + String(n.getDate()).padStart(2, '0');
   body.innerHTML = rentalItemsList.map(function (it) {
     var custom = /^i\d+$/.test(it.id);
+    var day = rentalRemaining[todayKey] || {};
+    var left = (day[it.id] === undefined) ? it.stock : Math.min(it.stock, Number(day[it.id]));
+    var booked = Math.max(0, it.stock - left);
     return '<tr><td>' + escapeHtml(it.name) + '</td><td>&#8369;' + Number(it.price).toLocaleString() + '</td><td>' + it.stock + '</td>' +
+      '<td>' + booked + '</td><td><strong>' + left + '</strong></td>' +
       '<td><button type="button" class="btn-secondary" data-rental-edit="' + it.id + '">Edit</button> ' +
       (custom ? '<button type="button" class="btn-secondary" data-rental-del="' + it.id + '">Remove</button>' : '') + '</td></tr>';
   }).join('');
