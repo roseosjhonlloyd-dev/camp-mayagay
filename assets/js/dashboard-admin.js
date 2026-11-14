@@ -1166,7 +1166,11 @@ function renderCalendarGuestList() {
   var list = document.getElementById('calGuestList');
   if (!list) return;
 
-  var booked = getCalendarBookedReservations();
+  // Newest booking first (by date created), oldest at the bottom of the scroll.
+  var booked = getCalendarBookedReservations().slice().sort(function (a, b) {
+    var c = String(b.created_at || '').localeCompare(String(a.created_at || ''));
+    return c !== 0 ? c : String(b.check_in).localeCompare(String(a.check_in));
+  });
   if (!booked.length) {
     list.innerHTML = '<p class="calendar-detail-empty">No confirmed reservations yet.</p>';
     return;
