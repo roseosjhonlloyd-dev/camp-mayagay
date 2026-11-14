@@ -1600,7 +1600,7 @@
             <div class="resv-actions">
               ${r.status === 'Cancelled' ? `<button class="btn-cancel-resv" data-id="${r.id}" data-action="delete">Delete</button>` : (r.cancelRequested ? '' : (canCancelNow(r) ? `<span class="cancel-note">You can cancel within 24 hours of booking while still Pending.</span><button class="btn-cancel-resv" data-id="${r.id}">Cancel booking</button>` : '<span class="cancel-closed">' + (String(r.status || '').toLowerCase() === 'confirmed' ? 'Confirmed bookings can no longer be cancelled.' : 'Cancellation is only allowed within 24 hours of booking.') + '</span>'))}
               <button class="btn-secondary btn-receipt" data-id="${r.id}" type="button" style="flex:0 0 auto; padding:11px 16px;">Receipt</button>
-              <button class="btn-status">${r.cancelRequested ? 'Pending' : r.status}</button>
+              <button class="btn-status${(r.cancelRequested || String(r.status).toLowerCase() === 'pending') ? ' st-pending' : ''}">${r.cancelRequested ? 'Pending' : r.status}</button>
             </div>
           </div>
         </div>
