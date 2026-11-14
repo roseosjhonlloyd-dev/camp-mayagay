@@ -1454,8 +1454,7 @@ try {
             // Staff and admin both manage the front-desk / reservation panel,
             // so both are allowed to record a reservation as already
             // confirmed (walk-in guests), unlike a regular guest self-booking
-            // through the public site, which is confirmed right away (the guest can still
-            // cancel within 24 hours).
+            // through the public site, which always starts as 'pending'.
             $isAdmin = in_array($user['role'], ['admin', 'staff'], true);
 
             $guestName  = trim((string)($input['guest_name'] ?? ($user['firstname'] . ' ' . $user['lastname'])));
@@ -1468,7 +1467,7 @@ try {
             $guestsCnt  = max(1, (int)($input['guests_count'] ?? 1));
             $payment    = trim((string)($input['payment_method'] ?? ''));
             $total      = (float)($input['total_amount'] ?? 0);
-            $status     = $isAdmin ? (string)($input['status'] ?? 'confirmed') : 'confirmed';
+            $status     = $isAdmin ? (string)($input['status'] ?? 'confirmed') : 'pending';
             ensureAmountPaidColumn($pdo);
             // Walk-in (admin/staff): the amount actually received is typed in.
             // Online (guest): depends on the receipt/reference they submitted.
@@ -1651,8 +1650,8 @@ try {
                     "Reference no.: " . $code . "\nAccommodation: " . $cabinName . "\n" .
                     "Check-in: " . $in . ", 2:00 PM\nCheck-out: " . $out . ", 12:00 NN\n" .
                     "Total amount: PHP " . number_format($total, 2) . "\nPayment method: " . $payment . "\n\n" .
-                    "Status: CONFIRMED. You can still cancel within 24 hours of booking; after that the booking can no longer be cancelled. Camp Mayagay will verify your payment details.", $newId);
-                addNotification($pdo, $user['id'], 'guest', 'payment', 'Payment Received', 'We received your payment details. Your booking is confirmed; Camp Mayagay will verify your payment.', $newId);
+                    "Status: PENDING. Camp Mayagay will verify your payment and email you once your booking is confirmed.", $newId);
+                addNotification($pdo, $user['id'], 'guest', 'payment', 'Payment Received', 'We received your payment details. Camp Mayagay will verify them and confirm your booking.', $newId);
             }
 
             $stmt = $pdo->prepare(RESERVATION_SELECT . ' WHERE r.reservation_id = :id');
@@ -1887,6 +1886,12 @@ try {
             if ($reason === '') {
                 http_response_code(422);
                 echo json_encode(['success' => false, 'message' => 'Please tell us why you want to cancel.']);
+                break;
+            }
+            // Confirmed bookings can no longer be cancelled by guests.
+            if (!isStaffOrAdmin($user) && $row['reservation_status'] === 'confirmed') {
+                http_response_code(422);
+                echo json_encode(['success' => false, 'message' => 'Confirmed bookings can no longer be cancelled.']);
                 break;
             }
             // Guests can only cancel within 24 hours after booking (staff/admin are exempt).

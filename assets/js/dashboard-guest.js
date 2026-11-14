@@ -1454,7 +1454,7 @@
         cabinId, dayIndex: pb.dayIndex, cabin: cabin.name, icon: cabin.icon, capacity: cabin.note,
         checkInLabel: fmtDate(checkInDate) + ' · ' + fmtTime(checkInTime),
         checkOutLabel: fmtDate(checkOutDate) + ' · ' + fmtTime(checkOutTime),
-        guest, paymentMethod, lineItems, total, status: 'Confirmed',
+        guest, paymentMethod, lineItems, total, status: 'Pending',
         guestsCount: tent ? tent.heads : 1 + persons, baseRate, extraGuestsCharge, totalAccommodation, addons, addonsTotal,
         rentals: pickedRentals || {}, blankets: (pickedRentals && pickedRentals.blankets) || 0, pillows: (pickedRentals && pickedRentals.pillows) || 0,
         gcashRef: pb.gcashRef || '',
@@ -1509,7 +1509,7 @@
       const first = saved[0];
       let msg = cabin.name + ', ' + saved.map(r => r.checkInLabel.split(' · ')[0] + (r.checkOutLabel ? ' to ' + r.checkOutLabel.split(' · ')[0] : '')).join('; ') +
         ' · Ref ' + saved.map(r => r.code).join(', ') + ' · via ' + paymentMethod +
-        '. Status: Confirmed. You can still cancel within 24 hours of booking.';
+        '. Status: Pending until Camp Mayagay confirms your payment.';
       if (saved.length < dates.length) msg += ' Hindi na-save ang ' + (dates.length - saved.length) + ' na reservation: ' + failMsg;
       document.getElementById('thankyouSummary').textContent = msg;
       document.getElementById('thankyouModal').classList.add('open');
@@ -1537,8 +1537,7 @@
 
   /* Guests may cancel only within 24 hours after the booking was made. */
   function canCancelNow(r){
-    const st = String(r.status || '').toLowerCase();
-    if (st !== 'pending' && st !== 'confirmed') return false;   // completed/cancelled/declined: no cancel
+    if (String(r.status || '').toLowerCase() !== 'pending') return false; // confirmed na = hindi na pwede i-cancel
     if (!r.createdAt) return true;
     const made = new Date(String(r.createdAt).replace(' ', 'T'));
     if (isNaN(made.getTime())) return true;
@@ -1581,7 +1580,7 @@
             <div class="sum-total"><span>Total:</span><span>${peso(r.total)}</span></div>
             ${r.cancelRequested ? '<p style="color:#8a6d1d;font-size:13px;margin:8px 0 0;">Cancellation requested \u2014 waiting for admin review.</p>' : ''}
             <div class="resv-actions">
-              ${r.status === 'Cancelled' ? `<button class="btn-cancel-resv" data-id="${r.id}" data-action="delete">Delete</button>` : (r.cancelRequested ? '' : (canCancelNow(r) ? `<span class="cancel-note">You can cancel within 24 hours of booking.</span><button class="btn-cancel-resv" data-id="${r.id}">Cancel booking</button>` : '<span class="cancel-closed">' + 'Cancellation is only allowed within 24 hours of booking.' + '</span>'))}
+              ${r.status === 'Cancelled' ? `<button class="btn-cancel-resv" data-id="${r.id}" data-action="delete">Delete</button>` : (r.cancelRequested ? '' : (canCancelNow(r) ? `<span class="cancel-note">You can cancel within 24 hours of booking while still Pending.</span><button class="btn-cancel-resv" data-id="${r.id}">Cancel booking</button>` : '<span class="cancel-closed">' + (String(r.status || '').toLowerCase() === 'confirmed' ? 'Confirmed bookings can no longer be cancelled.' : 'Cancellation is only allowed within 24 hours of booking.') + '</span>'))}
               <button class="btn-secondary btn-receipt" data-id="${r.id}" type="button" style="flex:0 0 auto; padding:11px 16px;">Receipt</button>
               <button class="btn-status">${r.cancelRequested ? 'Pending' : r.status}</button>
             </div>
