@@ -265,7 +265,8 @@ nav.primary-nav{
   border-radius:999px;
 }
 .status-pill.confirmed{background:var(--status-green-bg); color:var(--status-green);}
-.status-pill.pending{background:var(--status-yellow-bg); color:var(--status-yellow);}
+.status-pill.pending{background:#ffe6cc; color:#d9620a;}
+body.dark-mode .status-pill.pending{background:rgba(255,140,40,.2); color:#ffa14a;}
 .status-pill.cancelled{background:var(--status-red-bg); color:var(--status-red);}
 
 .avail-grid{

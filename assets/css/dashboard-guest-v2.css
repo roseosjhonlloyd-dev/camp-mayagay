@@ -21,7 +21,7 @@ body{
   --v2-pill-confirmed-bg:rgba(63,107,46,0.14);  --v2-pill-confirmed:#2c5a1f;
   --v2-pill-completed-bg:rgba(70,100,160,0.14); --v2-pill-completed:#2f4a85;
   --v2-pill-cancelled-bg:rgba(193,84,63,0.14);  --v2-pill-cancelled:#8a2f21;
-  --v2-pill-pending-bg:rgba(211,169,74,0.2);    --v2-pill-pending:#7a5b10;
+  --v2-pill-pending-bg:rgba(255,140,40,0.2);    --v2-pill-pending:#b84f00;
   --v2-due:#b3731a;
 }
 body.dark-mode{
@@ -41,7 +41,7 @@ body.dark-mode{
   --v2-pill-confirmed-bg:rgba(111,179,92,0.22);  --v2-pill-confirmed:#9bd98a;
   --v2-pill-completed-bg:rgba(120,150,200,0.22); --v2-pill-completed:#a9c0ee;
   --v2-pill-cancelled-bg:rgba(224,82,77,0.22);   --v2-pill-cancelled:#ff9a95;
-  --v2-pill-pending-bg:rgba(230,184,74,0.22);    --v2-pill-pending:#f0cf7d;
+  --v2-pill-pending-bg:rgba(255,140,40,0.24);    --v2-pill-pending:#ffa14a;
   --v2-due:#e6b84a;
   /* both layers fixed, so the overlay stays the same height as the photo on long pages */
   background:

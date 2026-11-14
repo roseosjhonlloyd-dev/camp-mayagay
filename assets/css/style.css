@@ -1071,7 +1071,7 @@ body.modal-open { overflow: hidden; }
   font-size: 0.72rem;
   font-weight: 700;
 }
-.gd-status-badge.pending { background: #FEF3E2; color: #D97706; }
+.gd-status-badge.pending { background: #FFE6CC; color: #D9620A; }
 .gd-status-badge.confirmed { background: #E7F5EA; color: #16803C; }
 .gd-status-badge.cancelled { background: #FEE9E9; color: #DC2626; }
 
