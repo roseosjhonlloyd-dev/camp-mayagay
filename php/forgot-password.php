@@ -70,6 +70,12 @@ try {
                 $mailError = null;
                 if (!sendVerificationEmail($email, $code, $mailError)) {
                     error_log('Forgot password mail error: ' . $mailError);
+                    // Don't pretend it worked: the guest would wait for a code that never comes.
+                    unset($_SESSION['reset_code'], $_SESSION['reset_expires']);
+                    sendJson([
+                        'success' => false,
+                        'message' => 'We could not send the email right now. Please try again in a few minutes or contact the camp.',
+                    ], 502);
                 }
             }
 
@@ -96,6 +102,10 @@ try {
             $mailError = null;
             if (!sendVerificationEmail($email, $code, $mailError)) {
                 error_log('Forgot password resend mail error: ' . $mailError);
+                sendJson([
+                    'success' => false,
+                    'message' => 'We could not send the email right now. Please try again in a few minutes.',
+                ], 502);
             }
 
             sendJson(['success' => true, 'message' => 'A new code has been sent.']);
