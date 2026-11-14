@@ -203,7 +203,7 @@ VALUES (
 INSERT INTO accommodations (slug, accommodation_name, description, type, capacity, price, status, image) VALUES
 ('nipa1', 'Nipa Hut 1',  'Traditional nipa hut, good for 1-2 pax',        'nipa',       '1-2 pax',          2000.00, 'available', 'assets/images/nipa-hut.png'),
 ('nipa2', 'Nipa Hut 2',  'Traditional nipa hut, good for 1-2 pax',        'nipa',       '1-2 pax',          2000.00, 'available', 'assets/images/nipa-hut.png'),
-('glass', 'Glass Door',  'Glass door cabin, good for 1-2 pax',            'cabin',      '1-2 pax',          2500.00, 'available', 'assets/images/glass-door.png'),
+('glass', 'Glass Door',  'Glass door cabin, good for 4-6 pax',            'cabin',      '4-6 pax',          2500.00, 'available', 'assets/images/glass-door.png'),
 ('tent',  'Tent Area',   'Open tent area, good for 1-2 pax',              'tent area',  '1-2 pax',          250.00,  'available', 'assets/images/tent-area.png'),
-('big1',  'Big House 1', 'Big house, good for 1-2 pax per room',          'room',       '1-2 pax per room', 2500.00, 'available', 'assets/images/big-house.png'),
-('big2',  'Big House 2', 'Big house, good for 1-2 pax per room',          'room',       '1-2 pax per room', 2500.00, 'available', 'assets/images/big-house.png');
+('big1',  'Big House 1', 'Big house, good for 4-6 pax per room',          'room',       '4-6 pax per room', 2500.00, 'available', 'assets/images/big-house.png'),
+('big2',  'Big House 2', 'Big house, good for 4-6 pax per room',          'room',       '4-6 pax per room', 2500.00, 'available', 'assets/images/big-house.png');
