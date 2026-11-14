@@ -349,4 +349,5 @@ body.dark-mode .home-rank{background:#3d7a3a;}
 .cabin-foot .acc2-rating{white-space:nowrap;}
 
 /* Pending status button = orange */
-.btn-status.st-pending{background:#f08a1c; color:#fff;}
+.btn-status.st-pending{background:#ffe2c2; color:#c2570c;}
+body.dark-mode .btn-status.st-pending{background:rgba(255,140,40,.24); color:#ffb066;}
