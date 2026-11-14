@@ -604,6 +604,7 @@ function renderAttendance(r) {
         if (String(allReservations[i].id) === String(r.id)) { allReservations[i] = res.reservation; break; }
       }
       openReservationModal(r.id);
+      renderReservationTable();   // update the Actual Check-in/out columns without a page refresh
     });
   }
   box.querySelectorAll('[data-att]').forEach(function (b) {
