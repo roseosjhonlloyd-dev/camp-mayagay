@@ -1697,3 +1697,7 @@ body.dark-mode .emerg-form input,body.dark-mode .emerg-form select,body.dark-mod
 .guest-names{grid-template-columns:1fr !important;gap:8px;margin:8px 0 14px;}
 .guest-names .gn-input{width:100%;height:36px;}
 .add-person-names{margin:8px 0 12px;padding:0;}
+
+/* Name fields: same width/border/radius as the Main guest name field */
+.guest-names{display:flex !important;flex-direction:column;width:100%;}
+.guest-names .gn-input{display:block;width:100% !important;max-width:none;box-sizing:border-box;border:1px solid var(--sand-dim);border-radius:var(--radius-sm);background:var(--bk-card, #fff);padding:11px 13px;height:auto;font-size:13.5px;font-family:inherit;color:var(--ink);}
