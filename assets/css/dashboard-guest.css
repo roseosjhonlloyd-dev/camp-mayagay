@@ -1704,3 +1704,4 @@ body.dark-mode .emerg-form input,body.dark-mode .emerg-form select,body.dark-mod
 
 .pay-extra{display:grid;grid-template-columns:1fr;gap:8px;margin:10px 0 4px;}
 .pay-extra input{width:100%;box-sizing:border-box;border:1px solid var(--sand-dim);border-radius:var(--radius-sm);padding:11px 13px;font-size:13.5px;font-family:inherit;background:var(--sand);color:var(--ink);}
+.u-scan.ok{color:#1f5f33;font-weight:600}.u-scan.warn{color:#a3361f;font-weight:600}.u-scan.busy{color:#7a5a10}
