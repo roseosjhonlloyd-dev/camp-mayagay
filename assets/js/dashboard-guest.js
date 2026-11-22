@@ -1462,7 +1462,7 @@
     // Read the actual image so it's sent along with the booking and the
     // admin dashboard can show the real receipt, not just the file name.
     // I-compress muna (max 1600px) para hindi sobrang laki ang ipapadala, lalo na sa litrato ng camera.
-    compressImage(file, 1600, 0.85).then(function (url) {
+    compressImage(file, 2400, 0.82).then(function (url) {
       uploadedReceiptDataUrl = url;
       var prev = document.getElementById('receiptPreview');
       if (prev) { prev.src = url; prev.style.display = 'block'; }
@@ -1505,14 +1505,19 @@
     let date = '';
     const MON = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
     const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const tm = '(?:[\\s,]+(\\d{1,2}:\\d{2}(?::\\d{2})?(?:\\s?[AaPp][Mm])?))?';
-    let dm = t.match(new RegExp('\\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\\.?\\s+(\\d{1,2}),?\\s+(20\\d{2})' + tm, 'i'));
+    const fixNum = (x) => String(x).replace(/[Oo]/g, '0').replace(/[Il|]/g, '1');
+    const tmRe = '(?:[\\s,]*(\\d{1,2}\\s?[:.;]\\s?\\d{2}(?:[:.;]\\d{2})?(?:\\s?[AaPp]\\s?[Mm])?))?';
+    const fmtTime = (x) => x ? ' ' + x.replace(/\s/g, '').replace(/[.;]/g, ':').replace(/([AaPp][Mm])$/, ' $1').toUpperCase() : '';
+    let dm = t.match(new RegExp('\\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\\.?\\s*([0-9OIl]{1,2})\\s*[,.]?\\s*(2[0O][0-9OIl]{2})' + tmRe, 'i'));
     if (dm){
-      date = MN[MON.indexOf(dm[1].toLowerCase())] + ' ' + parseInt(dm[2], 10) + ', ' + dm[3] + (dm[4] ? ' ' + dm[4].toUpperCase().replace(/\s?(AM|PM)/, ' $1') : '');
-    } else if ((dm = t.match(new RegExp('\\b(20\\d{2})[-/](\\d{1,2})[-/](\\d{1,2})' + tm)))){
-      date = MN[Math.max(0, Math.min(11, parseInt(dm[2], 10) - 1))] + ' ' + parseInt(dm[3], 10) + ', ' + dm[1] + (dm[4] ? ' ' + dm[4].toUpperCase() : '');
-    } else if ((dm = t.match(new RegExp('\\b(\\d{1,2})[-/](\\d{1,2})[-/](20\\d{2})' + tm)))){
-      date = MN[Math.max(0, Math.min(11, parseInt(dm[1], 10) - 1))] + ' ' + parseInt(dm[2], 10) + ', ' + dm[3] + (dm[4] ? ' ' + dm[4].toUpperCase() : '');
+      const day = parseInt(fixNum(dm[2]), 10);
+      if (day >= 1 && day <= 31) date = MN[MON.indexOf(dm[1].toLowerCase())] + ' ' + day + ', ' + fixNum(dm[3]) + fmtTime(dm[4]);
+    }
+    if (!date && (dm = t.match(new RegExp('\\b(20\\d{2})[-/](\\d{1,2})[-/](\\d{1,2})' + tmRe)))){
+      date = MN[Math.max(0, Math.min(11, parseInt(dm[2], 10) - 1))] + ' ' + parseInt(dm[3], 10) + ', ' + dm[1] + fmtTime(dm[4]);
+    }
+    if (!date && (dm = t.match(new RegExp('\\b(\\d{1,2})[-/](\\d{1,2})[-/](20\\d{2})' + tmRe)))){
+      date = MN[Math.max(0, Math.min(11, parseInt(dm[1], 10) - 1))] + ' ' + parseInt(dm[2], 10) + ', ' + dm[3] + fmtTime(dm[4]);
     }
     return { ref, amount, name, date };
   }
@@ -1526,8 +1531,33 @@
     document.querySelectorAll('.pay-amt, .pay-name, .pay-date').forEach(i => { i.value = ''; });
     if (pendingBooking) pendingBooking.gcashRef = '';
     updatePaymentConfirmState();
-    loadTesseract().then(T => T.recognize(dataUrl, 'eng')).then(res => {
-      const out = parseReceiptText(res && res.data && res.data.text);
+    // Maliit ang text ng petsa sa maraming resibo: kung may kulang pagkatapos ng unang basa,
+    // gumawa ng mas malaki at mas matingkad (grayscale) na kopya at basahin ulit, tapos pagsamahin.
+    function enhanced(url){
+      return new Promise(resolve => {
+        const im = new Image();
+        im.onerror = () => resolve(url);
+        im.onload = () => {
+          const k = Math.min(2.5, 3000 / Math.max(im.width, im.height));
+          const c = document.createElement('canvas');
+          c.width = Math.round(im.width * Math.max(1.4, k)); c.height = Math.round(im.height * Math.max(1.4, k));
+          const g = c.getContext('2d');
+          g.filter = 'grayscale(1) contrast(1.35)';
+          g.drawImage(im, 0, 0, c.width, c.height);
+          resolve(c.toDataURL('image/png'));
+        };
+        im.src = url;
+      });
+    }
+    loadTesseract().then(T => T.recognize(dataUrl, 'eng').then(r1 => {
+      const o1 = parseReceiptText(r1 && r1.data && r1.data.text);
+      if (o1.ref && o1.amount != null && o1.date) return { data: { text: r1.data.text }, o: o1 };
+      return enhanced(dataUrl).then(u => T.recognize(u, 'eng')).then(r2 => {
+        const o2 = parseReceiptText(r2 && r2.data && r2.data.text);
+        return { o: { ref: o1.ref || o2.ref, amount: o1.amount != null ? o1.amount : o2.amount, name: o1.name || o2.name, date: o1.date || o2.date } };
+      }).catch(() => ({ o: o1 }));
+    })).then(res => {
+      const out = res.o;
       const notes = [];
       if (out.ref){
         const inp = document.getElementById('gcashRef');
