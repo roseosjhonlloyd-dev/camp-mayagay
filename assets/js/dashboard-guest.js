@@ -1273,7 +1273,32 @@
     Object.keys(rentalQty).forEach(id => { if (rentalQty[id] > 0 && (tentMode2 || id !== 'tents')) picked[id] = rentalQty[id]; });
     pendingBooking.rentals = picked;
     closeBookingModal();
+    openTncGate();
+  });
+
+  /* Terms and Conditions of Payment: dapat i-check muna bago makapunta sa payment. */
+  function openTncGate(){
+    const src = document.querySelector('#tncBlock .tnc-list');
+    const dst = document.getElementById('tncGateList');
+    if (src && dst) dst.innerHTML = src.innerHTML;
+    document.getElementById('tncGateCheck').checked = false;
+    document.getElementById('tncGateContinue').disabled = true;
+    document.getElementById('tncGateModal').classList.add('open');
+  }
+  document.getElementById('tncGateCheck').addEventListener('change', (e) => {
+    document.getElementById('tncGateContinue').disabled = !e.target.checked;
+  });
+  document.getElementById('tncGateBack').addEventListener('click', () => {
+    document.getElementById('tncGateModal').classList.remove('open');
+    document.getElementById('bookingModal').classList.add('open');
+  });
+  document.getElementById('tncGateContinue').addEventListener('click', () => {
+    if (!document.getElementById('tncGateCheck').checked) return;
+    document.getElementById('tncGateModal').classList.remove('open');
     openPaymentModal();
+    // Naka-agree na sa gate, kaya hindi na uulitin sa payment screen.
+    const c = document.getElementById('tncCheck'); if (c){ c.checked = true; updatePaymentConfirmState(); }
+    const blk = document.getElementById('tncBlock'); if (blk) blk.style.display = 'none';
   });
 
   let uploadedReceiptName = null;
@@ -1306,6 +1331,7 @@
     if (prevEl) { prevEl.src = ''; prevEl.style.display = 'none'; }
     document.getElementById('bankSelect').value = 'bdo';
     document.getElementById('tncCheck').checked = false;
+    const tb = document.getElementById('tncBlock'); if (tb) tb.style.display = '';
     updateBankDisplay();
     const { total } = computeCharges(pendingBooking.cabin, pendingBooking.persons, pendingBooking.rentals || {}, pendingBooking.nights, pendingBooking.tent);
     const days = (pendingBooking.dates || []).length || 1;
