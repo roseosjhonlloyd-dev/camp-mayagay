@@ -1087,7 +1087,7 @@ function initWalkInModal() {
   function wiRenderOthers() {
     var box = document.getElementById('walkInOthers');
     if (!box) return;
-    var n = Math.max(0, wiGuests() - 1) + wiAdd.persons;
+    var n = Math.max(0, wiGuests() - 1);
     var old = [].map.call(box.querySelectorAll('input'), function (i) { return i.value; });
     var h = '';
     for (var i = 0; i < n; i++) {
@@ -1104,7 +1104,8 @@ function initWalkInModal() {
     }
     nights = Math.max(0, nights);
     var base = price * nights;
-    var persons = wiAdd.persons * 150 * nights;
+    var extra = Math.max(0, wiGuests() - wiBasePax());
+    var persons = extra * 150 * nights;
     var addons = (wiAdd.blankets + wiAdd.pillows) * 50 * nights;
     var total = base + persons + addons;
     totalInput.value = total.toFixed(2);
@@ -1119,7 +1120,6 @@ function initWalkInModal() {
       var k = b.getAttribute('data-wi'), d = Number(b.getAttribute('data-d'));
       var max = k === 'persons' ? 5 : 20;
       wiAdd[k] = Math.max(0, Math.min(max, wiAdd[k] + d));
-      if (k === 'persons') wiRenderOthers();
       recalcWalkInTotal();
     });
   });
@@ -1164,11 +1164,11 @@ function initWalkInModal() {
       cabin_name: cabinName,
       check_in: checkIn + ' 00:00:00',
       check_out: checkOut + ' 00:00:00',
-      guests_count: wiGuests() + wiAdd.persons,
+      guests_count: wiGuests(),
       data: {
         guest: { name: guestName, phone: document.getElementById('walkInGuestPhone').value.trim(), email: document.getElementById('walkInGuestEmail').value.trim(),
           others: [].map.call(document.querySelectorAll('#walkInOthers input'), function (i) { return i.value.trim(); }).filter(Boolean) },
-        persons: wiAdd.persons,
+        persons: Math.max(0, wiGuests() - wiBasePax()),
         rentals: { blankets: wiAdd.blankets, pillows: wiAdd.pillows }
       },
       payment_method: document.getElementById('walkInPaymentMethod').value,

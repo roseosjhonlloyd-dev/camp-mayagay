@@ -1393,3 +1393,11 @@ body.dark-mode .calendar-legend span{color:#ffffff !important;}
 .wi-others input{width:100%;box-sizing:border-box}
 #walkInTotalAmount{background:#eef3ea;font-weight:700}
 .wi-breakdown{font-size:12px;opacity:.75;margin:-4px 0 8px}
+.wi-addon>span:first-child{color:#2b3a2b !important;font-weight:600}
+.wi-addon small{color:#5d6b5d !important;opacity:1}
+.wi-step b{color:#2b3a2b}
+.wi-breakdown{color:#4a574a;opacity:1}
+body.dark .wi-addon>span:first-child,[data-theme="dark"] .wi-addon>span:first-child,.dark-mode .wi-addon>span:first-child{color:#f1f5ef !important}
+body.dark .wi-addon small,[data-theme="dark"] .wi-addon small,.dark-mode .wi-addon small{color:#c9d3c5 !important}
+body.dark .wi-step b,[data-theme="dark"] .wi-step b,.dark-mode .wi-step b,body.dark .wi-breakdown,[data-theme="dark"] .wi-breakdown,.dark-mode .wi-breakdown{color:#f1f5ef}
+body.dark .wi-step button,[data-theme="dark"] .wi-step button,.dark-mode .wi-step button{background:#2a3a2a;color:#fff;border-color:#6b7f6b}
