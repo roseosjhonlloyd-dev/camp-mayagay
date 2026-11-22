@@ -201,12 +201,13 @@ function autoCompleteCheckedOut(PDO $pdo): void
                AND amount_paid + 0.004 >= total_amount
                AND (check_out_date < :d1 OR (check_out_date = :d2 AND :n = 1))"
         )->execute(['d1' => $today, 'd2' => $today, 'n' => $noonPassed ? 1 : 0]);
-        // Still 'pending' when check-in day arrives (past check-in date) -> auto-cancel.
+        // Still 'pending' after the stay's check-out (noon) has passed -> auto-cancel.
         $pdo->prepare(
             "UPDATE reservations SET reservation_status = 'cancelled', cancel_requested = 0,
-                    cancel_reason = 'Auto-cancelled: not confirmed before the check-in date.'
-             WHERE reservation_status = 'pending' AND check_in_date < :d"
-        )->execute(['d' => $today]);
+                    cancel_reason = 'Auto-cancelled: still pending after the reservation date had passed.'
+             WHERE reservation_status = 'pending'
+               AND (check_out_date < :d1 OR (check_out_date = :d2 AND :n = 1))"
+        )->execute(['d1' => $today, 'd2' => $today, 'n' => $noonPassed ? 1 : 0]);
     } catch (Throwable $e) { /* never block the page */ }
 }
 
