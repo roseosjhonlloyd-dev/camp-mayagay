@@ -469,6 +469,9 @@
     return r && typeof r[item] === 'number' ? r[item] : inventory.limits[item];
   }
   function isBookedOn(cabinId, dayKey){
+    // Temporary block: an accommodation whose guest just checked out today
+    // stays unavailable for the rest of today (cleaning / turnover).
+    if (dayKey === todayKey() && realBookings.some(b => b.slug === cabinId && String(b.check_out).slice(0, 10) === dayKey)) return true;
     return realBookings.some(b => b.slug === cabinId &&
       String(b.check_in).slice(0, 10) <= dayKey && dayKey < String(b.check_out).slice(0, 10));
   }
