@@ -530,6 +530,10 @@ function openReservationModal(id) {
     '<div class="modal-info-row"><span>Check-in</span><span>' + formatDateTime(r.check_in) + '</span></div>' +
     '<div class="modal-info-row"><span>Check-out</span><span>' + formatDateTime(r.check_out) + '</span></div>' +
     '<div class="modal-info-row"><span>Guests</span><span>' + r.guests_count + '</span></div>' +
+    (function () {
+      var o = (r.data && r.data.guest && Array.isArray(r.data.guest.others)) ? r.data.guest.others.filter(Boolean) : [];
+      return o.length ? '<div class="modal-info-row"><span>Other Guests</span><span>' + o.map(escapeHtml).join(', ') + '</span></div>' : '';
+    })() +
     '<div class="modal-info-row"><span>Total Amount</span><span>' + peso2(r.total_amount) + '</span></div>' +
     '<div class="modal-info-row"><span>Status</span><span><span class="status-pill ' + pillClass + '">' + statusLabel + '</span></span></div>' +
     (r.cancel_requested ? '<div class="modal-info-row"><span>Cancellation Reason</span><span>' + (r.cancel_reason || '-') + '</span></div>' : '') +
