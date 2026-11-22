@@ -1270,6 +1270,8 @@
     document.getElementById('paymentTotalAmount').textContent = peso(grand) + (days > 1 ? ' (' + days + ' nights x ' + peso(total) + (runCount > 1 ? ', ' + runCount + ' reservations' : '') + ')' : '');
     const downEl = document.getElementById('paymentDownAmount');
     if (downEl) downEl.textContent = peso(Math.ceil(grand / 2));
+    pendingBooking.downAmount = Math.ceil(grand / 2);
+    const scanEl = document.getElementById('receiptScanStatus'); if (scanEl) scanEl.textContent = '';
     setPayChoice(null);
     pendingBooking.paymentMethod = null;
     pendingBooking.gcashRef = '';
@@ -1361,8 +1363,64 @@
       uploadedReceiptDataUrl = reader.result;
       var prev = document.getElementById('receiptPreview');
       if (prev) { prev.src = reader.result; prev.style.display = 'block'; }
+      scanReceipt(reader.result);
     };
     reader.readAsDataURL(file);
+  }
+
+  /* Libreng OCR (tesseract.js, sa browser mismo): binabasa ang reference no. at amount
+     sa resibo at ina-auto-fill. Suggestion lang - puwede pa ring i-edit ng guest. */
+  let tesseractLoading = null;
+  function loadTesseract(){
+    if (window.Tesseract) return Promise.resolve(window.Tesseract);
+    if (!tesseractLoading) tesseractLoading = new Promise((resolve, reject) => {
+      const sc = document.createElement('script');
+      sc.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+      sc.onload = () => resolve(window.Tesseract);
+      sc.onerror = () => { tesseractLoading = null; reject(new Error('ocr load')); };
+      document.head.appendChild(sc);
+    });
+    return tesseractLoading;
+  }
+  function parseReceiptText(text){
+    const t = String(text || '').replace(/[|]/g, ' ');
+    let ref = '';
+    const refRe = /ref(?:erence)?\.?\s*(?:no\.?|number|#)?\s*[:.\-]?\s*([0-9OoIl][0-9OoIl\s\-]{8,22})/gi;
+    let m;
+    while ((m = refRe.exec(t))){
+      const d = m[1].replace(/[Oo]/g, '0').replace(/[Il]/g, '1').replace(/\D/g, '');
+      if (d.length >= 9){ ref = d.slice(0, 13); break; }
+    }
+    if (!ref){ const g = t.match(/\b(\d{4})\s(\d{3})\s(\d{6})\b/); if (g) ref = g[1] + g[2] + g[3]; }
+    let amount = null;
+    const amtRe = /(?:amount(?:\s+sent)?|total(?:\s+amount)?(?:\s+sent)?|sent)\D{0,12}?([0-9][0-9,]*\.\d{2})/i;
+    m = t.match(amtRe);
+    if (!m) m = t.match(/(?:\u20b1|PHP|Php|P|#)\s?([0-9][0-9,]*\.\d{2})/);
+    if (m) amount = parseFloat(m[1].replace(/,/g, ''));
+    return { ref, amount };
+  }
+  function scanReceipt(dataUrl){
+    const st = document.getElementById('receiptScanStatus');
+    const setSt = (msg, cls) => { if (st){ st.textContent = msg; st.className = 'u-scan ' + (cls || ''); } };
+    setSt('Scanning receipt...', 'busy');
+    loadTesseract().then(T => T.recognize(dataUrl, 'eng')).then(res => {
+      const out = parseReceiptText(res && res.data && res.data.text);
+      const notes = [];
+      if (out.ref){
+        const inp = document.getElementById('gcashRef');
+        if (inp && !inp.value.trim()) inp.value = out.ref;
+        if (pendingBooking) pendingBooking.gcashRef = out.ref;
+        notes.push('Ref No. ' + out.ref);
+      }
+      if (out.amount != null){
+        notes.push('Amount ' + peso(out.amount));
+        const need = pendingBooking && pendingBooking.downAmount;
+        if (need && out.amount + 0.5 < need) notes.push('\u26a0 mas mababa sa required na ' + peso(need));
+      }
+      updatePaymentConfirmState();
+      if (!notes.length) setSt('Hindi mabasa ang resibo. Pakilagay nang manual ang Reference No.', 'warn');
+      else setSt('Nabasa: ' + notes.join(' \u00b7 ') + '. Paki-check kung tama.', 'ok');
+    }).catch(() => setSt('Hindi na-scan ang resibo. Pakilagay nang manual ang Reference No.', 'warn'));
   }
   uploadDrop.addEventListener('click', (e) => {
     if (e.target.id === 'receiptPreview') { openReceiptZoom(e.target.src); return; }

@@ -1684,3 +1684,5 @@ body.dark-mode .emerg-form input,body.dark-mode .emerg-form select,body.dark-mod
 
 .fb-sos-btn{border:1px solid #c62828; border-radius:12px; padding:10px 16px; cursor:pointer; white-space:nowrap; align-self:center; margin-left:auto;}
 .fb-hero{flex-wrap:wrap; gap:12px;}
+.u-scan{display:block;font-size:12px;margin-top:6px;opacity:.9}
+.u-scan.busy{color:#d3a94a}.u-scan.ok{color:#7fd08f}.u-scan.warn{color:#f0a08a}
