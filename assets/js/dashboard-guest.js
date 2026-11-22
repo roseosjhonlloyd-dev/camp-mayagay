@@ -1453,7 +1453,12 @@
   function scanReceipt(dataUrl){
     const st = document.getElementById('receiptScanStatus');
     const setSt = (msg, cls) => { if (st){ st.textContent = msg; st.className = 'u-scan ' + (cls || ''); } };
-    setSt('Scanning receipt...', 'busy');
+    setSt('', '');
+    // Bagong upload = bagong resibo: i-clear ang lumang laman bago mag-scan ulit.
+    const refEl = document.getElementById('gcashRef'); if (refEl) refEl.value = '';
+    document.querySelectorAll('.pay-amt, .pay-name').forEach(i => { i.value = ''; });
+    if (pendingBooking) pendingBooking.gcashRef = '';
+    updatePaymentConfirmState();
     loadTesseract().then(T => T.recognize(dataUrl, 'eng')).then(res => {
       const out = parseReceiptText(res && res.data && res.data.text);
       const notes = [];
@@ -1494,7 +1499,7 @@
     document.addEventListener('keydown', onKey);
     document.body.appendChild(ov);
   }
-  receiptInput.addEventListener('change', (e) => handleReceiptFile(e.target.files && e.target.files[0]));
+  receiptInput.addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; handleReceiptFile(f); e.target.value = ''; });
   var qrReal = document.querySelector('.qr-real');
   if (qrReal) qrReal.addEventListener('click', () => openReceiptZoom(qrReal.src));
   uploadDrop.addEventListener('dragover', (e) => { e.preventDefault(); uploadDrop.classList.add('dragover'); });
