@@ -1400,13 +1400,23 @@ function renderCalendarDayDetails() {
       return (r.status === 'confirmed' || r.status === 'completed') && String(r.check_out).slice(0, 10) === selectedKey;
     });
 
-    checkinList.innerHTML = checkins.length ? checkins.map(function (r) {
-      return '<div class="calendar-detail-item"><span>' + r.guest_name + '</span><span class="cabin-tag">' + r.cabin_name + '</span></div>';
-    }).join('') : '<p class="calendar-detail-empty">There are no scheduled check-ins today.</p>';
+    // Isang item: pangalan + cabin + arrow (v). Pag pinindot ang arrow, lalabas ang main guest at mga dagdag na bisita.
+    function guestItemHtml(r) {
+      var others = (r.data && r.data.guest && Array.isArray(r.data.guest.others)) ? r.data.guest.others.filter(Boolean) : [];
+      return '<div class="calendar-detail-item has-more">' +
+        '<span class="cd-name">' + escapeCalHtml(r.guest_name) + '</span>' +
+        '<span class="cabin-tag">' + escapeCalHtml(r.cabin_name) + '</span>' +
+        '<button type="button" class="cd-toggle" aria-expanded="false" aria-label="Show guest names"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+        '<div class="cd-more">' +
+          '<div><b>Main guest:</b> ' + escapeCalHtml(r.guest_name) + '</div>' +
+          '<div><b>Other guests:</b> ' + (others.length ? others.map(escapeCalHtml).join(', ') : '<i>None listed</i>') + '</div>' +
+        '</div>' +
+      '</div>';
+    }
 
-    checkoutList.innerHTML = checkouts.length ? checkouts.map(function (r) {
-      return '<div class="calendar-detail-item"><span>' + r.guest_name + '</span><span class="cabin-tag">' + r.cabin_name + '</span></div>';
-    }).join('') : '<p class="calendar-detail-empty">There is no scheduled check-out today.</p>';
+    checkinList.innerHTML = checkins.length ? checkins.map(guestItemHtml).join('') : '<p class="calendar-detail-empty">There are no scheduled check-ins today.</p>';
+
+    checkoutList.innerHTML = checkouts.length ? checkouts.map(guestItemHtml).join('') : '<p class="calendar-detail-empty">There is no scheduled check-out today.</p>';
   }
 
   // Room availability: laging naka-base sa napiling petsa sa calendar,

@@ -1359,3 +1359,13 @@ body.dark-mode .calendar-legend span{color:#ffffff !important;}
 .calendar-guest-item .guest-done{ margin-left:auto; font-size:10.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#10200f; background:#8fbf6e; padding:2px 9px; border-radius:999px; }
 .calendar-guest-item.is-done{ opacity:.78; }
 .calendar-guest-item.is-done .guest-meta{ text-decoration:none; }
+
+/* Check-in / check-out items: arrow na nagpapakita ng main guest at mga dagdag na bisita */
+.calendar-detail-item.has-more{ flex-wrap:wrap; align-items:center; gap:6px 8px; }
+.calendar-detail-item.has-more .cd-name{ flex:1 1 auto; min-width:0; }
+.calendar-detail-item .cd-toggle{ width:28px; height:28px; border-radius:50%; border:1px solid rgba(0,0,0,.18); background:transparent; color:inherit; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; flex:none; padding:0; }
+.calendar-detail-item .cd-toggle svg{ transition:transform .2s ease; }
+.calendar-detail-item.open .cd-toggle svg{ transform:rotate(180deg); }
+.calendar-detail-item .cd-more{ display:none; flex:1 1 100%; width:100%; font-size:12.5px; line-height:1.5; padding-top:8px; margin-top:2px; border-top:1px dashed rgba(0,0,0,.2); }
+.calendar-detail-item.open .cd-more{ display:block; }
+.calendar-detail-item .cd-more b{ font-weight:700; }
