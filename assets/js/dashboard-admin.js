@@ -1152,6 +1152,18 @@ function calResKey(r) {
 }
 
 // Confirmed (o completed) na reservations lang - kapareho ng rule ng calendar.
+/* Done = completed na, o lampas na ang check-out (ngayong araw: pagkatapos ng 12:00 NN, oras sa Pilipinas). */
+function isReservationDone(r) {
+  if (!r) return false;
+  if (r.status === 'completed') return true;
+  if (r.status !== 'confirmed' || !r.check_out) return false;
+  var co = String(r.check_out).slice(0, 10);
+  var now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+  var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+  var today = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+  return co < today || (co === today && now.getHours() >= 12);
+}
+
 function getCalendarBookedReservations() {
   return allReservations
     .filter(function (r) { return (r.status === 'confirmed' || r.status === 'completed') && r.check_in && r.check_out; })
@@ -1196,8 +1208,8 @@ function renderCalendarGuestList() {
   var guestColors = getCalendarGuestColors();
   list.innerHTML = booked.map(function (r) {
     var active = String(calResKey(r)) === String(calendarHighlightedId);
-    return '<button type="button" class="calendar-guest-item' + (active ? ' active' : '') + '" data-res-id="' + escapeCalHtml(calResKey(r)) + '" style="--gc:' + guestColors[calGuestKey(r)] + '">' +
-      '<span class="guest-name"><i class="guest-person-icon">' + CAL_PERSON_SVG.replace('width="11" height="11"', 'width="15" height="15"') + '</i>' + escapeCalHtml(r.guest_name) + '</span>' +
+    return '<button type="button" class="calendar-guest-item' + (active ? ' active' : '') + (isReservationDone(r) ? ' is-done' : '') + '" data-res-id="' + escapeCalHtml(calResKey(r)) + '" style="--gc:' + guestColors[calGuestKey(r)] + '">' +
+      '<span class="guest-name"><i class="guest-person-icon">' + CAL_PERSON_SVG.replace('width="11" height="11"', 'width="15" height="15"') + '</i>' + escapeCalHtml(r.guest_name) + (isReservationDone(r) ? '<b class="guest-done">&#10003; Done</b>' : '') + '</span>' +
       '<span class="guest-meta">' + escapeCalHtml(r.cabin_name) + ' &middot; ' + shortDate(r.check_in) + ' - ' + shortDate(r.check_out) + '</span>' +
       '</button>';
   }).join('');

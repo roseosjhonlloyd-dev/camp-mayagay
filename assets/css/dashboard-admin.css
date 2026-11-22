@@ -1355,3 +1355,7 @@ body.dark-mode .calendar-legend span{color:#ffffff !important;}
 .calendar-day-guestdots{ flex-wrap:nowrap; white-space:nowrap; overflow:hidden; padding:0 2px; box-sizing:border-box; gap:1px; }
 .calendar-day-guestdots .cal-guest-dot svg{ width:10px; height:10px; }
 .calendar-day-guestdots em{ font-size:9px; font-weight:800; color:#fff; opacity:.95; margin-left:1px; }
+
+.calendar-guest-item .guest-done{ margin-left:auto; font-size:10.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#10200f; background:#8fbf6e; padding:2px 9px; border-radius:999px; }
+.calendar-guest-item.is-done{ opacity:.78; }
+.calendar-guest-item.is-done .guest-meta{ text-decoration:none; }
