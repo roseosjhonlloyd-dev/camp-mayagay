@@ -1753,3 +1753,7 @@ body.dark-mode .pay-total-row span,body.dark-mode .pay-total-row span:last-child
 
 /* Walang hiwalay na pulang Retake button: ang Take a picture button na mismo ang nagiging Retake a picture */
 #receiptRetakeBtn{display:none !important;}
+
+/* Stack the two receipt buttons so long labels never overlap */
+#receiptBlock .upload-actions{grid-template-columns:1fr !important;}
+#receiptBlock .btn-upload-act{justify-content:center;overflow:hidden;text-overflow:ellipsis;}

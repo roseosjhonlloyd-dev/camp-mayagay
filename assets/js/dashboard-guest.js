@@ -1539,7 +1539,7 @@
         notes.push('Amount ' + peso(out.amount));
         document.querySelectorAll('.pay-amt').forEach(i => { if (!i.value.trim()) i.value = out.amount.toFixed(2); });
         const need = pendingBooking && pendingBooking.downAmount;
-        if (need && out.amount + 0.5 < need) notes.push('\u26a0 mas mababa sa required na ' + peso(need));
+        if (need && out.amount + 0.5 < need) notes.push('\u26a0 Amount is lower than the required ' + peso(need));
       }
       if (out.date){
         document.querySelectorAll('.pay-date').forEach(i => { if (!i.value.trim()) i.value = out.date; });
