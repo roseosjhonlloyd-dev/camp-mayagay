@@ -933,26 +933,36 @@
     if (!m) return 1;
     return Math.max(1, Number(m[2] || m[1]) || 1);
   }
-  function totalGuestCount(){
+  function baseOtherCount(){
     const cabin = pendingBooking && pendingBooking.cabin;
-    if (!cabin) return 1;
-    if (isTentArea(cabin)) return Math.max(1, extraQty.heads);
-    return basePax(cabin) + extraQty.person;
+    if (!cabin) return 0;
+    if (isTentArea(cabin)) return Math.max(0, extraQty.heads - 1);
+    return Math.max(0, basePax(cabin) - 1);
+  }
+  function addedPersonCount(){
+    const cabin = pendingBooking && pendingBooking.cabin;
+    return (cabin && !isTentArea(cabin)) ? extraQty.person : 0;
   }
   function currentOtherNames(){
-    return Array.from(document.querySelectorAll('#guestNames input')).map(i => i.value);
+    const get = sel => Array.from(document.querySelectorAll(sel + ' input')).map(i => i.value);
+    return get('#guestNames').concat(get('#addPersonNames'));
+  }
+  function nameInputsHtml(from, count, keep){
+    let html = '';
+    for (let i = 0; i < count; i++){
+      const label = 'Guest ' + (from + i + 2);
+      html += '<input type="text" class="gn-input" maxlength="80" placeholder="' + label + ' name" aria-label="' + label + ' name" value="' + escHtml(keep[from + i] || '') + '">';
+    }
+    return html;
   }
   function renderGuestNames(values){
-    const box = document.getElementById('guestNames');
-    if (!box) return;
     const keep = values || currentOtherNames();
-    const n = Math.max(0, totalGuestCount() - 1);
-    let html = '';
-    for (let i = 0; i < n; i++){
-      html += '<input type="text" class="gn-input" maxlength="80" placeholder="Guest ' + (i + 2) + ' name" aria-label="Guest ' + (i + 2) + ' name" value="' + escHtml(keep[i] || '') + '">';
-    }
-    box.innerHTML = html;
-    box.style.display = n ? '' : 'none';
+    const baseN = baseOtherCount(), addN = addedPersonCount();
+    const box = document.getElementById('guestNames');
+    if (box){ box.innerHTML = nameInputsHtml(0, baseN, keep); box.style.display = baseN ? '' : 'none'; }
+    // Added persons: lalabas lang ang name fields sa ilalim ng "Add person" kapag may nadagdag.
+    const addBox = document.getElementById('addPersonNames');
+    if (addBox){ addBox.innerHTML = nameInputsHtml(baseN, addN, keep); addBox.style.display = addN ? '' : 'none'; }
   }
 
   function resetSteppers(){
