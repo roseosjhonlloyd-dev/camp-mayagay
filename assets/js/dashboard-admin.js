@@ -1139,7 +1139,7 @@ function initWalkInModal() {
     e.preventDefault();
     var errorBox = document.getElementById('walkInFormError');
     var showError = function (msg) {
-      if (errorBox) { errorBox.textContent = msg; errorBox.style.display = 'block'; }
+      if (errorBox) { errorBox.textContent = msg; errorBox.style.display = 'block'; try { errorBox.scrollIntoView({ block: 'center' }); } catch (e) {} }
     };
 
     var guestName = document.getElementById('walkInGuestName').value.trim();
@@ -1148,7 +1148,7 @@ function initWalkInModal() {
     var checkIn = checkInInput.value;
     var checkOut = checkOutInput.value;
 
-    if (!guestName) { showError('Guest name is required.'); return; }
+    if (!guestName) guestName = 'Walk-in Guest';
     if (!cabinId) { showError('Please select an accommodation.'); return; }
     if (!checkIn || !checkOut || checkOut <= checkIn) { showError('Check-out must be after check-in.'); return; }
 
