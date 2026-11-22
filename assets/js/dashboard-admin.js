@@ -1159,7 +1159,8 @@ function getCalendarBookedReservations() {
 }
 
 // Kulay ng bawat guest (pareho ang kulay ng lahat ng booking ng iisang pangalan).
-var CAL_GUEST_COLORS = ['#ef4444', '#f97316', '#3b82f6', '#a855f7', '#ec4899', '#14b8a6', '#eab308', '#06b6d4', '#84cc16', '#f43f5e'];
+var CAL_GUEST_COLORS = ['#8fbf6e'];   // iisang kulay na lang - person icon na ang ginagamit sa halip na kulay-kulay na tuldok
+var CAL_PERSON_SVG = '<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z"/></svg>';
 function calGuestKey(r) { return String(r.guest_name || '').trim().toLowerCase(); }
 function getCalendarGuestColors() {
   var names = [];
@@ -1196,7 +1197,7 @@ function renderCalendarGuestList() {
   list.innerHTML = booked.map(function (r) {
     var active = String(calResKey(r)) === String(calendarHighlightedId);
     return '<button type="button" class="calendar-guest-item' + (active ? ' active' : '') + '" data-res-id="' + escapeCalHtml(calResKey(r)) + '" style="--gc:' + guestColors[calGuestKey(r)] + '">' +
-      '<span class="guest-name"><i class="guest-color-dot"></i>' + escapeCalHtml(r.guest_name) + '</span>' +
+      '<span class="guest-name"><i class="guest-person-icon">' + CAL_PERSON_SVG.replace('width="11" height="11"', 'width="15" height="15"') + '</i>' + escapeCalHtml(r.guest_name) + '</span>' +
       '<span class="guest-meta">' + escapeCalHtml(r.cabin_name) + ' &middot; ' + shortDate(r.check_in) + ' - ' + shortDate(r.check_out) + '</span>' +
       '</button>';
   }).join('');
@@ -1312,7 +1313,7 @@ function renderReservationCalendar() {
         seenGuests[gk] = true;
         dotCount++;
         if (dotCount <= 4) {
-          guestDots += '<i class="cal-guest-dot" style="background:' + guestColors[gk] + '" title="' + escapeCalHtml(r.guest_name) + '"></i>';
+          guestDots += '<i class="cal-guest-dot" title="' + escapeCalHtml(r.guest_name) + '">' + CAL_PERSON_SVG + '</i>';
         }
       }
     });

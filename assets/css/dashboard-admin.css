@@ -1345,3 +1345,8 @@ body.dark-mode .calendar-detail-heading{color:var(--leaf) !important;}
 .calendar-legend span,
 body.dark-mode .calendar-legend,
 body.dark-mode .calendar-legend span{color:#ffffff !important;}
+
+/* Calendar: person icon sa halip na kulay-kulay na tuldok */
+.cal-guest-dot{ width:auto; height:auto; border-radius:0; box-shadow:none; background:none !important; color:#ffffff; display:inline-flex; line-height:0; }
+.calendar-day-guestdots{ gap:2px; }
+.guest-person-icon{ display:inline-flex; line-height:0; color:#ffffff; opacity:.9; }
