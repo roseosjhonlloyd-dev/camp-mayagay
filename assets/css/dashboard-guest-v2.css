@@ -166,6 +166,8 @@ body.dark-mode .accom-card.acc2-card{background:var(--v2-card); border-color:var
   font-size:12px; font-weight:600; padding:5px 12px; border-radius:999px;
 }
 .acc2-badge.none{background:#e0524d; color:#fff;}
+.acc2-maint .accom-art{filter:grayscale(.6);}
+.acc2-maint-note{margin:10px 0 4px; padding:8px 10px; border-radius:8px; background:#fdecea; color:#a3322e; font-size:13px; line-height:1.4;}
 .acc2-heart{
   position:absolute; top:10px; right:10px; z-index:6; width:32px; height:32px; border-radius:50%;
   background:#fff; color:#e5484d; border:0; display:grid; place-items:center; cursor:pointer;

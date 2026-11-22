@@ -15,6 +15,7 @@
   // ito lumalabas sa Guest side. Ngayon, kinukuha na ito mula sa totoong
   // accommodations table (parehong pinagmumulan ng Admin dashboard).
   let CABINS = [];
+  let MAINT_CABINS = [];
   // Raw accommodation rows (accommodation_id + accommodation_name) exactly
   // as the database returns them - used to list ALL accommodations in the
   // feedback form and the reviews filter, kahit wala pang reservation ang
@@ -39,6 +40,7 @@
       icon: icon,
       code: (a.slug || 'CMY').slice(0, 3).toUpperCase(),
       image: a.image || null,
+      maintenanceUntil: a.maintenance_until || null,
       avgRating: a.avg_rating != null ? Number(a.avg_rating) : null,
       ratingCount: Number(a.rating_count) || 0,
       amenities: Array.isArray(a.amenities) ? a.amenities : ['Complete beddings', 'Kettle', 'Plates', 'Mugs']
@@ -416,7 +418,11 @@
     return apiCall('accommodations_list', {}).then(res => {
       const rows = (res && res.success && res.accommodations) ? res.accommodations : [];
       CABINS = rows
-        .filter(a => a.status !== 'unavailable') // itago ang mga pansamantalang di-available na accommodation
+        .filter(a => a.status !== 'unavailable') // hindi na pwedeng i-book ang mga under maintenance
+        .map(mapAccommodationToCabin);
+      // Under-maintenance accommodations are still shown (no booking) with their end date.
+      MAINT_CABINS = rows
+        .filter(a => a.status === 'unavailable')
         .map(mapAccommodationToCabin);
       // Lahat ng accommodation (kahit unavailable), para sa "All guest
       // reviews" filter at sa "Which room are you rating?" select -
@@ -752,7 +758,16 @@
       default:          return true;
     }
   }
-  function filteredCabins(){ return CABINS.filter(cabinMatchesFilter); }
+  function filteredCabins(){
+    const maint = accomFilter === 'available' ? [] : MAINT_CABINS.filter(cabinMatchesFilter);
+    return CABINS.filter(cabinMatchesFilter).concat(maint);
+  }
+  function maintDateText(s){
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || ''));
+    if (!m) return '';
+    const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Number(m[2]) - 1];
+    return mon + ' ' + Number(m[3]) + ', ' + m[1];
+  }
   /* A day that is already over (before today) is greyed out and can no longer be booked. */
   function isPastDay(i){ return toLocalDateKey(getDateForDay(i)) < todayKey(); }
   function weekAvailCount(c){
@@ -805,6 +820,22 @@
     if (!pageItems.length){
       grid.innerHTML = '<p class="acc2-empty">No accommodations match this filter.</p>';
     } else grid.innerHTML = pageItems.map(c => {
+      if (MAINT_CABINS.indexOf(c) !== -1){
+        const until = maintDateText(c.maintenanceUntil);
+        return `
+      <div class="accom-card acc2-card acc2-maint">
+        <div class="accom-art" style="background:${ART_BG[c.icon]}${c.image ? ";--art-img:url('" + encodeURI(c.image).replace(/'/g, '%27') + "')" : ''}">
+          ${accomSlider(c)}
+          <span class="acc2-badge none">Under maintenance</span>
+          <div class="acc2-price"><b>${peso(c.price)}</b> / ${c.unit}</div>
+        </div>
+        <div class="acc2-body">
+          <div class="acc2-titlerow"><p class="accom-name">${c.name}</p></div>
+          <p class="accom-note">${c.note || ''}</p>
+          <p class="acc2-maint-note">${until ? 'Under maintenance until <b>' + until + '</b>. Not available for booking.' : 'Under maintenance. Not available for booking.'}</p>
+        </div>
+      </div>`;
+      }
       const chips = (c.amenities || []).slice(0, 3).map(a => '<span class="acc2-amenity">' + escHtml(a) + '</span>').join('');
       const bars = DAYS.map((d, i) => {
         const past = isPastDay(i);

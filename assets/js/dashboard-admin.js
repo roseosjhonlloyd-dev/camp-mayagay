@@ -1579,7 +1579,9 @@ function renderAccommodationTable() {
     html += '  <td>' + typeLabel + '</td>';
     html += '  <td>' + (a.capacity || '-') + '</td>';
     html += '  <td>' + peso2(a.price) + '</td>';
-    html += '  <td><span class="status-pill ' + (a.status === 'available' ? 'confirmed' : 'cancelled') + '">' + statusLabel + '</span></td>';
+    html += '  <td><span class="status-pill ' + (a.status === 'available' ? 'confirmed' : 'cancelled') + '">' + statusLabel + '</span>' +
+            (a.status === 'unavailable' ? '<div class="maint-until-note" style="font-size:12px;margin-top:4px;opacity:.8">' +
+              (a.maintenance_until ? 'Maintenance until ' + fmtMaintDate(a.maintenance_until) : 'Maintenance (no end date)') + '</div>' : '') + '</td>';
     html += '  <td>';
     html += '    <div class="row-actions">';
     html += '      <button class="row-action-btn" data-toggle-id="' + a.accommodation_id + '" data-current="' + a.status + '" title="Toggle availability" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12C4 7 8 4.5 12 4.5S20 7 22 12C20 17 16 19.5 12 19.5S4 17 2 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.6"/></svg></button>';
@@ -1596,7 +1598,15 @@ function renderAccommodationTable() {
       var id = btn.getAttribute('data-toggle-id');
       var current = btn.getAttribute('data-current');
       var next = current === 'available' ? 'unavailable' : 'available';
-      adminApiCall('accommodations_update_status', { accommodation_id: id, status: next }).then(loadAccommodations);
+      var payload = { accommodation_id: id, status: next };
+      if (next === 'unavailable') {
+        var ans = window.prompt('Maintenance until what date? Enter YYYY-MM-DD (e.g. 2026-12-05). Leave blank if no end date yet.', '');
+        if (ans === null) return;
+        ans = ans.trim();
+        if (ans && !/^\d{4}-\d{2}-\d{2}$/.test(ans)) { alert('Invalid date. Use YYYY-MM-DD.'); return; }
+        payload.maintenance_until = ans;
+      }
+      adminApiCall('accommodations_update_status', payload).then(loadAccommodations);
     });
   });
   tbody.querySelectorAll('[data-edit-acc-id]').forEach(function (btn) {
@@ -1611,6 +1621,13 @@ function renderAccommodationTable() {
       });
     });
   });
+}
+
+function fmtMaintDate(s) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || ''));
+  if (!m) return String(s || '');
+  var mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Number(m[2]) - 1];
+  return mon + ' ' + Number(m[3]) + ', ' + m[1];
 }
 
 var DEFAULT_AMENITIES = ['Complete beddings', 'Kettle', 'Plates', 'Mugs'];
@@ -1758,6 +1775,7 @@ function initAccommodationCrud() {
         capacity: document.getElementById('accFormCapacity').value.trim(),
         price: document.getElementById('accFormPrice').value,
         status: document.getElementById('accFormStatus').value,
+        maintenance_until: document.getElementById('accFormMaintUntil').value,
         description: document.getElementById('accFormDescription').value.trim()
       };
 
@@ -1838,6 +1856,8 @@ function openAccommodationModal(id) {
     document.getElementById('accFormCapacity').value = a.capacity || '';
     document.getElementById('accFormPrice').value = a.price || '';
     document.getElementById('accFormStatus').value = a.status || 'available';
+    document.getElementById('accFormMaintUntil').value = a.maintenance_until ? String(a.maintenance_until).slice(0, 10) : '';
+    syncAccMaintField();
     document.getElementById('accFormDescription').value = a.description || '';
     accAmenities = Array.isArray(a.amenities) ? a.amenities.slice() : DEFAULT_AMENITIES.slice();
     if (a.image && preview) {
@@ -1849,8 +1869,23 @@ function openAccommodationModal(id) {
     title.textContent = 'Add Accommodation';
   }
 
+  syncAccMaintField();
+  var stSel = document.getElementById('accFormStatus');
+  if (stSel && !stSel.dataset.maintBound) {
+    stSel.dataset.maintBound = '1';
+    stSel.addEventListener('change', syncAccMaintField);
+  }
   renderAccAmenities();
   modal.classList.remove('hidden');
+}
+
+function syncAccMaintField() {
+  var wrap = document.getElementById('accFormMaintWrap');
+  var st = document.getElementById('accFormStatus');
+  if (!wrap || !st) return;
+  var show = st.value === 'unavailable';
+  wrap.style.display = show ? '' : 'none';
+  if (!show) document.getElementById('accFormMaintUntil').value = '';
 }
 
 function closeAccommodationModal() {

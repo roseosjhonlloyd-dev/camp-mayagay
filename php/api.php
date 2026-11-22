@@ -146,6 +146,18 @@ function ensureAmenitiesColumn(PDO $pdo): void
     $done = true;
 }
 
+/** Adds accommodations.maintenance_until (date the maintenance ends; NULL = no end date set). */
+function ensureMaintenanceColumn(PDO $pdo): void
+{
+    static $done = false;
+    if ($done) return;
+    $has = $pdo->query("SHOW COLUMNS FROM accommodations LIKE 'maintenance_until'")->fetch();
+    if (!$has) {
+        $pdo->exec('ALTER TABLE accommodations ADD COLUMN maintenance_until DATE NULL');
+    }
+    $done = true;
+}
+
 /** Adds reservations.amount_paid (how much the guest has actually paid).
  *  Existing rows already marked 'paid' are backfilled to their full total. */
 function ensureAmountPaidColumn(PDO $pdo): void
@@ -1154,6 +1166,7 @@ try {
         case 'accommodations_list':
             if ($user) requireModuleAccess($pdo, $user, 'accommodation');
             ensureAmenitiesColumn($pdo);
+            ensureMaintenanceColumn($pdo);
             applyBundledAccommodationPhotos($pdo);
             $stmt = $pdo->query('SELECT * FROM accommodations ORDER BY accommodation_id ASC');
             $accRows = $stmt->fetchAll();
@@ -1299,6 +1312,7 @@ try {
             if (!$id) { http_response_code(422); echo json_encode(['success' => false, 'message' => 'Missing id.']); break; }
 
             ensureAmenitiesColumn($pdo);
+            ensureMaintenanceColumn($pdo);
             $fields = [];
             $params = ['id' => $id];
             if (array_key_exists('amenities', $input) && is_array($input['amenities'])) {
@@ -1313,6 +1327,10 @@ try {
             }
             if (isset($input['status']) && in_array($input['status'], ['available', 'unavailable'], true)) {
                 $fields[] = 'status = :status'; $params['status'] = $input['status'];
+                // Maintenance end date only applies while unavailable; clear it when available again.
+                $fields[] = 'maintenance_until = :mu';
+                $mu = trim((string)($input['maintenance_until'] ?? ''));
+                $params['mu'] = ($input['status'] === 'unavailable' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $mu)) ? $mu : null;
             }
             if (!empty($input['image'])) {
                 $imgError = null;
@@ -1349,8 +1367,11 @@ try {
                 echo json_encode(['success' => false, 'message' => 'Invalid accommodation or status.']);
                 break;
             }
-            $pdo->prepare('UPDATE accommodations SET status = :status WHERE accommodation_id = :id')
-                ->execute(['status' => $status, 'id' => $id]);
+            ensureMaintenanceColumn($pdo);
+            $mu = trim((string)($input['maintenance_until'] ?? ''));
+            $mu = ($status === 'unavailable' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $mu)) ? $mu : null;
+            $pdo->prepare('UPDATE accommodations SET status = :status, maintenance_until = :mu WHERE accommodation_id = :id')
+                ->execute(['status' => $status, 'mu' => $mu, 'id' => $id]);
             echo json_encode(['success' => true]);
             break;
 
