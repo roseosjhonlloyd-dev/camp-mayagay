@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Staff Dashboard | Camp Mayagay</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="assets/css/dashboard-admin.css?v=23">
+<link rel="stylesheet" href="assets/css/dashboard-admin.css?v=24">
 <script>
 // If nobody is logged in (for example after Log out, then pressing Back), leave the dashboard
 // right away and go to the login page instead of showing the old page.
@@ -890,7 +890,7 @@
           <p class="wi-cal-summary" id="walkInCalSummary"></p>
         </div>
         <div class="setting-row-split">
-          <label>Number of Guests<input type="number" id="walkInGuestsCount" min="1" value="1" required></label>
+          <label>Number of Guests<input type="text" inputmode="numeric" maxlength="1" pattern="[1-9]" id="walkInGuestsCount" value="1" required></label>
           <label>Payment Method
             <select id="walkInPaymentMethod">
               <option value="cash">Cash</option>
@@ -900,10 +900,17 @@
             </select>
           </label>
         </div>
+        <div class="wi-addons">
+          <div class="wi-addon"><span>Add person <small>(+&#8369;150 each, max 5)</small></span><span class="wi-step"><button type="button" data-wi="persons" data-d="-1">&minus;</button><b id="wiVal_persons">0</b><button type="button" data-wi="persons" data-d="1">+</button></span></div>
+          <div id="walkInOthers" class="wi-others"></div>
+          <div class="wi-addon"><span>Blanket <small>(+&#8369;50 each)</small></span><span class="wi-step"><button type="button" data-wi="blankets" data-d="-1">&minus;</button><b id="wiVal_blankets">0</b><button type="button" data-wi="blankets" data-d="1">+</button></span></div>
+          <div class="wi-addon"><span>Pillow <small>(+&#8369;50 each)</small></span><span class="wi-step"><button type="button" data-wi="pillows" data-d="-1">&minus;</button><b id="wiVal_pillows">0</b><button type="button" data-wi="pillows" data-d="1">+</button></span></div>
+        </div>
         <div class="setting-row-split">
-          <label>Total Amount<input type="number" id="walkInTotalAmount" min="0" step="0.01" required></label>
+          <label>Total Amount (auto)<input type="number" id="walkInTotalAmount" readonly tabindex="-1" value="0"></label>
           <label>Amount Paid<input type="number" id="walkInAmountPaid" min="0" step="0.01" value="0" placeholder="0 = Unpaid"></label>
         </div>
+        <p class="wi-breakdown" id="walkInBreakdown"></p>
         <p id="walkInFormError" style="display:none; color:#c0392b; font-size:12.5px; margin:-6px 0 6px;"></p>
         <div class="modal-footer">
           <button class="btn-secondary" id="walkInModalCancelBtn" type="button">Cancel</button>
@@ -1588,7 +1595,7 @@
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="assets/js/dashboard-admin.js?v=71"></script>
+<script src="assets/js/dashboard-admin.js?v=72"></script>
 <script src="assets/js/dashboard-payments.js?v=5"></script>
 <script src="assets/js/dashboard-staff-permissions.js?v=6"></script>
 </body>

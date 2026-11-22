@@ -889,6 +889,7 @@ function openWalkInModal() {
   if (toDateKey(base) < toDateKey(new Date())) base = new Date();
   walkInCalStart(toDateKey(base));
   document.getElementById('walkInGuestsCount').value = 1;
+  if (window.recalcWalkInTotal) window.recalcWalkInTotal();
   var apEl = document.getElementById('walkInAmountPaid'); if (apEl) apEl.value = 0;
   modal.classList.remove('hidden');
 }
@@ -1069,20 +1070,70 @@ function initWalkInModal() {
   });
   modal.addEventListener('click', function (e) { if (e.target === modal) closeWalkInModal(); });
 
-  // Auto-suggest the total (price/night x nights) whenever the accommodation
-  // or dates change - admin can still edit the amount before saving.
-  function suggestTotal() {
-    if (!cabinSelect || !cabinSelect.value || !checkInInput.value || !checkOutInput.value) return;
-    var opt = cabinSelect.options[cabinSelect.selectedIndex];
-    var price = Number(opt.getAttribute('data-price')) || 0;
-    var ci = new Date(checkInInput.value + 'T00:00');
-    var co = new Date(checkOutInput.value + 'T00:00');
-    var nights = Math.round((co - ci) / (1000 * 60 * 60 * 24));
-    if (nights > 0 && price > 0) totalInput.value = (price * nights).toFixed(2);
+  // Total is fixed/auto: rate x nights + extra persons + blanket/pillow.
+  var wiAdd = { persons: 0, blankets: 0, pillows: 0 };
+  window.walkInAdd = wiAdd;
+  function wiBasePax() {
+    var opt = cabinSelect && cabinSelect.options[cabinSelect.selectedIndex];
+    var acc = opt && opt.value ? allAccommodations.filter(function (x) { return x.slug === opt.value; })[0] : null;
+    var note = String((acc && (acc.note || acc.description)) || '');
+    var m = note.match(/(\d+)\s*(?:-|\u2013|to)\s*(\d+)\s*pax/i) || note.match(/(\d+)\s*pax/i);
+    return m ? Math.max(1, Number(m[2] || m[1]) || 1) : 1;
   }
+  function wiGuests() {
+    var v = parseInt(document.getElementById('walkInGuestsCount').value, 10);
+    return (v >= 1 && v <= 9) ? v : 1;
+  }
+  function wiRenderOthers() {
+    var box = document.getElementById('walkInOthers');
+    if (!box) return;
+    var n = Math.max(0, wiGuests() - 1) + wiAdd.persons;
+    var old = [].map.call(box.querySelectorAll('input'), function (i) { return i.value; });
+    var h = '';
+    for (var i = 0; i < n; i++) {
+      h += '<input type="text" class="wi-other" placeholder="Other guest ' + (i + 1) + ' name" maxlength="80" value="' + escapeCalHtml(old[i] || '') + '">';
+    }
+    box.innerHTML = h;
+  }
+  function recalcWalkInTotal() {
+    var price = 0, nights = 0;
+    var opt = cabinSelect && cabinSelect.options[cabinSelect.selectedIndex];
+    if (opt && opt.value) price = Number(opt.getAttribute('data-price')) || 0;
+    if (checkInInput.value && checkOutInput.value) {
+      nights = Math.round((new Date(checkOutInput.value + 'T00:00') - new Date(checkInInput.value + 'T00:00')) / 86400000);
+    }
+    nights = Math.max(0, nights);
+    var base = price * nights;
+    var persons = wiAdd.persons * 150 * nights;
+    var addons = (wiAdd.blankets + wiAdd.pillows) * 50 * nights;
+    var total = base + persons + addons;
+    totalInput.value = total.toFixed(2);
+    var bd = document.getElementById('walkInBreakdown');
+    if (bd) bd.textContent = nights ? ('Rate \u20b1' + base.toLocaleString() + (persons ? ' + Persons \u20b1' + persons.toLocaleString() : '') + (addons ? ' + Add-ons \u20b1' + addons.toLocaleString() : '') + '  (' + nights + ' night' + (nights > 1 ? 's' : '') + ')') : '';
+    ['persons', 'blankets', 'pillows'].forEach(function (k) { var e = document.getElementById('wiVal_' + k); if (e) e.textContent = wiAdd[k]; });
+  }
+  window.recalcWalkInTotal = function () { wiAdd.persons = 0; wiAdd.blankets = 0; wiAdd.pillows = 0; wiRenderOthers(); recalcWalkInTotal(); };
+  var suggestTotal = recalcWalkInTotal;
+  [].forEach.call(modal.querySelectorAll('[data-wi]'), function (b) {
+    b.addEventListener('click', function () {
+      var k = b.getAttribute('data-wi'), d = Number(b.getAttribute('data-d'));
+      var max = k === 'persons' ? 5 : 20;
+      wiAdd[k] = Math.max(0, Math.min(max, wiAdd[k] + d));
+      if (k === 'persons') wiRenderOthers();
+      recalcWalkInTotal();
+    });
+  });
+  var gc = document.getElementById('walkInGuestsCount');
+  if (gc) gc.addEventListener('input', function () {
+    gc.value = gc.value.replace(/[^1-9]/g, '').slice(0, 1);
+    wiRenderOthers(); recalcWalkInTotal();
+  });
   if (cabinSelect) cabinSelect.addEventListener('change', suggestTotal);
   if (checkInInput) checkInInput.addEventListener('change', suggestTotal);
   if (checkOutInput) checkOutInput.addEventListener('change', suggestTotal);
+  var _ci = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+  // walk-in calendar sets hidden date values by script: hook it
+  window.walkInRecalc = suggestTotal;
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
@@ -1113,7 +1164,13 @@ function initWalkInModal() {
       cabin_name: cabinName,
       check_in: checkIn + ' 00:00:00',
       check_out: checkOut + ' 00:00:00',
-      guests_count: Number(document.getElementById('walkInGuestsCount').value) || 1,
+      guests_count: wiGuests() + wiAdd.persons,
+      data: {
+        guest: { name: guestName, phone: document.getElementById('walkInGuestPhone').value.trim(), email: document.getElementById('walkInGuestEmail').value.trim(),
+          others: [].map.call(document.querySelectorAll('#walkInOthers input'), function (i) { return i.value.trim(); }).filter(Boolean) },
+        persons: wiAdd.persons,
+        rentals: { blankets: wiAdd.blankets, pillows: wiAdd.pillows }
+      },
       payment_method: document.getElementById('walkInPaymentMethod').value,
       total_amount: Number(totalInput.value) || 0,
       amount_paid: Number((document.getElementById('walkInAmountPaid') || {}).value) || 0,

@@ -1381,3 +1381,15 @@ body.dark-mode .calendar-legend span{color:#ffffff !important;}
 .pill.pay-st-paid{ background:#e3f3e6; color:#2f7a47; }
 .pill.pay-st-partial{ background:#fdebd3; color:#c76a0a; }
 .pill.pay-st-unpaid{ background:#fbe6e4; color:#c1443a; }
+
+/* Walk-in add-ons */
+.wi-addons{display:flex;flex-direction:column;gap:8px;margin:4px 0 10px}
+.wi-addon{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.wi-addon small{opacity:.7}
+.wi-step{display:inline-flex;align-items:center;gap:10px}
+.wi-step button{width:28px;height:28px;border-radius:50%;border:1px solid #bbb;background:#fff;color:#222;font-size:16px;cursor:pointer;line-height:1}
+.wi-step b{min-width:16px;text-align:center}
+.wi-others{display:flex;flex-direction:column;gap:6px}
+.wi-others input{width:100%;box-sizing:border-box}
+#walkInTotalAmount{background:#eef3ea;font-weight:700}
+.wi-breakdown{font-size:12px;opacity:.75;margin:-4px 0 8px}
