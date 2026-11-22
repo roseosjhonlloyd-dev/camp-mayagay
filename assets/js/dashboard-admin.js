@@ -494,8 +494,15 @@ function renderReservationTable() {
       }
 
       var statusMap = { confirm: 'confirmed', decline: 'declined', complete: 'completed' };
+      var declineReason = '';
+      if (action === 'decline') {
+        var rr = window.prompt('Reason for declining this reservation (shown to the guest):', '');
+        if (rr === null) return;
+        declineReason = rr.trim();
+        if (!declineReason) { showAdminToast('Please enter a reason for declining.', true); return; }
+      }
       btn.disabled = true;
-      adminApiCall('reservations_update_status', { id: id, status: statusMap[action] }).then(function (res) {
+      adminApiCall('reservations_update_status', { id: id, status: statusMap[action], reason: declineReason }).then(function (res) {
         if (res && res.success) {
           showAdminToast('Reservation ' + actionLabels[action] + '.');
         } else {
@@ -524,16 +531,16 @@ function openReservationModal(id) {
   info.innerHTML =
     '<div class="modal-info-row"><span>Booking Code</span><span>' + r.code + '</span></div>' +
     '<div class="modal-info-row"><span>Guest Name</span><span>' + r.guest_name + '</span></div>' +
+    (function () {
+      var o = (r.data && r.data.guest && Array.isArray(r.data.guest.others)) ? r.data.guest.others.filter(Boolean) : [];
+      return o.length ? '<div class="modal-info-row"><span>Other Guests</span><span>' + o.map(escapeHtml).join(', ') + '</span></div>' : '';
+    })() +
     '<div class="modal-info-row"><span>Contact Number</span><span>' + (r.guest_phone || '-') + '</span></div>' +
     '<div class="modal-info-row"><span>Email Address</span><span>' + (r.guest_email || '-') + '</span></div>' +
     '<div class="modal-info-row"><span>Accommodation</span><span>' + r.cabin_name + '</span></div>' +
     '<div class="modal-info-row"><span>Check-in</span><span>' + formatDateTime(r.check_in) + '</span></div>' +
     '<div class="modal-info-row"><span>Check-out</span><span>' + formatDateTime(r.check_out) + '</span></div>' +
     '<div class="modal-info-row"><span>Guests</span><span>' + r.guests_count + '</span></div>' +
-    (function () {
-      var o = (r.data && r.data.guest && Array.isArray(r.data.guest.others)) ? r.data.guest.others.filter(Boolean) : [];
-      return o.length ? '<div class="modal-info-row"><span>Other Guests</span><span>' + o.map(escapeHtml).join(', ') + '</span></div>' : '';
-    })() +
     (function () {
       var d = r.data || {}, h = '';
       if (d.payerName) h += '<div class="modal-info-row"><span>Payer Name</span><span>' + escapeHtml(d.payerName) + '</span></div>';
@@ -543,7 +550,7 @@ function openReservationModal(id) {
     })() +
     '<div class="modal-info-row"><span>Total Amount</span><span>' + peso2(r.total_amount) + '</span></div>' +
     '<div class="modal-info-row"><span>Status</span><span><span class="status-pill ' + pillClass + '">' + statusLabel + '</span></span></div>' +
-    (r.cancel_requested ? '<div class="modal-info-row"><span>Cancellation Reason</span><span>' + (r.cancel_reason || '-') + '</span></div>' : '') +
+    ((r.cancel_requested || ((r.status === 'declined' || r.status === 'cancelled') && r.cancel_reason)) ? '<div class="modal-info-row"><span>' + (r.status === 'declined' ? 'Decline Reason' : 'Cancellation Reason') + '</span><span>' + (r.cancel_reason || '-') + '</span></div>' : '') +
     '<div class="modal-info-row"><span>Payment Method</span><span>' + (r.payment_method || '-') + '</span></div>' +
     '<div class="modal-info-row"><span>Payment Status</span><span>' + (r.payment_status ? r.payment_status.charAt(0).toUpperCase() + r.payment_status.slice(1) : '-') + '</span></div>' +
     '<div class="modal-info-row"><span>Date Created</span><span>' + formatDateTime(r.created_at) + '</span></div>' +
@@ -889,6 +896,7 @@ function openWalkInModal() {
   if (toDateKey(base) < toDateKey(new Date())) base = new Date();
   walkInCalStart(toDateKey(base));
   document.getElementById('walkInGuestsCount').value = 1;
+  if (window.recalcWalkInTotal) window.recalcWalkInTotal();
   var apEl = document.getElementById('walkInAmountPaid'); if (apEl) apEl.value = 0;
   modal.classList.remove('hidden');
 }
@@ -1069,26 +1077,76 @@ function initWalkInModal() {
   });
   modal.addEventListener('click', function (e) { if (e.target === modal) closeWalkInModal(); });
 
-  // Auto-suggest the total (price/night x nights) whenever the accommodation
-  // or dates change - admin can still edit the amount before saving.
-  function suggestTotal() {
-    if (!cabinSelect || !cabinSelect.value || !checkInInput.value || !checkOutInput.value) return;
-    var opt = cabinSelect.options[cabinSelect.selectedIndex];
-    var price = Number(opt.getAttribute('data-price')) || 0;
-    var ci = new Date(checkInInput.value + 'T00:00');
-    var co = new Date(checkOutInput.value + 'T00:00');
-    var nights = Math.round((co - ci) / (1000 * 60 * 60 * 24));
-    if (nights > 0 && price > 0) totalInput.value = (price * nights).toFixed(2);
+  // Total is fixed/auto: rate x nights + extra persons + blanket/pillow.
+  var wiAdd = { persons: 0, blankets: 0, pillows: 0 };
+  window.walkInAdd = wiAdd;
+  function wiBasePax() {
+    var opt = cabinSelect && cabinSelect.options[cabinSelect.selectedIndex];
+    var acc = opt && opt.value ? allAccommodations.filter(function (x) { return x.slug === opt.value; })[0] : null;
+    var note = String((acc && (acc.note || acc.description)) || '');
+    var m = note.match(/(\d+)\s*(?:-|\u2013|to)\s*(\d+)\s*pax/i) || note.match(/(\d+)\s*pax/i);
+    return m ? Math.max(1, Number(m[2] || m[1]) || 1) : 1;
   }
+  function wiGuests() {
+    var v = parseInt(document.getElementById('walkInGuestsCount').value, 10);
+    return (v >= 1 && v <= 9) ? v : 1;
+  }
+  function wiRenderOthers() {
+    var box = document.getElementById('walkInOthers');
+    if (!box) return;
+    var n = Math.max(0, wiGuests() - 1);
+    var old = [].map.call(box.querySelectorAll('input'), function (i) { return i.value; });
+    var h = '';
+    for (var i = 0; i < n; i++) {
+      h += '<input type="text" class="wi-other" placeholder="Other guest ' + (i + 1) + ' name" maxlength="80" value="' + escapeCalHtml(old[i] || '') + '">';
+    }
+    box.innerHTML = h;
+  }
+  function recalcWalkInTotal() {
+    var price = 0, nights = 0;
+    var opt = cabinSelect && cabinSelect.options[cabinSelect.selectedIndex];
+    if (opt && opt.value) price = Number(opt.getAttribute('data-price')) || 0;
+    if (checkInInput.value && checkOutInput.value) {
+      nights = Math.round((new Date(checkOutInput.value + 'T00:00') - new Date(checkInInput.value + 'T00:00')) / 86400000);
+    }
+    nights = Math.max(0, nights);
+    var base = price * nights;
+    var extra = Math.max(0, wiGuests() - wiBasePax());
+    var persons = extra * 150 * nights;
+    var addons = (wiAdd.blankets + wiAdd.pillows) * 50 * nights;
+    var total = base + persons + addons;
+    totalInput.value = total.toFixed(2);
+    var bd = document.getElementById('walkInBreakdown');
+    if (bd) bd.textContent = nights ? ('Rate \u20b1' + base.toLocaleString() + (persons ? ' + Persons \u20b1' + persons.toLocaleString() : '') + (addons ? ' + Add-ons \u20b1' + addons.toLocaleString() : '') + '  (' + nights + ' night' + (nights > 1 ? 's' : '') + ')') : '';
+    ['persons', 'blankets', 'pillows'].forEach(function (k) { var e = document.getElementById('wiVal_' + k); if (e) e.textContent = wiAdd[k]; });
+  }
+  window.recalcWalkInTotal = function () { wiAdd.persons = 0; wiAdd.blankets = 0; wiAdd.pillows = 0; wiRenderOthers(); recalcWalkInTotal(); };
+  var suggestTotal = recalcWalkInTotal;
+  [].forEach.call(modal.querySelectorAll('[data-wi]'), function (b) {
+    b.addEventListener('click', function () {
+      var k = b.getAttribute('data-wi'), d = Number(b.getAttribute('data-d'));
+      var max = k === 'persons' ? 5 : 20;
+      wiAdd[k] = Math.max(0, Math.min(max, wiAdd[k] + d));
+      recalcWalkInTotal();
+    });
+  });
+  var gc = document.getElementById('walkInGuestsCount');
+  if (gc) gc.addEventListener('input', function () {
+    gc.value = gc.value.replace(/[^1-9]/g, '').slice(0, 1);
+    wiRenderOthers(); recalcWalkInTotal();
+  });
   if (cabinSelect) cabinSelect.addEventListener('change', suggestTotal);
   if (checkInInput) checkInInput.addEventListener('change', suggestTotal);
   if (checkOutInput) checkOutInput.addEventListener('change', suggestTotal);
+  var _ci = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+  // walk-in calendar sets hidden date values by script: hook it
+  window.walkInRecalc = suggestTotal;
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var errorBox = document.getElementById('walkInFormError');
     var showError = function (msg) {
-      if (errorBox) { errorBox.textContent = msg; errorBox.style.display = 'block'; }
+      if (errorBox) { errorBox.textContent = msg; errorBox.style.display = 'block'; try { errorBox.scrollIntoView({ block: 'center' }); } catch (e) {} }
     };
 
     var guestName = document.getElementById('walkInGuestName').value.trim();
@@ -1097,7 +1155,7 @@ function initWalkInModal() {
     var checkIn = checkInInput.value;
     var checkOut = checkOutInput.value;
 
-    if (!guestName) { showError('Guest name is required.'); return; }
+    if (!guestName) guestName = 'Walk-in Guest';
     if (!cabinId) { showError('Please select an accommodation.'); return; }
     if (!checkIn || !checkOut || checkOut <= checkIn) { showError('Check-out must be after check-in.'); return; }
 
@@ -1113,7 +1171,13 @@ function initWalkInModal() {
       cabin_name: cabinName,
       check_in: checkIn + ' 00:00:00',
       check_out: checkOut + ' 00:00:00',
-      guests_count: Number(document.getElementById('walkInGuestsCount').value) || 1,
+      guests_count: wiGuests(),
+      data: {
+        guest: { name: guestName, phone: document.getElementById('walkInGuestPhone').value.trim(), email: document.getElementById('walkInGuestEmail').value.trim(),
+          others: [].map.call(document.querySelectorAll('#walkInOthers input'), function (i) { return i.value.trim(); }).filter(Boolean) },
+        persons: Math.max(0, wiGuests() - wiBasePax()),
+        rentals: { blankets: wiAdd.blankets, pillows: wiAdd.pillows }
+      },
       payment_method: document.getElementById('walkInPaymentMethod').value,
       total_amount: Number(totalInput.value) || 0,
       amount_paid: Number((document.getElementById('walkInAmountPaid') || {}).value) || 0,
@@ -1417,6 +1481,17 @@ function renderCalendarDayDetails() {
     checkinList.innerHTML = checkins.length ? checkins.map(guestItemHtml).join('') : '<p class="calendar-detail-empty">There are no scheduled check-ins today.</p>';
 
     checkoutList.innerHTML = checkouts.length ? checkouts.map(guestItemHtml).join('') : '<p class="calendar-detail-empty">There is no scheduled check-out today.</p>';
+
+    [checkinList, checkoutList].forEach(function (box) {
+      box.querySelectorAll('.cd-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          var item = btn.closest('.calendar-detail-item');
+          var open = item.classList.toggle('open');
+          btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+      });
+    });
   }
 
   // Room availability: laging naka-base sa napiling petsa sa calendar,
@@ -3587,7 +3662,7 @@ function showLoginMap(mapFrame, mapEmpty, lat, lng) {
     return;
   }
   if (loginLeafletMap) { loginLeafletMap.remove(); loginLeafletMap = null; }
-  loginLeafletMap = L.map(mapFrame, { scrollWheelZoom: true, dragging: true, touchZoom: true, zoomControl: true }).setView([lat, lng], 13);
+  loginLeafletMap = L.map(mapFrame, { scrollWheelZoom: true, dragging: true, touchZoom: true, zoomControl: true, attributionControl: false }).setView([lat, lng], 13);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'

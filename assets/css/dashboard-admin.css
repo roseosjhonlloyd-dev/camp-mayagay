@@ -1369,3 +1369,36 @@ body.dark-mode .calendar-legend span{color:#ffffff !important;}
 .calendar-detail-item .cd-more{ display:none; flex:1 1 100%; width:100%; font-size:12.5px; line-height:1.5; padding-top:8px; margin-top:2px; border-top:1px dashed rgba(0,0,0,.2); }
 .calendar-detail-item.open .cd-more{ display:block; }
 .calendar-detail-item .cd-more b{ font-weight:700; }
+
+/* Payment tabs: kulay ng napiling tab = kulay ng status */
+.pay-tab.active[data-pay-tab=""]{ background:rgba(255,255,255,.14); color:#fff; border-color:rgba(255,255,255,.5); }
+.pay-tab.active[data-pay-tab="paid"]{ background:#e3f3e6; color:#2f7a47; border-color:#2f7a47; }
+.pay-tab.active[data-pay-tab="partial"]{ background:#fdebd3; color:#c76a0a; border-color:#e08a2b; }
+.pay-tab.active[data-pay-tab="unpaid"]{ background:#fbe6e4; color:#c1443a; border-color:#c1443a; }
+/* Status column ay lalabas lang sa All */
+#payTable.hide-status th:nth-child(9), #payTable.hide-status td:nth-child(9){ display:none; }
+/* Kulay ng status pill: Paid = green, Partial = orange, Unpaid = red */
+.pill.pay-st-paid{ background:#e3f3e6; color:#2f7a47; }
+.pill.pay-st-partial{ background:#fdebd3; color:#c76a0a; }
+.pill.pay-st-unpaid{ background:#fbe6e4; color:#c1443a; }
+
+/* Walk-in add-ons */
+.wi-addons{display:flex;flex-direction:column;gap:8px;margin:4px 0 10px}
+.wi-addon{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.wi-addon small{opacity:.7}
+.wi-step{display:inline-flex;align-items:center;gap:10px}
+.wi-step button{width:28px;height:28px;border-radius:50%;border:1px solid #bbb;background:#fff;color:#222;font-size:16px;cursor:pointer;line-height:1}
+.wi-step b{min-width:16px;text-align:center}
+.wi-others{display:flex;flex-direction:column;gap:6px}
+.wi-others input{width:100%;box-sizing:border-box}
+#walkInTotalAmount{background:#eef3ea;font-weight:700}
+.wi-breakdown{font-size:12px;opacity:.75;margin:-4px 0 8px}
+.wi-addon>span:first-child{color:#2b3a2b !important;font-weight:600}
+.wi-addon small{color:#5d6b5d !important;opacity:1}
+.wi-step b{color:#2b3a2b}
+.wi-breakdown{color:#4a574a;opacity:1}
+body.dark .wi-addon>span:first-child,[data-theme="dark"] .wi-addon>span:first-child,.dark-mode .wi-addon>span:first-child{color:#f1f5ef !important}
+body.dark .wi-addon small,[data-theme="dark"] .wi-addon small,.dark-mode .wi-addon small{color:#c9d3c5 !important}
+body.dark .wi-step b,[data-theme="dark"] .wi-step b,.dark-mode .wi-step b,body.dark .wi-breakdown,[data-theme="dark"] .wi-breakdown,.dark-mode .wi-breakdown{color:#f1f5ef}
+body.dark .wi-step button,[data-theme="dark"] .wi-step button,.dark-mode .wi-step button{background:#2a3a2a;color:#fff;border-color:#6b7f6b}
+.leaflet-control-attribution{display:none !important}

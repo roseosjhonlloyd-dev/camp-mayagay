@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Guest Dashboard | Camp Mayagay</title>
 
-<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=61">
+<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=62">
 <link rel="stylesheet" href="assets/css/dashboard-guest-v2.css?v=18">
 <script>
 // If nobody is logged in (for example after Log out, then pressing Back), leave the dashboard
@@ -690,6 +690,7 @@
 
     <div class="pay-block" id="receiptBlock" style="display:none;">
       <h4 id="receiptTitle">Upload Payment Receipt</h4>
+      <p class="hint receipt-autohint">Upload a receipt of your payment to auto-fill the reference number, amount, sender name and date.</p>
       <div class="upload-section">
         <div class="upload-drop" id="uploadDrop">
           <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4M12 4L7 9M12 4L17 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16V18C4 19.1 4.9 20 6 20H18C19.1 20 20 19.1 20 18V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -884,7 +885,7 @@
   <span id="toastText">Done</span>
 </div>
 
-<script src="assets/js/dashboard-guest.js?v=77"></script>
+<script src="assets/js/dashboard-guest.js?v=80"></script>
 <script>
   (function () {
     var okBtn = document.getElementById('passwordOkBtn');

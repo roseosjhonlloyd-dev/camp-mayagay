@@ -205,6 +205,13 @@ function autoCompleteCheckedOut(PDO $pdo): void
                AND amount_paid + 0.004 >= total_amount
                AND (check_out_date < :d1 OR (check_out_date = :d2 AND :n = 1))"
         )->execute(['d1' => $today, 'd2' => $today, 'n' => $noonPassed ? 1 : 0]);
+        // Still 'pending' after the stay's check-out (noon) has passed -> auto-cancel.
+        $pdo->prepare(
+            "UPDATE reservations SET reservation_status = 'cancelled', cancel_requested = 0,
+                    cancel_reason = 'Auto-cancelled: still pending after the reservation date had passed.'
+             WHERE reservation_status = 'pending'
+               AND (check_out_date < :d1 OR (check_out_date = :d2 AND :n = 1))"
+        )->execute(['d1' => $today, 'd2' => $today, 'n' => $noonPassed ? 1 : 0]);
     } catch (Throwable $e) { /* never block the page */ }
 }
 
@@ -1840,6 +1847,11 @@ try {
             }
             $pdo->prepare('UPDATE reservations SET reservation_status = :status WHERE reservation_id = :id')
                 ->execute(['status' => $status, 'id' => $id]);
+            $statusReason = mb_substr(trim((string)($input['reason'] ?? '')), 0, 300);
+            if (in_array($status, ['declined', 'cancelled'], true) && $statusReason !== '') {
+                $pdo->prepare('UPDATE reservations SET cancel_requested = 0, cancel_reason = :r WHERE reservation_id = :id')
+                    ->execute(['r' => $statusReason, 'id' => $id]);
+            }
 
             // Payment status is no longer flipped to 'paid' just because a booking
             // is confirmed - it follows the amount actually paid (see payments_record).
@@ -1855,6 +1867,7 @@ try {
             $row = $stmt->fetch();
             if ($row && $row['user_id']) {
                 $extra = in_array($status, ['declined', 'cancelled'], true) ? ' Your payment will be refunded.' : '';
+                if ($statusReason !== '' && $extra !== '') { $extra = ' Reason: ' . $statusReason . '.' . $extra; }
                 notifyGuestWithEmail($pdo, (int)$row['user_id'], $row['guest_email'] ?? null, 'confirmation', 'Reservation ' . ucfirst($status),
                     'Your reservation ' . $row['code'] . ' (' . ($row['accommodation_name'] ?? 'Camp Mayagay') . ') is now ' . strtoupper($status) . '.' . $extra, $id);
             }

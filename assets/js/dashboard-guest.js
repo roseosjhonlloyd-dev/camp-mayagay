@@ -469,7 +469,16 @@
     const r = inventory.remaining[dateKey];
     return r && typeof r[item] === 'number' ? r[item] : inventory.limits[item];
   }
+  // Check-out is 12:00 noon; keep the room blocked for a few hours (until 3:00 PM Manila) for cleaning.
+  const CLEANING_END_HOUR = 15;
+  function cleaningWindowActive(){
+    const h = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Manila', hour: 'numeric', hour12: false }).format(new Date())) % 24;
+    return h < CLEANING_END_HOUR;
+  }
   function isBookedOn(cabinId, dayKey){
+    // Temporary block: an accommodation whose guest just checked out today
+    // stays unavailable until 3:00 PM (cleaning / turnover).
+    if (dayKey === todayKey() && cleaningWindowActive() && realBookings.some(b => b.slug === cabinId && String(b.check_out).slice(0, 10) === dayKey)) return true;
     return realBookings.some(b => b.slug === cabinId &&
       String(b.check_in).slice(0, 10) <= dayKey && dayKey < String(b.check_out).slice(0, 10));
   }
@@ -842,8 +851,8 @@
         const past = isPastDay(i);
         const free = state.availability[availKey(c.id, i)];
         const avail = free && !past;
-        const cls = past && free ? 'past' : (free ? 'avail' : 'booked');
-        const label = past && free ? ' - day has passed' : (free ? ' - available' : ' - booked');
+        const cls = past ? 'past' : (free ? 'avail' : 'booked');
+        const label = past ? ' - day has passed' : (free ? ' - available' : ' - booked');
         return '<div class="acc2-day"><button type="button" class="acc2-bar ' + cls + '" data-cabin="' + c.id + '" data-day="' + i +
                '" aria-label="' + d + label + '"' + (avail ? '' : ' disabled') + '></button><span>' + d.charAt(0) + d.slice(1).toLowerCase() + '</span></div>';
       }).join('');
@@ -1415,8 +1424,12 @@
     const qr = document.querySelector('.qr-box');
     if (qr) qr.style.display = choice === 'GCash' ? '' : 'none';
     const t = document.getElementById('receiptTitle');
-    if (t) t.textContent = choice === 'Bank Transfer' ? 'Upload deposit slip (required)' : 'Upload GCash screenshot (optional)';
+    if (t) t.textContent = choice === 'Bank Transfer' ? 'Upload deposit slip (required)' : 'Upload GCash screenshot';
+    syncReceiptFields();
     updatePaymentConfirmState();
+  }
+  function syncReceiptFields(){
+    document.querySelectorAll('.pay-panel').forEach(p => p.classList.toggle('has-receipt', !!uploadedReceiptName));
   }
   /* Pag nagpalit ng payment method, i-clear ang na-upload na resibo at lahat ng nabasa/nilagay. */
   function clearReceiptState(){
@@ -1424,6 +1437,7 @@
     const rf = document.getElementById('gcashRef'); if (rf){ rf.value = ''; if (typeof markGcashRef === 'function') markGcashRef(); }
     document.querySelectorAll('.pay-amt, .pay-name, .pay-date').forEach(i => { i.value = ''; });
     const fn = document.getElementById('uploadFileName'); if (fn) fn.textContent = '';
+    syncReceiptFields();
     const pv = document.getElementById('receiptPreview'); if (pv){ pv.removeAttribute('src'); pv.style.display = 'none'; }
     const st = document.getElementById('receiptScanStatus'); if (st){ st.textContent = ''; st.className = 'u-scan'; }
     const rt = document.getElementById('receiptRetakeBtn'); if (rt) rt.style.display = 'none';
@@ -1489,6 +1503,7 @@
     uploadedReceiptName = file.name || 'receipt.jpg';
     updateReceiptBtnLabels();
     document.getElementById('uploadFileName').textContent = uploadedReceiptName;
+    syncReceiptFields();
     updatePaymentConfirmState();
 
     // Read the actual image so it's sent along with the booking and the
