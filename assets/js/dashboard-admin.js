@@ -494,8 +494,15 @@ function renderReservationTable() {
       }
 
       var statusMap = { confirm: 'confirmed', decline: 'declined', complete: 'completed' };
+      var declineReason = '';
+      if (action === 'decline') {
+        var rr = window.prompt('Reason for declining this reservation (shown to the guest):', '');
+        if (rr === null) return;
+        declineReason = rr.trim();
+        if (!declineReason) { showAdminToast('Please enter a reason for declining.', true); return; }
+      }
       btn.disabled = true;
-      adminApiCall('reservations_update_status', { id: id, status: statusMap[action] }).then(function (res) {
+      adminApiCall('reservations_update_status', { id: id, status: statusMap[action], reason: declineReason }).then(function (res) {
         if (res && res.success) {
           showAdminToast('Reservation ' + actionLabels[action] + '.');
         } else {
@@ -543,7 +550,7 @@ function openReservationModal(id) {
     })() +
     '<div class="modal-info-row"><span>Total Amount</span><span>' + peso2(r.total_amount) + '</span></div>' +
     '<div class="modal-info-row"><span>Status</span><span><span class="status-pill ' + pillClass + '">' + statusLabel + '</span></span></div>' +
-    (r.cancel_requested ? '<div class="modal-info-row"><span>Cancellation Reason</span><span>' + (r.cancel_reason || '-') + '</span></div>' : '') +
+    ((r.cancel_requested || ((r.status === 'declined' || r.status === 'cancelled') && r.cancel_reason)) ? '<div class="modal-info-row"><span>' + (r.status === 'declined' ? 'Decline Reason' : 'Cancellation Reason') + '</span><span>' + (r.cancel_reason || '-') + '</span></div>' : '') +
     '<div class="modal-info-row"><span>Payment Method</span><span>' + (r.payment_method || '-') + '</span></div>' +
     '<div class="modal-info-row"><span>Payment Status</span><span>' + (r.payment_status ? r.payment_status.charAt(0).toUpperCase() + r.payment_status.slice(1) : '-') + '</span></div>' +
     '<div class="modal-info-row"><span>Date Created</span><span>' + formatDateTime(r.created_at) + '</span></div>' +
@@ -3586,7 +3593,7 @@ function showLoginMap(mapFrame, mapEmpty, lat, lng) {
     return;
   }
   if (loginLeafletMap) { loginLeafletMap.remove(); loginLeafletMap = null; }
-  loginLeafletMap = L.map(mapFrame, { scrollWheelZoom: true, dragging: true, touchZoom: true, zoomControl: true }).setView([lat, lng], 13);
+  loginLeafletMap = L.map(mapFrame, { scrollWheelZoom: true, dragging: true, touchZoom: true, zoomControl: true, attributionControl: false }).setView([lat, lng], 13);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'

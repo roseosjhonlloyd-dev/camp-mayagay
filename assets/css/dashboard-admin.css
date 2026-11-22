@@ -1401,3 +1401,4 @@ body.dark .wi-addon>span:first-child,[data-theme="dark"] .wi-addon>span:first-ch
 body.dark .wi-addon small,[data-theme="dark"] .wi-addon small,.dark-mode .wi-addon small{color:#c9d3c5 !important}
 body.dark .wi-step b,[data-theme="dark"] .wi-step b,.dark-mode .wi-step b,body.dark .wi-breakdown,[data-theme="dark"] .wi-breakdown,.dark-mode .wi-breakdown{color:#f1f5ef}
 body.dark .wi-step button,[data-theme="dark"] .wi-step button,.dark-mode .wi-step button{background:#2a3a2a;color:#fff;border-color:#6b7f6b}
+.leaflet-control-attribution{display:none !important}
