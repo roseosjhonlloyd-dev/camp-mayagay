@@ -1328,6 +1328,7 @@
     uploadedReceiptDataUrl = null;
     document.getElementById('uploadFileName').textContent = '';
     document.getElementById('uploadDrop').classList.remove('dragover');
+    receiptSource = ''; if (typeof updateReceiptBtnLabels === 'function') updateReceiptBtnLabels();
     document.getElementById('receiptInput').value = '';
     const rtk = document.getElementById('receiptRetakeBtn'); if (rtk) rtk.style.display = 'none';
     var prevEl = document.getElementById('receiptPreview');
@@ -1387,7 +1388,7 @@
   }
   /* Pag nagpalit ng payment method, i-clear ang na-upload na resibo at lahat ng nabasa/nilagay. */
   function clearReceiptState(){
-    uploadedReceiptName = null; uploadedReceiptDataUrl = null;
+    uploadedReceiptName = null; uploadedReceiptDataUrl = null; receiptSource = ''; updateReceiptBtnLabels();
     const rf = document.getElementById('gcashRef'); if (rf){ rf.value = ''; if (typeof markGcashRef === 'function') markGcashRef(); }
     document.querySelectorAll('.pay-amt, .pay-name, .pay-date').forEach(i => { i.value = ''; });
     const fn = document.getElementById('uploadFileName'); if (fn) fn.textContent = '';
@@ -1440,11 +1441,21 @@
 
   const uploadDrop = document.getElementById('uploadDrop');
   const receiptInput = document.getElementById('receiptInput');
-  function handleReceiptFile(file){
+  let receiptSource = '';   // 'camera' o 'upload' - saan galing ang huling larawan
+  function updateReceiptBtnLabels(){
+    const cam = document.getElementById('receiptCamBtnText');
+    const up = document.getElementById('receiptUploadBtnText');
+    const has = !!uploadedReceiptName;
+    if (cam) cam.textContent = (has && receiptSource === 'camera') ? 'Retake a picture' : 'Take a picture';
+    if (up) up.textContent = (has && receiptSource === 'upload') ? 'Upload another image' : 'Upload image';
+  }
+  function handleReceiptFile(file, source){
+    if (source) receiptSource = source;
     if (!file) return;
     if (!/^image\//.test(file.type)){ showToast('Please upload an image file'); return; }
     if (file.size > 12 * 1024 * 1024){ showToast('File is too large'); return; }
     uploadedReceiptName = file.name || 'receipt.jpg';
+    updateReceiptBtnLabels();
     document.getElementById('uploadFileName').textContent = uploadedReceiptName;
     updatePaymentConfirmState();
 
@@ -1542,7 +1553,7 @@
       if (!out.ref && retake) retake.style.display = 'block';
       if (!out.ref && out.amount == null && !out.date){
         // Walang reference, amount o date = hindi resibo ang larawan. I-reject ito.
-        uploadedReceiptName = null; uploadedReceiptDataUrl = null;
+        uploadedReceiptName = null; uploadedReceiptDataUrl = null; updateReceiptBtnLabels();
         const fn = document.getElementById('uploadFileName'); if (fn) fn.textContent = '';
         const pv = document.getElementById('receiptPreview'); if (pv){ pv.removeAttribute('src'); pv.style.display = 'none'; }
         updatePaymentConfirmState();
@@ -1569,9 +1580,9 @@
     document.addEventListener('keydown', onKey);
     document.body.appendChild(ov);
   }
-  receiptInput.addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; handleReceiptFile(f); e.target.value = ''; });
+  receiptInput.addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; handleReceiptFile(f, 'upload'); e.target.value = ''; });
   const receiptCamInput = document.getElementById('receiptCamInput');
-  receiptCamInput.addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; handleReceiptFile(f); e.target.value = ''; });
+  receiptCamInput.addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; handleReceiptFile(f, 'camera'); e.target.value = ''; });
   document.getElementById('receiptCamBtn').addEventListener('click', () => receiptCamInput.click());
   document.getElementById('receiptUploadBtn').addEventListener('click', () => receiptInput.click());
   document.getElementById('receiptRetakeBtn').addEventListener('click', () => receiptCamInput.click());

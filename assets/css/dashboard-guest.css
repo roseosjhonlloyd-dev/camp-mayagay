@@ -1750,3 +1750,6 @@ body.dark-mode .pay-total-row span,body.dark-mode .pay-total-row span:last-child
 #receiptBlock .btn-upload-act svg{flex:none;}
 #receiptBlock .btn-retake{margin:0;height:46px;padding:0;}
 @media (hover:none){#receiptBlock .upload-drop .u-main,#receiptBlock .upload-drop .u-sub:nth-of-type(2){display:none;}}
+
+/* Walang hiwalay na pulang Retake button: ang Take a picture button na mismo ang nagiging Retake a picture */
+#receiptRetakeBtn{display:none !important;}
