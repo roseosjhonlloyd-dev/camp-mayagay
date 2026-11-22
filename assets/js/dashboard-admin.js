@@ -524,16 +524,16 @@ function openReservationModal(id) {
   info.innerHTML =
     '<div class="modal-info-row"><span>Booking Code</span><span>' + r.code + '</span></div>' +
     '<div class="modal-info-row"><span>Guest Name</span><span>' + r.guest_name + '</span></div>' +
+    (function () {
+      var o = (r.data && r.data.guest && Array.isArray(r.data.guest.others)) ? r.data.guest.others.filter(Boolean) : [];
+      return o.length ? '<div class="modal-info-row"><span>Other Guests</span><span>' + o.map(escapeHtml).join(', ') + '</span></div>' : '';
+    })() +
     '<div class="modal-info-row"><span>Contact Number</span><span>' + (r.guest_phone || '-') + '</span></div>' +
     '<div class="modal-info-row"><span>Email Address</span><span>' + (r.guest_email || '-') + '</span></div>' +
     '<div class="modal-info-row"><span>Accommodation</span><span>' + r.cabin_name + '</span></div>' +
     '<div class="modal-info-row"><span>Check-in</span><span>' + formatDateTime(r.check_in) + '</span></div>' +
     '<div class="modal-info-row"><span>Check-out</span><span>' + formatDateTime(r.check_out) + '</span></div>' +
     '<div class="modal-info-row"><span>Guests</span><span>' + r.guests_count + '</span></div>' +
-    (function () {
-      var o = (r.data && r.data.guest && Array.isArray(r.data.guest.others)) ? r.data.guest.others.filter(Boolean) : [];
-      return o.length ? '<div class="modal-info-row"><span>Other Guests</span><span>' + o.map(escapeHtml).join(', ') + '</span></div>' : '';
-    })() +
     (function () {
       var d = r.data || {}, h = '';
       if (d.payerName) h += '<div class="modal-info-row"><span>Payer Name</span><span>' + escapeHtml(d.payerName) + '</span></div>';
@@ -1417,6 +1417,17 @@ function renderCalendarDayDetails() {
     checkinList.innerHTML = checkins.length ? checkins.map(guestItemHtml).join('') : '<p class="calendar-detail-empty">There are no scheduled check-ins today.</p>';
 
     checkoutList.innerHTML = checkouts.length ? checkouts.map(guestItemHtml).join('') : '<p class="calendar-detail-empty">There is no scheduled check-out today.</p>';
+
+    [checkinList, checkoutList].forEach(function (box) {
+      box.querySelectorAll('.cd-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          var item = btn.closest('.calendar-detail-item');
+          var open = item.classList.toggle('open');
+          btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+      });
+    });
   }
 
   // Room availability: laging naka-base sa napiling petsa sa calendar,
