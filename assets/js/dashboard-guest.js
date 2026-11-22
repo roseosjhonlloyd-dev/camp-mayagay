@@ -1385,7 +1385,22 @@
     if (t) t.textContent = choice === 'Bank Transfer' ? 'Upload deposit slip (required)' : 'Upload GCash screenshot (optional)';
     updatePaymentConfirmState();
   }
-  document.querySelectorAll('.pay-option').forEach(b => b.addEventListener('click', () => setPayChoice(b.dataset.pay)));
+  /* Pag nagpalit ng payment method, i-clear ang na-upload na resibo at lahat ng nabasa/nilagay. */
+  function clearReceiptState(){
+    uploadedReceiptName = null; uploadedReceiptDataUrl = null;
+    const rf = document.getElementById('gcashRef'); if (rf){ rf.value = ''; if (typeof markGcashRef === 'function') markGcashRef(); }
+    document.querySelectorAll('.pay-amt, .pay-name, .pay-date').forEach(i => { i.value = ''; });
+    const fn = document.getElementById('uploadFileName'); if (fn) fn.textContent = '';
+    const pv = document.getElementById('receiptPreview'); if (pv){ pv.removeAttribute('src'); pv.style.display = 'none'; }
+    const st = document.getElementById('receiptScanStatus'); if (st){ st.textContent = ''; st.className = 'u-scan'; }
+    const rt = document.getElementById('receiptRetakeBtn'); if (rt) rt.style.display = 'none';
+    ['receiptInput', 'receiptCamInput'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    if (pendingBooking) pendingBooking.gcashRef = '';
+  }
+  document.querySelectorAll('.pay-option').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.pay !== payChoice) clearReceiptState();
+    setPayChoice(b.dataset.pay);
+  }));
   function updatePaymentConfirmState(){
     const ref = document.getElementById('gcashRef').value.trim();
     const tncOk = document.getElementById('tncCheck').checked;
