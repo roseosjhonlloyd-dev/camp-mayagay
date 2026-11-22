@@ -1757,3 +1757,6 @@ body.dark-mode .pay-total-row span,body.dark-mode .pay-total-row span:last-child
 /* Stack the two receipt buttons so long labels never overlap */
 #receiptBlock .upload-actions{grid-template-columns:1fr !important;}
 #receiptBlock .btn-upload-act{justify-content:center;overflow:hidden;text-overflow:ellipsis;}
+
+/* Receipt fields appear only after a receipt is uploaded */
+.pay-panel:not(.has-receipt) .gcash-row input,.pay-panel:not(.has-receipt) .pay-extra,.pay-panel:not(.has-receipt) .hint{display:none !important}

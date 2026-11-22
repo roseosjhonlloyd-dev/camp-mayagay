@@ -1414,8 +1414,12 @@
     const qr = document.querySelector('.qr-box');
     if (qr) qr.style.display = choice === 'GCash' ? '' : 'none';
     const t = document.getElementById('receiptTitle');
-    if (t) t.textContent = choice === 'Bank Transfer' ? 'Upload deposit slip (required)' : 'Upload GCash screenshot (optional)';
+    if (t) t.textContent = choice === 'Bank Transfer' ? 'Upload deposit slip (required)' : 'Upload GCash screenshot';
+    syncReceiptFields();
     updatePaymentConfirmState();
+  }
+  function syncReceiptFields(){
+    document.querySelectorAll('.pay-panel').forEach(p => p.classList.toggle('has-receipt', !!uploadedReceiptName));
   }
   /* Pag nagpalit ng payment method, i-clear ang na-upload na resibo at lahat ng nabasa/nilagay. */
   function clearReceiptState(){
@@ -1423,6 +1427,7 @@
     const rf = document.getElementById('gcashRef'); if (rf){ rf.value = ''; if (typeof markGcashRef === 'function') markGcashRef(); }
     document.querySelectorAll('.pay-amt, .pay-name, .pay-date').forEach(i => { i.value = ''; });
     const fn = document.getElementById('uploadFileName'); if (fn) fn.textContent = '';
+    syncReceiptFields();
     const pv = document.getElementById('receiptPreview'); if (pv){ pv.removeAttribute('src'); pv.style.display = 'none'; }
     const st = document.getElementById('receiptScanStatus'); if (st){ st.textContent = ''; st.className = 'u-scan'; }
     const rt = document.getElementById('receiptRetakeBtn'); if (rt) rt.style.display = 'none';
@@ -1488,6 +1493,7 @@
     uploadedReceiptName = file.name || 'receipt.jpg';
     updateReceiptBtnLabels();
     document.getElementById('uploadFileName').textContent = uploadedReceiptName;
+    syncReceiptFields();
     updatePaymentConfirmState();
 
     // Read the actual image so it's sent along with the booking and the
