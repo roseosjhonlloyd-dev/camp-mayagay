@@ -811,7 +811,7 @@
         const cls = past && free ? 'past' : (free ? 'avail' : 'booked');
         const label = past && free ? ' - day has passed' : (free ? ' - available' : ' - booked');
         return '<div class="acc2-day"><button type="button" class="acc2-bar ' + cls + '" data-cabin="' + c.id + '" data-day="' + i +
-               '" aria-label="' + d + label + '"' + (avail ? '' : ' disabled') + '></button><span>' + d.charAt(0) + '</span></div>';
+               '" aria-label="' + d + label + '"' + (avail ? '' : ' disabled') + '></button><span>' + d.charAt(0) + d.slice(1).toLowerCase() + '</span></div>';
       }).join('');
       const badge = availBadgeText(c);
       return `
