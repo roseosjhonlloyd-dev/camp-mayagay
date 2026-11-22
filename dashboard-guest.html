@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Guest Dashboard | Camp Mayagay</title>
 
-<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=54">
+<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=55">
 <link rel="stylesheet" href="assets/css/dashboard-guest-v2.css?v=17">
 <script>
 // If nobody is logged in (for example after Log out, then pressing Back), leave the dashboard
@@ -125,16 +125,6 @@
     <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu" type="button">
       <svg viewBox="0 0 24 24" fill="none"><path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
-    <label class="theme-switch">
-      <input type="checkbox" id="themeToggleInput">
-      <span class="theme-switch-track">
-        <svg class="theme-icon sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 3V5M12 19V21M3 12H5M19 12H21M5.6 5.6L7 7M17 17L18.4 18.4M18.4 5.6L17 7M7 17L5.6 18.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <svg class="theme-icon moon" viewBox="0 0 24 24" fill="none"><path d="M21 12.5A9 9 0 1111.5 3a7 7 0 009.5 9.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-        <span class="theme-switch-thumb"></span>
-      </span>
-    </label>
-    <button class="icon-btn" id="textSizeBtn" type="button" aria-label="Larger text" title="Larger text" style="font-weight:700;font-size:14px;">A+</button>
-    <button class="icon-btn" id="helpGuideBtn" type="button" aria-label="How to book" title="How to book" style="font-weight:700;font-size:16px;">?</button>
     <button class="icon-btn" id="notifBtn" aria-label="Notifications">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 10a6 6 0 1112 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 19a2 2 0 004 0" stroke="currentColor" stroke-width="1.5"/></svg>
       <span class="dot" id="notifDot"></span>
@@ -319,8 +309,24 @@
     <div class="set2-grid">
       <div class="set2-left">
         <div class="panel set2-card">
-          <h2>Settings</h2>
-          <p class="sub set2-sub">Account setting &amp; preferences</p>
+          <div class="set2-head">
+            <div class="set2-head-text">
+              <h2>Settings</h2>
+              <p class="sub set2-sub">Account setting &amp; preferences</p>
+            </div>
+            <div class="set2-tools">
+    <label class="theme-switch">
+        <input type="checkbox" id="themeToggleInput">
+        <span class="theme-switch-track">
+          <svg class="theme-icon sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 3V5M12 19V21M3 12H5M19 12H21M5.6 5.6L7 7M17 17L18.4 18.4M18.4 5.6L17 7M7 17L5.6 18.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <svg class="theme-icon moon" viewBox="0 0 24 24" fill="none"><path d="M21 12.5A9 9 0 1111.5 3a7 7 0 009.5 9.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          <span class="theme-switch-thumb"></span>
+        </span>
+      </label>
+      <button class="icon-btn" id="textSizeBtn" type="button" aria-label="Larger text" title="Larger text" style="font-weight:700;font-size:14px;">A+</button>
+      <button class="icon-btn" id="helpGuideBtn" type="button" aria-label="How to book" title="How to book" style="font-weight:700;font-size:16px;">?</button>
+            </div>
+          </div>
         <div class="resv-panel">
           <h4 style="text-transform:none; font-size:16px;">Profile information</h4>
           <p class="ro-label" style="margin-bottom:8px;">Profile photo</p>
@@ -778,7 +784,7 @@
       <li><b>Pay.</b> Choose GCash or Bank Transfer, enter the reference number, and upload a photo of your receipt.</li>
       <li><b>Wait for confirmation.</b> Your booking shows as <b>Pending</b> in Reservation History until Camp Mayagay confirms it.</li>
     </ol>
-    <p class="guide-tip">Tip: tap <b>A+</b> at the top to make the text bigger.</p>
+    <p class="guide-tip">Tip: tap <b>A+</b> in Settings to make the text bigger.</p>
   </div>
 </div>
 
