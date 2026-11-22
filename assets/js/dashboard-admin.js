@@ -1166,7 +1166,7 @@ function isReservationDone(r) {
 
 function getCalendarBookedReservations() {
   return allReservations
-    .filter(function (r) { return (r.status === 'confirmed' || r.status === 'completed') && r.check_in && r.check_out; })
+    .filter(function (r) { return r.status === 'confirmed' && r.check_in && r.check_out && !isReservationDone(r); })
     .sort(function (a, b) { return String(a.check_in).localeCompare(String(b.check_in)); });
 }
 
@@ -1196,7 +1196,7 @@ function renderCalendarGuestList() {
     return c !== 0 ? c : String(b.check_in).localeCompare(String(a.check_in));
   });
   if (!booked.length) {
-    list.innerHTML = '<p class="calendar-detail-empty">No confirmed reservations yet.</p>';
+    list.innerHTML = '<p class="calendar-detail-empty">No active confirmed reservations.</p>';
     return;
   }
 
