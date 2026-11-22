@@ -1525,10 +1525,19 @@
       }
       updatePaymentConfirmState();
       if (!out.ref && retake) retake.style.display = 'block';
-      if (!notes.length) setSt('Hindi mabasa ang resibo. Mag-retake ng litrato o ilagay nang manual ang Reference No.', 'warn');
+      if (!out.ref && out.amount == null && !out.date){
+        // Walang reference, amount o date = hindi resibo ang larawan. I-reject ito.
+        uploadedReceiptName = null; uploadedReceiptDataUrl = null;
+        const fn = document.getElementById('uploadFileName'); if (fn) fn.textContent = '';
+        const pv = document.getElementById('receiptPreview'); if (pv){ pv.removeAttribute('src'); pv.style.display = 'none'; }
+        updatePaymentConfirmState();
+        setSt('Not a valid receipt. Please take a clear photo or upload your GCash / bank payment receipt.', 'warn');
+        return;
+      }
+      if (!notes.length) setSt('Could not read the receipt. Please retake the picture or type the Reference No. manually.', 'warn');
       else if (notes.some(n => n.indexOf('\u26a0') >= 0)) setSt(notes.filter(n => n.indexOf('\u26a0') >= 0).join(' '), 'warn');
       else setSt('', '');
-    }).catch(() => { if (retake) retake.style.display = 'block'; setSt('Hindi na-scan ang resibo. Mag-retake ng litrato o ilagay nang manual ang Reference No.', 'warn'); });
+    }).catch(() => { if (retake) retake.style.display = 'block'; setSt('Could not scan the receipt. Please retake the picture or type the Reference No. manually.', 'warn'); });
   }
   uploadDrop.addEventListener('click', (e) => {
     if (e.target.id === 'receiptPreview') { openReceiptZoom(e.target.src); return; }
@@ -1668,7 +1677,7 @@
         data: reservation
       }).then(res => {
         if (!res || !res.success || !res.reservation){
-          failMsg = (res && res.message) ? res.message : 'Hindi na-save ang booking. Pakisubukan ulit.';
+          failMsg = (res && res.message) ? res.message : 'The booking could not be saved. Please try again.';
           return false;
         }
         reservation.id = 'r' + res.reservation.id;
@@ -1685,7 +1694,7 @@
       confirmBtn.disabled = false;
       confirmBtn.textContent = originalBtnText;
       if (!saved.length){
-        showToast(failMsg || 'Hindi na-save ang booking. Pakisubukan ulit.');
+        showToast(failMsg || 'The booking could not be saved. Please try again.');
         return;
       }
       state.availability = buildAvailability();
@@ -1702,7 +1711,7 @@
       let msg = cabin.name + ', ' + saved.map(r => r.checkInLabel.split(' · ')[0] + (r.checkOutLabel ? ' to ' + r.checkOutLabel.split(' · ')[0] : '')).join('; ') +
         ' · Ref ' + saved.map(r => r.code).join(', ') + ' · via ' + paymentMethod +
         '. Status: Pending until Camp Mayagay confirms your payment.';
-      if (saved.length < dates.length) msg += ' Hindi na-save ang ' + (dates.length - saved.length) + ' na reservation: ' + failMsg;
+      if (saved.length < dates.length) msg += ' ' + (dates.length - saved.length) + ' reservation(s) could not be saved: ' + failMsg;
       document.getElementById('thankyouSummary').textContent = msg;
       document.getElementById('thankyouModal').classList.add('open');
       pendingBooking = null;
@@ -1710,7 +1719,7 @@
       confirmBtn.disabled = false;
       confirmBtn.textContent = originalBtnText;
       if (saved.length){ state.availability = buildAvailability(); renderAccomGrid(); renderHistory(); }
-      showToast('Hindi maka-konekta sa server. Pakisubukan ulit.');
+      showToast('Could not connect to the server. Please try again.');
     });
   }
   document.getElementById('thankyouDone').addEventListener('click', () => {
