@@ -926,6 +926,35 @@
   function isTentArea(cabin){ return !!cabin && /^tent area/i.test(cabin.name || ''); }
   const EXTRA_MAX = 5;
 
+  /* Pangalan ng bawat bisita: #1 = main guest (Guest name sa itaas); ang iba ay
+     base pax ng accommodation + mga Add person. Compact na grid. */
+  function basePax(cabin){
+    const m = String((cabin && cabin.note) || '').match(/(\d+)\s*(?:-|\u2013|to)\s*(\d+)\s*pax/i) || String((cabin && cabin.note) || '').match(/(\d+)\s*pax/i);
+    if (!m) return 1;
+    return Math.max(1, Number(m[2] || m[1]) || 1);
+  }
+  function totalGuestCount(){
+    const cabin = pendingBooking && pendingBooking.cabin;
+    if (!cabin) return 1;
+    if (isTentArea(cabin)) return Math.max(1, extraQty.heads);
+    return basePax(cabin) + extraQty.person;
+  }
+  function currentOtherNames(){
+    return Array.from(document.querySelectorAll('#guestNames input')).map(i => i.value);
+  }
+  function renderGuestNames(values){
+    const box = document.getElementById('guestNames');
+    if (!box) return;
+    const keep = values || currentOtherNames();
+    const n = Math.max(0, totalGuestCount() - 1);
+    let html = '';
+    for (let i = 0; i < n; i++){
+      html += '<input type="text" class="gn-input" maxlength="80" placeholder="Guest ' + (i + 2) + ' name" aria-label="Guest ' + (i + 2) + ' name" value="' + escHtml(keep[i] || '') + '">';
+    }
+    box.innerHTML = html;
+    box.style.display = n ? '' : 'none';
+  }
+
   function resetSteppers(){
     extraQty.person = 0; extraQty.nights = 1; extraQty.ownTents = 0; extraQty.heads = 1;
     rentalQty = {};
@@ -954,6 +983,7 @@
         const cap = key.charAt(0).toUpperCase() + key.slice(1);
         document.getElementById('qty' + cap).textContent = extraQty[key];
         markAddon(key);
+        if (key === 'person' || key === 'heads') renderGuestNames();
       });
     });
   });
@@ -1099,6 +1129,7 @@
     document.getElementById('guestPhone').value = sessionUser ? (sessionUser.contact_number || '') : '';
     document.getElementById('guestEmail').value = sessionUser ? (sessionUser.email || '') : '';
     resetSteppers();
+    renderGuestNames([]);
     // Calendar: start on the day the guest clicked (if still open).
     bk.dates = new Set();
     const startDate = getDateForDay(dayIndex);
@@ -1149,6 +1180,7 @@
       localStorage.setItem(draftKey(pendingBooking.cabinId), JSON.stringify({
         ts: Date.now(),
         name: document.getElementById('guestName').value,
+        others: currentOtherNames(),
         phone: document.getElementById('guestPhone').value,
         email: document.getElementById('guestEmail').value,
         dates: Array.from(bk.dates),
@@ -1187,6 +1219,7 @@
     Object.keys(extraQty).forEach(markAddon);
     rentalQty = {};
     Object.keys(d.rentals || {}).forEach(id => { const n = Number(d.rentals[id]) || 0; if (n > 0) rentalQty[id] = n; });
+    renderGuestNames(Array.isArray(d.others) ? d.others : []);
     afterDaysChanged();   // redraws the calendar and clamps rentals to stock
     renderRentalRows();   // redraws rental rows with the restored quantities
     return true;
@@ -1214,7 +1247,7 @@
     const email = document.getElementById('guestEmail').value.trim();
     if (!name || !phone || !email){ showToast('Please fill in guest name, contact number and email'); return; }
     if (!bk.dates.size){ showToast('Please pick at least one day on the calendar'); return; }
-    pendingBooking.guest = { name, phone, email };
+    pendingBooking.guest = { name, phone, email, others: currentOtherNames().map(x => x.trim()).filter(Boolean) };
     pendingBooking.checkIn = '14:00';
     pendingBooking.checkOut = '12:00';
     pendingBooking.nights = 1; // each picked day is its own 1-night reservation

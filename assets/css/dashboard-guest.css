@@ -1686,3 +1686,7 @@ body.dark-mode .emerg-form input,body.dark-mode .emerg-form select,body.dark-mod
 .fb-hero{flex-wrap:wrap; gap:12px;}
 .u-scan{display:block;font-size:12px;margin-top:6px;opacity:.9}
 .u-scan.busy{color:#d3a94a}.u-scan.ok{color:#7fd08f}.u-scan.warn{color:#f0a08a}
+
+.guest-names{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:-2px 0 12px;}
+.guest-names .gn-input{height:36px;padding:0 12px;font-size:13px;border-radius:10px;min-width:0;width:100%;box-sizing:border-box;}
+@media (max-width:420px){.guest-names{grid-template-columns:1fr 1fr;}}

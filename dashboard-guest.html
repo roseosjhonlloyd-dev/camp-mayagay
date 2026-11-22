@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Guest Dashboard | Camp Mayagay</title>
 
-<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=45">
+<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=46">
 <link rel="stylesheet" href="assets/css/dashboard-guest-v2.css?v=17">
 <script>
 // If nobody is logged in (for example after Log out, then pressing Back), leave the dashboard
@@ -531,7 +531,8 @@
 
     <section class="bk-section">
       <h4 class="bk-section-title"><span class="bk-step"></span>Guest details</h4>
-      <div class="field"><label for="guestName">Guest name</label><input type="text" id="guestName" placeholder="Juan Dela Cruz"></div>
+      <div class="field"><label for="guestName">Main guest name</label><input type="text" id="guestName" placeholder="Juan Dela Cruz"></div>
+      <div class="guest-names" id="guestNames" style="display:none"></div>
       <div class="field-row bk-contact-row">
         <div class="field"><label for="guestPhone">Contact number</label><input type="tel" id="guestPhone" placeholder="09XX XXX XXXX"></div>
         <div class="field"><label for="guestEmail">Email</label><input type="email" id="guestEmail" placeholder="you@email.com"></div>
@@ -834,7 +835,7 @@
   <span id="toastText">Done</span>
 </div>
 
-<script src="assets/js/dashboard-guest.js?v=61"></script>
+<script src="assets/js/dashboard-guest.js?v=62"></script>
 <script>
   (function () {
     var okBtn = document.getElementById('passwordOkBtn');
