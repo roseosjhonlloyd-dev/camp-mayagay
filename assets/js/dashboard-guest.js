@@ -468,10 +468,16 @@
     const r = inventory.remaining[dateKey];
     return r && typeof r[item] === 'number' ? r[item] : inventory.limits[item];
   }
+  // Check-out is 12:00 noon; keep the room blocked for a few hours (until 3:00 PM Manila) for cleaning.
+  const CLEANING_END_HOUR = 15;
+  function cleaningWindowActive(){
+    const h = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Manila', hour: 'numeric', hour12: false }).format(new Date())) % 24;
+    return h < CLEANING_END_HOUR;
+  }
   function isBookedOn(cabinId, dayKey){
     // Temporary block: an accommodation whose guest just checked out today
-    // stays unavailable for the rest of today (cleaning / turnover).
-    if (dayKey === todayKey() && realBookings.some(b => b.slug === cabinId && String(b.check_out).slice(0, 10) === dayKey)) return true;
+    // stays unavailable until 3:00 PM (cleaning / turnover).
+    if (dayKey === todayKey() && cleaningWindowActive() && realBookings.some(b => b.slug === cabinId && String(b.check_out).slice(0, 10) === dayKey)) return true;
     return realBookings.some(b => b.slug === cabinId &&
       String(b.check_in).slice(0, 10) <= dayKey && dayKey < String(b.check_out).slice(0, 10));
   }
