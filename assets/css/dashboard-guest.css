@@ -1735,3 +1735,18 @@ body.dark-mode .pay-total-row span,body.dark-mode .pay-total-row span:last-child
 .fb-thumb button{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:14px;line-height:1;cursor:pointer;}
 .fb-entry-imgs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
 .fb-entry-imgs img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--sand-dim);cursor:zoom-in;}
+
+/* ===== Receipt upload: cleaner layout ===== */
+#receiptBlock .upload-section{gap:10px;}
+#receiptBlock .upload-drop{padding:16px 14px;gap:4px;border-radius:14px;}
+#receiptBlock .upload-drop .u-main{font-size:14px;}
+#receiptBlock .upload-drop .u-sub{font-size:11.5px;}
+#receiptBlock .upload-drop .u-file{font-size:12.5px;margin-top:4px;word-break:break-all;}
+#receiptBlock .upload-drop .receipt-preview{width:100%;max-width:100%;height:auto;max-height:200px;object-fit:contain;background:#fff;border-radius:10px;margin-top:8px;}
+#receiptBlock .u-scan{font-size:12.5px;line-height:1.4;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.7);text-align:center;}
+#receiptBlock .u-scan:empty{display:none;}
+#receiptBlock .upload-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin:0;}
+#receiptBlock .btn-upload-act{width:100%;min-width:0;height:46px;padding:0 10px;white-space:nowrap;font-size:14px;gap:8px;flex:none;}
+#receiptBlock .btn-upload-act svg{flex:none;}
+#receiptBlock .btn-retake{margin:0;height:46px;padding:0;}
+@media (hover:none){#receiptBlock .upload-drop .u-main,#receiptBlock .upload-drop .u-sub:nth-of-type(2){display:none;}}
