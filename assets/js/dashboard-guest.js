@@ -41,6 +41,7 @@
       code: (a.slug || 'CMY').slice(0, 3).toUpperCase(),
       image: a.image || null,
       maintenanceUntil: a.maintenance_until || null,
+      maintenanceReason: a.maintenance_reason || '',
       avgRating: a.avg_rating != null ? Number(a.avg_rating) : null,
       ratingCount: Number(a.rating_count) || 0,
       amenities: Array.isArray(a.amenities) ? a.amenities : ['Complete beddings', 'Kettle', 'Plates', 'Mugs']
@@ -832,7 +833,7 @@
         <div class="acc2-body">
           <div class="acc2-titlerow"><p class="accom-name">${c.name}</p></div>
           <p class="accom-note">${c.note || ''}</p>
-          <p class="acc2-maint-note">${until ? 'Under maintenance until <b>' + until + '</b>. Not available for booking.' : 'Under maintenance. Not available for booking.'}</p>
+          <p class="acc2-maint-note">${until ? 'Under maintenance until <b>' + until + '</b>. Not available for booking.' : 'Under maintenance. Not available for booking.'}${c.maintenanceReason ? '<br>Reason: ' + escHtml(c.maintenanceReason) : ''}</p>
         </div>
       </div>`;
       }

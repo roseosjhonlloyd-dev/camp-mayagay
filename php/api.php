@@ -155,6 +155,10 @@ function ensureMaintenanceColumn(PDO $pdo): void
     if (!$has) {
         $pdo->exec('ALTER TABLE accommodations ADD COLUMN maintenance_until DATE NULL');
     }
+    $hasR = $pdo->query("SHOW COLUMNS FROM accommodations LIKE 'maintenance_reason'")->fetch();
+    if (!$hasR) {
+        $pdo->exec('ALTER TABLE accommodations ADD COLUMN maintenance_reason VARCHAR(255) NULL');
+    }
     $done = true;
 }
 
@@ -1331,6 +1335,9 @@ try {
                 $fields[] = 'maintenance_until = :mu';
                 $mu = trim((string)($input['maintenance_until'] ?? ''));
                 $params['mu'] = ($input['status'] === 'unavailable' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $mu)) ? $mu : null;
+                $fields[] = 'maintenance_reason = :mr';
+                $mr = mb_substr(trim((string)($input['maintenance_reason'] ?? '')), 0, 255);
+                $params['mr'] = ($input['status'] === 'unavailable' && $mr !== '') ? $mr : null;
             }
             if (!empty($input['image'])) {
                 $imgError = null;
@@ -1370,8 +1377,10 @@ try {
             ensureMaintenanceColumn($pdo);
             $mu = trim((string)($input['maintenance_until'] ?? ''));
             $mu = ($status === 'unavailable' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $mu)) ? $mu : null;
-            $pdo->prepare('UPDATE accommodations SET status = :status, maintenance_until = :mu WHERE accommodation_id = :id')
-                ->execute(['status' => $status, 'mu' => $mu, 'id' => $id]);
+            $mr = mb_substr(trim((string)($input['maintenance_reason'] ?? '')), 0, 255);
+            $mr = ($status === 'unavailable' && $mr !== '') ? $mr : null;
+            $pdo->prepare('UPDATE accommodations SET status = :status, maintenance_until = :mu, maintenance_reason = :mr WHERE accommodation_id = :id')
+                ->execute(['status' => $status, 'mu' => $mu, 'mr' => $mr, 'id' => $id]);
             echo json_encode(['success' => true]);
             break;
 

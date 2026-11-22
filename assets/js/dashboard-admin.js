@@ -1581,7 +1581,8 @@ function renderAccommodationTable() {
     html += '  <td>' + peso2(a.price) + '</td>';
     html += '  <td><span class="status-pill ' + (a.status === 'available' ? 'confirmed' : 'cancelled') + '">' + statusLabel + '</span>' +
             (a.status === 'unavailable' ? '<div class="maint-until-note" style="font-size:12px;margin-top:4px;opacity:.8">' +
-              (a.maintenance_until ? 'Maintenance until ' + fmtMaintDate(a.maintenance_until) : 'Maintenance (no end date)') + '</div>' : '') + '</td>';
+              (a.maintenance_until ? 'Maintenance until ' + fmtMaintDate(a.maintenance_until) : 'Maintenance (no end date)') +
+              (a.maintenance_reason ? '<br>Reason: ' + String(a.maintenance_reason).replace(/&/g,'&amp;').replace(/</g,'&lt;') : '') + '</div>' : '') + '</td>';
     html += '  <td>';
     html += '    <div class="row-actions">';
     html += '      <button class="row-action-btn" data-toggle-id="' + a.accommodation_id + '" data-current="' + a.status + '" title="Toggle availability" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12C4 7 8 4.5 12 4.5S20 7 22 12C20 17 16 19.5 12 19.5S4 17 2 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.6"/></svg></button>';
@@ -1600,11 +1601,12 @@ function renderAccommodationTable() {
       var next = current === 'available' ? 'unavailable' : 'available';
       var payload = { accommodation_id: id, status: next };
       if (next === 'unavailable') {
-        var ans = window.prompt('Maintenance until what date? Enter YYYY-MM-DD (e.g. 2026-12-05). Leave blank if no end date yet.', '');
-        if (ans === null) return;
-        ans = ans.trim();
-        if (ans && !/^\d{4}-\d{2}-\d{2}$/.test(ans)) { alert('Invalid date. Use YYYY-MM-DD.'); return; }
-        payload.maintenance_until = ans;
+        openMaintCalendar('', '', function (key, reason) {
+          payload.maintenance_until = key;
+          payload.maintenance_reason = reason;
+          adminApiCall('accommodations_update_status', payload).then(loadAccommodations);
+        });
+        return;
       }
       adminApiCall('accommodations_update_status', payload).then(loadAccommodations);
     });
@@ -1776,6 +1778,7 @@ function initAccommodationCrud() {
         price: document.getElementById('accFormPrice').value,
         status: document.getElementById('accFormStatus').value,
         maintenance_until: document.getElementById('accFormMaintUntil').value,
+        maintenance_reason: document.getElementById('accFormMaintReason').value.trim(),
         description: document.getElementById('accFormDescription').value.trim()
       };
 
@@ -1856,7 +1859,8 @@ function openAccommodationModal(id) {
     document.getElementById('accFormCapacity').value = a.capacity || '';
     document.getElementById('accFormPrice').value = a.price || '';
     document.getElementById('accFormStatus').value = a.status || 'available';
-    document.getElementById('accFormMaintUntil').value = a.maintenance_until ? String(a.maintenance_until).slice(0, 10) : '';
+    setAccMaintValue(a.maintenance_until ? String(a.maintenance_until).slice(0, 10) : '');
+    document.getElementById('accFormMaintReason').value = a.maintenance_reason || '';
     syncAccMaintField();
     document.getElementById('accFormDescription').value = a.description || '';
     accAmenities = Array.isArray(a.amenities) ? a.amenities.slice() : DEFAULT_AMENITIES.slice();
@@ -1879,13 +1883,78 @@ function openAccommodationModal(id) {
   modal.classList.remove('hidden');
 }
 
+/* Calendar picker for the maintenance end date (same look as the walk-in calendar). */
+var maintCal = { y: 0, m: 0, sel: '', cb: null };
+function maintKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function openMaintCalendar(current, reason, cb) {
+  var modal = document.getElementById('maintDateModal');
+  if (!modal) return;
+  maintCal.cb = cb;
+  var rEl = document.getElementById('maintCalReason'); if (rEl) rEl.value = reason || '';
+  maintCal.sel = /^\d{4}-\d{2}-\d{2}$/.test(current || '') ? current : '';
+  var base = maintCal.sel ? new Date(maintCal.sel + 'T00:00') : new Date();
+  maintCal.y = base.getFullYear(); maintCal.m = base.getMonth();
+  renderMaintCalendar();
+  modal.classList.remove('hidden');
+}
+function closeMaintCalendar() {
+  var modal = document.getElementById('maintDateModal');
+  if (modal) modal.classList.add('hidden');
+}
+function renderMaintCalendar() {
+  var grid = document.getElementById('maintCalGrid');
+  if (!grid) return;
+  document.getElementById('maintCalTitle').textContent = new Date(maintCal.y, maintCal.m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  var todayKey = maintKey(new Date());
+  var lead = (new Date(maintCal.y, maintCal.m, 1).getDay() + 6) % 7;
+  var dim = new Date(maintCal.y, maintCal.m + 1, 0).getDate();
+  var html = '';
+  for (var i = 0; i < lead; i++) html += '<span class="wi-cal-blank"></span>';
+  for (var d = 1; d <= dim; d++) {
+    var key = maintKey(new Date(maintCal.y, maintCal.m, d));
+    var cls = key === maintCal.sel ? 'sel' : (key < todayKey ? 'past' : 'ok');
+    html += '<button type="button" class="wi-day ' + cls + '" data-mday="' + key + '"' + (key < todayKey ? ' disabled' : '') + '>' + d + '</button>';
+  }
+  grid.innerHTML = html;
+  grid.querySelectorAll('[data-mday]').forEach(function (b) {
+    b.addEventListener('click', function () { maintCal.sel = b.getAttribute('data-mday'); renderMaintCalendar(); });
+  });
+  document.getElementById('maintCalSummary').textContent = maintCal.sel ? 'Maintenance until: ' + fmtMaintDate(maintCal.sel) : 'Select the last day of maintenance.';
+  document.getElementById('maintCalConfirm').disabled = !maintCal.sel;
+}
+document.addEventListener('DOMContentLoaded', function () {
+  function on(id, fn) { var e = document.getElementById(id); if (e) e.addEventListener('click', fn); }
+  on('maintCalPrev', function () { maintCal.m--; if (maintCal.m < 0) { maintCal.m = 11; maintCal.y--; } renderMaintCalendar(); });
+  on('maintCalNext', function () { maintCal.m++; if (maintCal.m > 11) { maintCal.m = 0; maintCal.y++; } renderMaintCalendar(); });
+  function maintReason() { var r = document.getElementById('maintCalReason'); return r ? r.value.trim() : ''; }
+  on('maintCalConfirm', function () { var cb = maintCal.cb, rs = maintReason(); closeMaintCalendar(); if (cb && maintCal.sel) cb(maintCal.sel, rs); });
+  on('maintCalNoEnd', function () { var cb = maintCal.cb, rs = maintReason(); closeMaintCalendar(); if (cb) cb('', rs); });
+  on('maintCalCancel', closeMaintCalendar);
+  on('maintDateClose', closeMaintCalendar);
+  var disp = document.getElementById('accFormMaintDisplay');
+  if (disp) disp.addEventListener('click', function () {
+    openMaintCalendar(document.getElementById('accFormMaintUntil').value, document.getElementById('accFormMaintReason').value, function (key, reason) {
+      setAccMaintValue(key);
+      document.getElementById('accFormMaintReason').value = reason || '';
+    });
+  });
+});
+function setAccMaintValue(key) {
+  document.getElementById('accFormMaintUntil').value = key || '';
+  var d = document.getElementById('accFormMaintDisplay');
+  if (d) d.value = key ? fmtMaintDate(key) : '';
+}
+
 function syncAccMaintField() {
   var wrap = document.getElementById('accFormMaintWrap');
   var st = document.getElementById('accFormStatus');
   if (!wrap || !st) return;
   var show = st.value === 'unavailable';
   wrap.style.display = show ? '' : 'none';
-  if (!show) document.getElementById('accFormMaintUntil').value = '';
+  var rw = document.getElementById('accFormMaintReasonWrap'); if (rw) rw.style.display = show ? '' : 'none';
+  if (!show) { var rr = document.getElementById('accFormMaintReason'); if (rr) rr.value = ''; }
+  if (!show) setAccMaintValue('');
+  else setAccMaintValue(document.getElementById('accFormMaintUntil').value);
 }
 
 function closeAccommodationModal() {
