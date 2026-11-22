@@ -1155,8 +1155,9 @@ function calResKey(r) {
 /* Done = completed na, o lampas na ang check-out (ngayong araw: pagkatapos ng 12:00 NN, oras sa Pilipinas). */
 function isReservationDone(r) {
   if (!r) return false;
-  if (r.status === 'completed') return true;
-  if (r.status !== 'confirmed' || !r.check_out) return false;
+  // Kahit 'completed' ang status, kung hindi pa lampas ang check-out (hal. naka-check-in ngayon),
+  // active pa rin ito sa calendar.
+  if ((r.status !== 'confirmed' && r.status !== 'completed') || !r.check_out) return false;
   var co = String(r.check_out).slice(0, 10);
   var now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
   var pad = function (n) { return (n < 10 ? '0' : '') + n; };
@@ -1166,7 +1167,7 @@ function isReservationDone(r) {
 
 function getCalendarBookedReservations() {
   return allReservations
-    .filter(function (r) { return r.status === 'confirmed' && r.check_in && r.check_out && !isReservationDone(r); })
+    .filter(function (r) { return (r.status === 'confirmed' || r.status === 'completed') && r.check_in && r.check_out && !isReservationDone(r); })
     .sort(function (a, b) { return String(a.check_in).localeCompare(String(b.check_in)); });
 }
 
@@ -1196,7 +1197,7 @@ function renderCalendarGuestList() {
     return c !== 0 ? c : String(b.check_in).localeCompare(String(a.check_in));
   });
   if (!booked.length) {
-    list.innerHTML = '<p class="calendar-detail-empty">No active confirmed reservations.</p>';
+    list.innerHTML = '<p class="calendar-detail-empty">No active reservations.</p>';
     return;
   }
 
