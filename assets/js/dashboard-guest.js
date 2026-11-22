@@ -168,6 +168,7 @@
         response: f.response || '',
         status: f.status || 'open',
         accommodationName: f.accommodation_name || '',
+        images: (function(){ try { var a = JSON.parse(f.images || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } })(),
         when: f.submitted_at ? new Date(f.submitted_at).toLocaleString() : ''
       }));
       renderFeedback();
@@ -215,6 +216,7 @@
         </div>
         <p class="fb-entry-room">${f.guestName}${f.accommodationName ? ' \u00b7 ' + f.accommodationName : ''}</p>
         <p class="fb-entry-msg">${f.message}</p>
+        ${(f.images && f.images.length) ? '<div class="fb-entry-imgs">' + f.images.map(src => '<img src="' + src + '" alt="Attached photo">').join('') + '</div>' : ''}
       </div>
     `).join('');
   }
@@ -1327,6 +1329,7 @@
     document.getElementById('uploadFileName').textContent = '';
     document.getElementById('uploadDrop').classList.remove('dragover');
     document.getElementById('receiptInput').value = '';
+    const rtk = document.getElementById('receiptRetakeBtn'); if (rtk) rtk.style.display = 'none';
     var prevEl = document.getElementById('receiptPreview');
     if (prevEl) { prevEl.src = ''; prevEl.style.display = 'none'; }
     document.getElementById('bankSelect').value = 'bdo';
@@ -1424,22 +1427,21 @@
   const receiptInput = document.getElementById('receiptInput');
   function handleReceiptFile(file){
     if (!file) return;
-    if (!/image\/(jpeg|png)/.test(file.type)){ showToast('Please upload a JPEG or PNG file'); return; }
-    if (file.size > 5 * 1024 * 1024){ showToast('File is larger than 5MB'); return; }
-    uploadedReceiptName = file.name;
-    document.getElementById('uploadFileName').textContent = file.name;
+    if (!/^image\//.test(file.type)){ showToast('Please upload an image file'); return; }
+    if (file.size > 12 * 1024 * 1024){ showToast('File is too large'); return; }
+    uploadedReceiptName = file.name || 'receipt.jpg';
+    document.getElementById('uploadFileName').textContent = uploadedReceiptName;
     updatePaymentConfirmState();
 
     // Read the actual image so it's sent along with the booking and the
     // admin dashboard can show the real receipt, not just the file name.
-    var reader = new FileReader();
-    reader.onload = function () {
-      uploadedReceiptDataUrl = reader.result;
+    // I-compress muna (max 1600px) para hindi sobrang laki ang ipapadala, lalo na sa litrato ng camera.
+    compressImage(file, 1600, 0.85).then(function (url) {
+      uploadedReceiptDataUrl = url;
       var prev = document.getElementById('receiptPreview');
-      if (prev) { prev.src = reader.result; prev.style.display = 'block'; }
-      scanReceipt(reader.result);
-    };
-    reader.readAsDataURL(file);
+      if (prev) { prev.src = url; prev.style.display = 'block'; }
+      scanReceipt(url);
+    }).catch(function () { showToast('Could not read that image. Please try again.'); });
   }
 
   /* Libreng OCR (tesseract.js, sa browser mismo): binabasa ang reference no. at amount
@@ -1480,6 +1482,7 @@
     const st = document.getElementById('receiptScanStatus');
     const setSt = (msg, cls) => { if (st){ st.textContent = msg; st.className = 'u-scan ' + (cls || ''); } };
     setSt('', '');
+    const retake = document.getElementById('receiptRetakeBtn'); if (retake) retake.style.display = 'none';
     // Bagong upload = bagong resibo: i-clear ang lumang laman bago mag-scan ulit.
     const refEl = document.getElementById('gcashRef'); if (refEl) refEl.value = '';
     document.querySelectorAll('.pay-amt, .pay-name').forEach(i => { i.value = ''; });
@@ -1505,10 +1508,11 @@
         notes.push('Name ' + out.name);
       }
       updatePaymentConfirmState();
-      if (!notes.length) setSt('Hindi mabasa ang resibo. Pakilagay nang manual ang Reference No.', 'warn');
+      if (!out.ref && retake) retake.style.display = 'block';
+      if (!notes.length) setSt('Hindi mabasa ang resibo. Mag-retake ng litrato o ilagay nang manual ang Reference No.', 'warn');
       else if (notes.some(n => n.indexOf('\u26a0') >= 0)) setSt(notes.filter(n => n.indexOf('\u26a0') >= 0).join(' '), 'warn');
       else setSt('', '');
-    }).catch(() => setSt('Hindi na-scan ang resibo. Pakilagay nang manual ang Reference No.', 'warn'));
+    }).catch(() => { if (retake) retake.style.display = 'block'; setSt('Hindi na-scan ang resibo. Mag-retake ng litrato o ilagay nang manual ang Reference No.', 'warn'); });
   }
   uploadDrop.addEventListener('click', (e) => {
     if (e.target.id === 'receiptPreview') { openReceiptZoom(e.target.src); return; }
@@ -1526,6 +1530,11 @@
     document.body.appendChild(ov);
   }
   receiptInput.addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; handleReceiptFile(f); e.target.value = ''; });
+  const receiptCamInput = document.getElementById('receiptCamInput');
+  receiptCamInput.addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; handleReceiptFile(f); e.target.value = ''; });
+  document.getElementById('receiptCamBtn').addEventListener('click', () => receiptCamInput.click());
+  document.getElementById('receiptUploadBtn').addEventListener('click', () => receiptInput.click());
+  document.getElementById('receiptRetakeBtn').addEventListener('click', () => receiptCamInput.click());
   var qrReal = document.querySelector('.qr-real');
   if (qrReal) qrReal.addEventListener('click', () => openReceiptZoom(qrReal.src));
   uploadDrop.addEventListener('dragover', (e) => { e.preventDefault(); uploadDrop.classList.add('dragover'); });
@@ -1984,6 +1993,58 @@
   }
   renderStars();
 
+  /* Feedback/concern photos (max 3), na-compress sa browser bago ipadala. */
+  const fbImgs = [];
+  function compressImage(file, maxSide, quality){
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onerror = reject;
+      fr.onload = () => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          const k = Math.min(1, maxSide / Math.max(img.width, img.height));
+          const c = document.createElement('canvas');
+          c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          resolve(c.toDataURL('image/jpeg', quality));
+        };
+        img.src = fr.result;
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+  function renderFbThumbs(){
+    const box = document.getElementById('fbThumbs');
+    if (!box) return;
+    box.innerHTML = fbImgs.map((src, i) => '<div class="fb-thumb"><img src="' + src + '" alt="Attached photo ' + (i + 1) + '" data-zoom="' + i + '"><button type="button" data-rm="' + i + '" aria-label="Remove photo">&times;</button></div>').join('');
+    const addBtn = document.getElementById('fbAttachBtn');
+    if (addBtn) addBtn.style.display = fbImgs.length >= 3 ? 'none' : '';
+  }
+  (function(){
+    const btn = document.getElementById('fbAttachBtn');
+    const inp = document.getElementById('fbImageInput');
+    const box = document.getElementById('fbThumbs');
+    if (!btn || !inp || !box) return;
+    btn.addEventListener('click', () => inp.click());
+    inp.addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files || []);
+      e.target.value = '';
+      for (const f of files){
+        if (fbImgs.length >= 3){ showToast('Up to 3 photos only.'); break; }
+        if (!/^image\//.test(f.type)){ showToast('Images only, please.'); continue; }
+        try { fbImgs.push(await compressImage(f, 1280, 0.8)); }
+        catch (err) { showToast('Could not read that photo.'); }
+      }
+      renderFbThumbs();
+    });
+    box.addEventListener('click', (e) => {
+      const rm = e.target.getAttribute && e.target.getAttribute('data-rm');
+      if (rm !== null && rm !== undefined && e.target.tagName === 'BUTTON'){ fbImgs.splice(Number(rm), 1); renderFbThumbs(); return; }
+      if (e.target.tagName === 'IMG') openReceiptZoom(e.target.src);
+    });
+  })();
+
   document.getElementById('feedbackForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const message = document.getElementById('fbMessage').value.trim();
@@ -2004,12 +2065,13 @@
     }
     const fbSubjectEl = document.getElementById('fbSubject');
     const fbSubject = (fbSubjectEl && fbSubjectEl.value.trim()) || (fbCategory === 'concern' ? 'Guest concern' : 'Guest feedback');
-    apiCall('feedback_create', { rating: currentRating, message, accommodation_id: accommodationId, subject: fbSubject, category: fbCategory }).then(res => {
+    apiCall('feedback_create', { rating: currentRating, message, accommodation_id: accommodationId, subject: fbSubject, category: fbCategory, images: fbImgs.slice() }).then(res => {
       if (!res || !res.success) {
         showToast((res && res.message) || 'Could not send feedback. Please try again.');
         return;
       }
-      state.feedback.unshift({ rating: currentRating, message, accommodationName, when: new Date().toLocaleString() });
+      state.feedback.unshift({ rating: currentRating, message, accommodationName, images: fbImgs.slice(), when: new Date().toLocaleString() });
+      fbImgs.length = 0; renderFbThumbs();
       document.getElementById('fbMessage').value = '';
       if (fbSubjectEl) fbSubjectEl.value = '';
       if (accSelect) accSelect.value = '';
@@ -2021,6 +2083,7 @@
       showToast('Feedback sent \u2014 thank you');
     }).catch(() => showToast('Could not send feedback. Please try again.'));
   });
+  document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('.fb-entry-imgs') && e.target.tagName === 'IMG') openReceiptZoom(e.target.src); });
   function renderFeedback(){
     const el = document.getElementById('feedbackList');
     if (!state.feedback.length) {

@@ -2372,7 +2372,14 @@ function openFeedbackResponseModal(id) {
   info.innerHTML =
     '<strong>' + f.guest_name + '</strong> &mdash; ' + f.subject +
     (f.accommodation_name ? ' <span style="color:var(--leaf-deep,#3f6b2e); font-weight:600;">(' + f.accommodation_name + ')</span>' : '') + '<br>' +
-    '<span style="color:var(--ink-soft,#777);">' + f.message + '</span>';
+    '<span style="color:var(--ink-soft,#777);">' + f.message + '</span>' +
+    (function () {
+      var imgs = []; try { imgs = JSON.parse(f.images || '[]'); } catch (e) {}
+      if (!Array.isArray(imgs) || !imgs.length) return '';
+      return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">' + imgs.map(function (src) {
+        return '<img src="' + src + '" alt="Guest photo" style="width:140px;height:140px;object-fit:cover;border-radius:8px;border:1px solid #ccc;">';
+      }).join('') + '</div>';
+    })();
   document.getElementById('feedbackResponseId').value = f.feedback_id;
   if (!f.is_read) {
     f.is_read = 1;

@@ -160,6 +160,18 @@ function ensureAmountPaidColumn(PDO $pdo): void
     $done = true;
 }
 
+/** Feedback/concern photos (JSON array of data URLs) - column added on demand. */
+function ensureFeedbackImagesColumn(PDO $pdo): void
+{
+    static $done = false;
+    if ($done) return;
+    $has = $pdo->query("SHOW COLUMNS FROM feedback_concerns LIKE 'images'")->fetch();
+    if (!$has) {
+        $pdo->exec('ALTER TABLE feedback_concerns ADD COLUMN images MEDIUMTEXT NULL');
+    }
+    $done = true;
+}
+
 /** Confirmed reservations that have checked out (past check-out day, or today after noon)
  *  become 'completed' - but only when fully paid. Unpaid/partial ones stay open
  *  until the balance is settled (payments_record re-runs this). */
@@ -2339,6 +2351,7 @@ try {
         ------------------------------------------------------------ */
         case 'feedback_list':
             requireLogin($user);
+            try { ensureFeedbackImagesColumn($pdo); } catch (\Throwable $e) { error_log('[camp-mayagay/api.php] images column: ' . $e->getMessage()); }
             $seeAllFeedback = $user['role'] === 'admin'
                 || ($user['role'] === 'staff' && !empty(getPermissionsForRole($pdo, 'staff')['feedback']));
             if ($seeAllFeedback) {
@@ -2521,11 +2534,23 @@ try {
             // try/catch ng addNotification() (hindi dapat ma-block ang
             // pag-save ng feedback dahil lang sa hindi pag-send ng
             // notification sa admin).
+            $fbImages = [];
+            if (isset($input['images']) && is_array($input['images'])) {
+                foreach (array_slice($input['images'], 0, 3) as $img) {
+                    if (is_string($img) && strlen($img) <= 2500000 && preg_match('#^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$#', $img)) {
+                        $fbImages[] = $img;
+                    }
+                }
+            }
+            $fbHasImages = false;
+            if ($fbImages) {
+                try { ensureFeedbackImagesColumn($pdo); $fbHasImages = true; } catch (\Throwable $e) { error_log('[camp-mayagay/api.php] images column: ' . $e->getMessage()); }
+            }
             $stmt = $pdo->prepare(
-                'INSERT INTO feedback_concerns (user_id, accommodation_id, guest_name, subject, message, category, rating)
-                 VALUES (:uid, :accommodation_id, :name, :subject, :message, :category, :rating)'
+                'INSERT INTO feedback_concerns (user_id, accommodation_id, guest_name, subject, message, category, rating' . ($fbHasImages ? ', images' : '') . ')
+                 VALUES (:uid, :accommodation_id, :name, :subject, :message, :category, :rating' . ($fbHasImages ? ', :images' : '') . ')'
             );
-            $stmt->execute([
+            $fbParams = [
                 'uid' => $user['id'],
                 'accommodation_id' => $accommodationId,
                 'name' => $guestName,
@@ -2533,7 +2558,9 @@ try {
                 'message' => $message,
                 'category' => $category,
                 'rating' => $rating
-            ]);
+            ];
+            if ($fbHasImages) $fbParams['images'] = json_encode($fbImages);
+            $stmt->execute($fbParams);
             try {
                 $notifMessage = $guestName . ' left a ' . $rating . '-star review' . ($accommodationName ? ' for ' . $accommodationName : '') . '.';
                 addNotification($pdo, null, 'admin', 'feedback', 'New feedback received', $notifMessage);
