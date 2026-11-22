@@ -1369,3 +1369,15 @@ body.dark-mode .calendar-legend span{color:#ffffff !important;}
 .calendar-detail-item .cd-more{ display:none; flex:1 1 100%; width:100%; font-size:12.5px; line-height:1.5; padding-top:8px; margin-top:2px; border-top:1px dashed rgba(0,0,0,.2); }
 .calendar-detail-item.open .cd-more{ display:block; }
 .calendar-detail-item .cd-more b{ font-weight:700; }
+
+/* Payment tabs: kulay ng napiling tab = kulay ng status */
+.pay-tab.active[data-pay-tab=""]{ background:rgba(255,255,255,.14); color:#fff; border-color:rgba(255,255,255,.5); }
+.pay-tab.active[data-pay-tab="paid"]{ background:#e3f3e6; color:#2f7a47; border-color:#2f7a47; }
+.pay-tab.active[data-pay-tab="partial"]{ background:#fdebd3; color:#c76a0a; border-color:#e08a2b; }
+.pay-tab.active[data-pay-tab="unpaid"]{ background:#fbe6e4; color:#c1443a; border-color:#c1443a; }
+/* Status column ay lalabas lang sa All */
+#payTable.hide-status th:nth-child(9), #payTable.hide-status td:nth-child(9){ display:none; }
+/* Kulay ng status pill: Paid = green, Partial = orange, Unpaid = red */
+.pill.pay-st-paid{ background:#e3f3e6; color:#2f7a47; }
+.pill.pay-st-partial{ background:#fdebd3; color:#c76a0a; }
+.pill.pay-st-unpaid{ background:#fbe6e4; color:#c1443a; }

@@ -103,6 +103,7 @@
 
     var list = filtered(false);
     var body = $('payTableBody');
+    var tbl = $('payTable'); if (tbl) tbl.classList.toggle('hide-status', !!activeTab);   // Status column: sa All tab lang
     if (!list.length) {
       body.innerHTML = '<tr><td colspan="10" class="empty-admin-note">No transactions found.</td></tr>';
       return;
