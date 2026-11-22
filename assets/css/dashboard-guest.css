@@ -1701,3 +1701,6 @@ body.dark-mode .emerg-form input,body.dark-mode .emerg-form select,body.dark-mod
 /* Name fields: same width/border/radius as the Main guest name field */
 .guest-names{display:flex !important;flex-direction:column;width:100%;}
 .guest-names .gn-input{display:block;width:100% !important;max-width:none;box-sizing:border-box;border:1px solid var(--sand-dim);border-radius:var(--radius-sm);background:var(--bk-card, #fff);padding:11px 13px;height:auto;font-size:13.5px;font-family:inherit;color:var(--ink);}
+
+.pay-extra{display:grid;grid-template-columns:1fr;gap:8px;margin:10px 0 4px;}
+.pay-extra input{width:100%;box-sizing:border-box;border:1px solid var(--sand-dim);border-radius:var(--radius-sm);padding:11px 13px;font-size:13.5px;font-family:inherit;background:var(--sand);color:var(--ink);}

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Guest Dashboard | Camp Mayagay</title>
 
-<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=49">
+<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=50">
 <link rel="stylesheet" href="assets/css/dashboard-guest-v2.css?v=17">
 <script>
 // If nobody is logged in (for example after Log out, then pressing Back), leave the dashboard
@@ -643,6 +643,10 @@
           </div>
           <input type="text" id="gcashRef" placeholder="Enter GCash Reference Number (13 digits)" inputmode="numeric" maxlength="20">
         </div>
+        <div class="pay-extra">
+          <input type="text" class="pay-amt" inputmode="decimal" placeholder="Amount sent (e.g. 1500.00)" aria-label="Amount sent">
+          <input type="text" class="pay-name" maxlength="80" placeholder="Sender name (name on the receipt)" aria-label="Sender name">
+        </div>
         <p class="hint">Send payment, then type the Reference No. shown in your GCash receipt.</p>
       </div>
         </div>
@@ -661,6 +665,10 @@
             <strong>Account Name: JESUSA G MONTAGUE</strong>
             Account Number: <span id="bankAccNum">007170244001</span>
           </div>
+        </div>
+        <div class="pay-extra">
+          <input type="text" class="pay-amt" inputmode="decimal" placeholder="Amount sent (e.g. 1500.00)" aria-label="Amount sent">
+          <input type="text" class="pay-name" maxlength="80" placeholder="Sender name (name on the receipt)" aria-label="Sender name">
         </div>
         <p class="hint">After depositing, upload the photo of your deposit slip below.</p>
       </div>
@@ -836,7 +844,7 @@
   <span id="toastText">Done</span>
 </div>
 
-<script src="assets/js/dashboard-guest.js?v=63"></script>
+<script src="assets/js/dashboard-guest.js?v=64"></script>
 <script>
   (function () {
     var okBtn = document.getElementById('passwordOkBtn');

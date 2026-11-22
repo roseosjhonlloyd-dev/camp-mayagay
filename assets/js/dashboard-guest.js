@@ -1296,6 +1296,7 @@
 
   function openPaymentModal(){
     document.getElementById('gcashRef').value = '';
+    document.querySelectorAll('.pay-amt, .pay-name').forEach(i => { i.value = ''; });
     uploadedReceiptName = null;
     uploadedReceiptDataUrl = null;
     document.getElementById('uploadFileName').textContent = '';
@@ -1383,6 +1384,10 @@
     }
     msg.textContent = bad ? 'GCash reference number must be exactly 13 digits.' : '';
   }
+  document.querySelectorAll('.pay-amt, .pay-name').forEach(inp => inp.addEventListener('input', () => {
+    const cls = inp.classList.contains('pay-amt') ? '.pay-amt' : '.pay-name';
+    document.querySelectorAll(cls).forEach(o => { if (o !== inp) o.value = inp.value; });
+  }));
   document.getElementById('gcashRef').addEventListener('input', () => {
     markGcashRef();
     if (pendingBooking) pendingBooking.gcashRef = document.getElementById('gcashRef').value.trim();
@@ -1440,7 +1445,10 @@
     m = t.match(amtRe);
     if (!m) m = t.match(/(?:\u20b1|PHP|Php|P|#)\s?([0-9][0-9,]*\.\d{2})/);
     if (m) amount = parseFloat(m[1].replace(/,/g, ''));
-    return { ref, amount };
+    let name = '';
+    const nm = t.match(/(?:sender|from|sent by|account name)\s*[:\-]?\s*\n?\s*([A-Za-z][A-Za-z.*' ]{2,40})/i);
+    if (nm) name = nm[1].trim().split(/\n/)[0].replace(/\s{2,}.*/, '').trim();
+    return { ref, amount, name };
   }
   function scanReceipt(dataUrl){
     const st = document.getElementById('receiptScanStatus');
@@ -1457,8 +1465,13 @@
       }
       if (out.amount != null){
         notes.push('Amount ' + peso(out.amount));
+        document.querySelectorAll('.pay-amt').forEach(i => { if (!i.value.trim()) i.value = out.amount.toFixed(2); });
         const need = pendingBooking && pendingBooking.downAmount;
         if (need && out.amount + 0.5 < need) notes.push('\u26a0 mas mababa sa required na ' + peso(need));
+      }
+      if (out.name){
+        document.querySelectorAll('.pay-name').forEach(i => { if (!i.value.trim()) i.value = out.name; });
+        notes.push('Name ' + out.name);
       }
       updatePaymentConfirmState();
       if (!notes.length) setSt('Hindi mabasa ang resibo. Pakilagay nang manual ang Reference No.', 'warn');
@@ -1577,6 +1590,8 @@
         guestsCount: tent ? tent.heads : 1 + persons, baseRate, extraGuestsCharge, totalAccommodation, addons, addonsTotal,
         rentals: pickedRentals || {}, blankets: (pickedRentals && pickedRentals.blankets) || 0, pillows: (pickedRentals && pickedRentals.pillows) || 0,
         gcashRef: pb.gcashRef || '',
+        payAmountSent: (document.querySelector('.pay-amt') || {}).value ? String(document.querySelector('.pay-amt').value).trim() : '',
+        payerName: (document.querySelector('.pay-name') || {}).value ? String(document.querySelector('.pay-name').value).trim() : '',
         receiptImage: uploadedReceiptDataUrl || null,
         receiptFileName: uploadedReceiptName || null
       };
