@@ -1312,12 +1312,12 @@ function renderReservationCalendar() {
       if (key >= String(r.check_in).slice(0, 10) && key <= String(r.check_out).slice(0, 10)) {
         seenGuests[gk] = true;
         dotCount++;
-        if (dotCount <= 4) {
+        if (dotCount <= 2) {
           guestDots += '<i class="cal-guest-dot" title="' + escapeCalHtml(r.guest_name) + '">' + CAL_PERSON_SVG + '</i>';
         }
       }
     });
-    if (guestDots) guestDots = '<span class="calendar-day-guestdots">' + guestDots + (dotCount > 4 ? '<em>+' + (dotCount - 4) + '</em>' : '') + '</span>';
+    if (guestDots) guestDots = '<span class="calendar-day-guestdots">' + guestDots + (dotCount > 2 ? '<em>+' + (dotCount - 2) + '</em>' : '') + '</span>';
 
     // Wala nang IN/OUT badges sa calendar - colored dots na lang ng mga guest.
     var dots = '';
