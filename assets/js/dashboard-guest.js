@@ -1475,7 +1475,8 @@
       }
       updatePaymentConfirmState();
       if (!notes.length) setSt('Hindi mabasa ang resibo. Pakilagay nang manual ang Reference No.', 'warn');
-      else setSt('Nabasa: ' + notes.join(' \u00b7 ') + '. Paki-check kung tama.', 'ok');
+      else if (notes.some(n => n.indexOf('\u26a0') >= 0)) setSt(notes.filter(n => n.indexOf('\u26a0') >= 0).join(' '), 'warn');
+      else setSt('', '');
     }).catch(() => setSt('Hindi na-scan ang resibo. Pakilagay nang manual ang Reference No.', 'warn'));
   }
   uploadDrop.addEventListener('click', (e) => {

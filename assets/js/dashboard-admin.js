@@ -534,6 +534,12 @@ function openReservationModal(id) {
       var o = (r.data && r.data.guest && Array.isArray(r.data.guest.others)) ? r.data.guest.others.filter(Boolean) : [];
       return o.length ? '<div class="modal-info-row"><span>Other Guests</span><span>' + o.map(escapeHtml).join(', ') + '</span></div>' : '';
     })() +
+    (function () {
+      var d = r.data || {}, h = '';
+      if (d.payerName) h += '<div class="modal-info-row"><span>Payer Name</span><span>' + escapeHtml(d.payerName) + '</span></div>';
+      if (d.payAmountSent) h += '<div class="modal-info-row"><span>Amount Sent (per receipt)</span><span>' + escapeHtml('\u20b1' + d.payAmountSent) + '</span></div>';
+      return h;
+    })() +
     '<div class="modal-info-row"><span>Total Amount</span><span>' + peso2(r.total_amount) + '</span></div>' +
     '<div class="modal-info-row"><span>Status</span><span><span class="status-pill ' + pillClass + '">' + statusLabel + '</span></span></div>' +
     (r.cancel_requested ? '<div class="modal-info-row"><span>Cancellation Reason</span><span>' + (r.cancel_reason || '-') + '</span></div>' : '') +
