@@ -1323,7 +1323,7 @@
 
   function openPaymentModal(){
     document.getElementById('gcashRef').value = '';
-    document.querySelectorAll('.pay-amt, .pay-name').forEach(i => { i.value = ''; });
+    document.querySelectorAll('.pay-amt, .pay-name, .pay-date').forEach(i => { i.value = ''; });
     uploadedReceiptName = null;
     uploadedReceiptDataUrl = null;
     document.getElementById('uploadFileName').textContent = '';
@@ -1413,8 +1413,8 @@
     }
     msg.textContent = bad ? 'GCash reference number must be exactly 13 digits.' : '';
   }
-  document.querySelectorAll('.pay-amt, .pay-name').forEach(inp => inp.addEventListener('input', () => {
-    const cls = inp.classList.contains('pay-amt') ? '.pay-amt' : '.pay-name';
+  document.querySelectorAll('.pay-amt, .pay-name, .pay-date').forEach(inp => inp.addEventListener('input', () => {
+    const cls = inp.classList.contains('pay-amt') ? '.pay-amt' : inp.classList.contains('pay-date') ? '.pay-date' : '.pay-name';
     document.querySelectorAll(cls).forEach(o => { if (o !== inp) o.value = inp.value; });
   }));
   document.getElementById('gcashRef').addEventListener('input', () => {
@@ -1476,7 +1476,19 @@
     let name = '';
     const nm = t.match(/(?:sender|from|sent by|account name)\s*[:\-]?\s*\n?\s*([A-Za-z][A-Za-z.*' ]{2,40})/i);
     if (nm) name = nm[1].trim().split(/\n/)[0].replace(/\s{2,}.*/, '').trim();
-    return { ref, amount, name };
+    let date = '';
+    const MON = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+    const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const tm = '(?:[\\s,]+(\\d{1,2}:\\d{2}(?::\\d{2})?(?:\\s?[AaPp][Mm])?))?';
+    let dm = t.match(new RegExp('\\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\\.?\\s+(\\d{1,2}),?\\s+(20\\d{2})' + tm, 'i'));
+    if (dm){
+      date = MN[MON.indexOf(dm[1].toLowerCase())] + ' ' + parseInt(dm[2], 10) + ', ' + dm[3] + (dm[4] ? ' ' + dm[4].toUpperCase().replace(/\s?(AM|PM)/, ' $1') : '');
+    } else if ((dm = t.match(new RegExp('\\b(20\\d{2})[-/](\\d{1,2})[-/](\\d{1,2})' + tm)))){
+      date = MN[Math.max(0, Math.min(11, parseInt(dm[2], 10) - 1))] + ' ' + parseInt(dm[3], 10) + ', ' + dm[1] + (dm[4] ? ' ' + dm[4].toUpperCase() : '');
+    } else if ((dm = t.match(new RegExp('\\b(\\d{1,2})[-/](\\d{1,2})[-/](20\\d{2})' + tm)))){
+      date = MN[Math.max(0, Math.min(11, parseInt(dm[1], 10) - 1))] + ' ' + parseInt(dm[2], 10) + ', ' + dm[3] + (dm[4] ? ' ' + dm[4].toUpperCase() : '');
+    }
+    return { ref, amount, name, date };
   }
   function scanReceipt(dataUrl){
     const st = document.getElementById('receiptScanStatus');
@@ -1485,7 +1497,7 @@
     const retake = document.getElementById('receiptRetakeBtn'); if (retake) retake.style.display = 'none';
     // Bagong upload = bagong resibo: i-clear ang lumang laman bago mag-scan ulit.
     const refEl = document.getElementById('gcashRef'); if (refEl) refEl.value = '';
-    document.querySelectorAll('.pay-amt, .pay-name').forEach(i => { i.value = ''; });
+    document.querySelectorAll('.pay-amt, .pay-name, .pay-date').forEach(i => { i.value = ''; });
     if (pendingBooking) pendingBooking.gcashRef = '';
     updatePaymentConfirmState();
     loadTesseract().then(T => T.recognize(dataUrl, 'eng')).then(res => {
@@ -1502,6 +1514,10 @@
         document.querySelectorAll('.pay-amt').forEach(i => { if (!i.value.trim()) i.value = out.amount.toFixed(2); });
         const need = pendingBooking && pendingBooking.downAmount;
         if (need && out.amount + 0.5 < need) notes.push('\u26a0 mas mababa sa required na ' + peso(need));
+      }
+      if (out.date){
+        document.querySelectorAll('.pay-date').forEach(i => { if (!i.value.trim()) i.value = out.date; });
+        notes.push('Date ' + out.date);
       }
       if (out.name){
         document.querySelectorAll('.pay-name').forEach(i => { if (!i.value.trim()) i.value = out.name; });
@@ -1632,6 +1648,7 @@
         rentals: pickedRentals || {}, blankets: (pickedRentals && pickedRentals.blankets) || 0, pillows: (pickedRentals && pickedRentals.pillows) || 0,
         gcashRef: pb.gcashRef || '',
         payAmountSent: (document.querySelector('.pay-amt') || {}).value ? String(document.querySelector('.pay-amt').value).trim() : '',
+        payDateOnReceipt: (document.querySelector('.pay-date') || {}).value ? String(document.querySelector('.pay-date').value).trim() : '',
         payerName: (document.querySelector('.pay-name') || {}).value ? String(document.querySelector('.pay-name').value).trim() : '',
         receiptImage: uploadedReceiptDataUrl || null,
         receiptFileName: uploadedReceiptName || null

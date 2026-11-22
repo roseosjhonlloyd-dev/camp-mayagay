@@ -537,6 +537,7 @@ function openReservationModal(id) {
     (function () {
       var d = r.data || {}, h = '';
       if (d.payerName) h += '<div class="modal-info-row"><span>Payer Name</span><span>' + escapeHtml(d.payerName) + '</span></div>';
+      if (d.payDateOnReceipt) h += '<div class="modal-info-row"><span>Receipt Date</span><span>' + escapeHtml(d.payDateOnReceipt) + '</span></div>';
       if (d.payAmountSent) h += '<div class="modal-info-row"><span>Amount Sent (per receipt)</span><span>' + escapeHtml('\u20b1' + d.payAmountSent) + '</span></div>';
       return h;
     })() +
