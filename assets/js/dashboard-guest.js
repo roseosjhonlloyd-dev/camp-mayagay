@@ -1381,6 +1381,7 @@
     const { total } = computeCharges(pendingBooking.cabin, pendingBooking.persons, pendingBooking.rentals || {}, pendingBooking.nights, pendingBooking.tent);
     const days = (pendingBooking.dates || []).length || 1;
     const grand = total * days;
+    paymentGrandTotal = grand;
     const runCount = groupConsecutiveDates(pendingBooking.dates || []).length || 1;
     document.getElementById('paymentTotalAmount').textContent = peso(grand) + (days > 1 ? ' (' + days + ' nights x ' + peso(total) + (runCount > 1 ? ', ' + runCount + ' reservations' : '') + ')' : '');
     const downEl = document.getElementById('paymentDownAmount');
@@ -1475,6 +1476,26 @@
     }
     msg.textContent = bad ? 'GCash reference number must be exactly 13 digits.' : '';
   }
+  let paymentGrandTotal = 0, amtFlashTimer = null;
+  document.querySelectorAll('.pay-amt').forEach(inp => inp.addEventListener('input', () => {
+    // Numbers only (max 2 decimals); can't go above the total amount due.
+    let v = inp.value.replace(/[^\d.]/g, '');
+    const dot = v.indexOf('.');
+    if (dot !== -1) v = v.slice(0, dot + 1) + v.slice(dot + 1).replace(/\./g, '').slice(0, 2);
+    const tooBig = paymentGrandTotal > 0 && v !== '' && Number(v) > paymentGrandTotal + 0.004;
+    if (tooBig) v = inp.dataset.last || '';
+    inp.value = v; inp.dataset.last = v;
+    document.querySelectorAll('.pay-amt').forEach(o => {
+      o.style.borderColor = tooBig ? '#e5484d' : ''; o.style.color = tooBig ? '#e5484d' : '';
+      let m = o.parentElement.querySelector('.pay-amt-msg');
+      if (!m){ m = document.createElement('div'); m.className = 'pay-amt-msg'; m.style.cssText = 'color:#e5484d;font-size:12px;margin:-4px 0 8px;'; o.insertAdjacentElement('afterend', m); }
+      m.textContent = tooBig ? 'Amount is more than the total amount due of ' + peso(paymentGrandTotal) + '.' : '';
+    });
+    clearTimeout(amtFlashTimer);
+    if (tooBig) amtFlashTimer = setTimeout(() => {
+      document.querySelectorAll('.pay-amt').forEach(o => { o.style.borderColor = ''; o.style.color = ''; const m = o.parentElement.querySelector('.pay-amt-msg'); if (m) m.textContent = ''; });
+    }, 2500);
+  }));
   document.querySelectorAll('.pay-amt, .pay-name, .pay-date').forEach(inp => inp.addEventListener('input', () => {
     const cls = inp.classList.contains('pay-amt') ? '.pay-amt' : inp.classList.contains('pay-date') ? '.pay-date' : '.pay-name';
     document.querySelectorAll(cls).forEach(o => { if (o !== inp) o.value = inp.value; });
