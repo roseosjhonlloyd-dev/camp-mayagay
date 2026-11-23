@@ -1479,8 +1479,21 @@
     const cls = inp.classList.contains('pay-amt') ? '.pay-amt' : inp.classList.contains('pay-date') ? '.pay-date' : '.pay-name';
     document.querySelectorAll(cls).forEach(o => { if (o !== inp) o.value = inp.value; });
   }));
+  let gcashFlashTimer = null;
   document.getElementById('gcashRef').addEventListener('input', () => {
+    const el = document.getElementById('gcashRef');
+    // Digits only, max 13: extra digits are rejected and the field flashes red with the message.
+    const cleaned = el.value.replace(/\D/g, '').slice(0, 13);
+    const rejected = cleaned !== el.value.trim();
+    el.value = cleaned;
     markGcashRef();
+    if (rejected){
+      el.style.borderColor = '#e5484d'; el.style.color = '#e5484d'; el.style.boxShadow = '0 0 0 2px rgba(229,72,77,.35)';
+      const msg = document.getElementById('gcashRefMsg');
+      if (msg) msg.textContent = 'GCash reference number must be exactly 13 digits.';
+      clearTimeout(gcashFlashTimer);
+      gcashFlashTimer = setTimeout(markGcashRef, 2500);
+    }
     if (pendingBooking) pendingBooking.gcashRef = document.getElementById('gcashRef').value.trim();
     updatePaymentConfirmState();
   });
