@@ -144,9 +144,27 @@
     $('payRecordLabel').firstChild.nodeValue = recordMode === 'set' ? 'Total amount paid' : 'Amount received now';
     $('payRecordAmount').min = recordMode === 'set' ? '0' : '0.01';
     $('payRecordAmount').value = recordMode === 'set' ? Number(r.amount_paid).toFixed(2) : (r.balance > 0 ? r.balance.toFixed(2) : '');
-    $('payRecordAmount').max = (recordMode === 'set' ? r.total_amount : r.balance).toFixed(2);
+    $('payRecordAmount').removeAttribute('max');
+    checkRecAmount();
     $('payRecordError').style.display = 'none';
     $('payRecordModal').classList.remove('hidden');
+  }
+  // Live check: red field + message as soon as the amount goes over the limit.
+  function checkRecAmount() {
+    var el = $('payRecordAmount'), box = $('payRecordError');
+    if (!el || !box || !recordTarget) return;
+    var amt = Number(el.value);
+    var limit = recordMode === 'set' ? recordTarget.total_amount : recordTarget.balance;
+    var over = el.value !== '' && amt > limit + 0.004;
+    el.style.borderColor = over ? '#e5484d' : '';
+    el.style.color = over ? '#e5484d' : '';
+    el.style.outlineColor = over ? '#e5484d' : '';
+    if (over) {
+      box.textContent = 'Amount is more than the ' + (recordMode === 'set' ? 'total' : 'balance') + ' of ' + money(limit) + '.';
+      box.style.display = 'block';
+    } else if (box.textContent.indexOf('Amount is more than') === 0) {
+      box.style.display = 'none'; box.textContent = '';
+    }
   }
   function closeRecord() { $('payRecordModal').classList.add('hidden'); recordTarget = null; }
   function showRecError(msg) { var e = $('payRecordError'); e.textContent = msg; e.style.display = 'block'; }
@@ -314,6 +332,7 @@
       if (btn) openRecord(Number(btn.getAttribute('data-pay-id')));
     });
     if ($('payRemindAll')) $('payRemindAll').addEventListener('click', remindAll);
+    $('payRecordAmount').addEventListener('input', checkRecAmount);
     $('payRecordClose').addEventListener('click', closeRecord);
     $('payRecordModal').addEventListener('click', function (e) { if (e.target.id === 'payRecordModal') closeRecord(); });
     $('payRecordForm').addEventListener('submit', function (e) {
