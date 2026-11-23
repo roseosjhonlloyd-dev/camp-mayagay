@@ -145,25 +145,37 @@
     $('payRecordAmount').min = recordMode === 'set' ? '0' : '0.01';
     $('payRecordAmount').value = recordMode === 'set' ? Number(r.amount_paid).toFixed(2) : (r.balance > 0 ? r.balance.toFixed(2) : '');
     $('payRecordAmount').removeAttribute('max');
-    checkRecAmount();
+    recLastValid = $('payRecordAmount').value;
+    recFlash(false);
     $('payRecordError').style.display = 'none';
     $('payRecordModal').classList.remove('hidden');
   }
-  // Live check: red field + message as soon as the amount goes over the limit.
-  function checkRecAmount() {
+  // Can't type past the limit: extra digits are rejected and the field flashes red with a message.
+  var recLastValid = '', recFlashTimer = null;
+  function recLimit() { return recordMode === 'set' ? recordTarget.total_amount : recordTarget.balance; }
+  function recFlash(on) {
     var el = $('payRecordAmount'), box = $('payRecordError');
-    if (!el || !box || !recordTarget) return;
-    var amt = Number(el.value);
-    var limit = recordMode === 'set' ? recordTarget.total_amount : recordTarget.balance;
-    var over = el.value !== '' && amt > limit + 0.004;
-    el.style.borderColor = over ? '#e5484d' : '';
-    el.style.color = over ? '#e5484d' : '';
-    el.style.outlineColor = over ? '#e5484d' : '';
-    if (over) {
-      box.textContent = 'Amount is more than the ' + (recordMode === 'set' ? 'total' : 'balance') + ' of ' + money(limit) + '.';
+    el.style.borderColor = on ? '#e5484d' : '';
+    el.style.color = on ? '#e5484d' : '';
+    if (on) {
+      box.textContent = 'Amount is more than the ' + (recordMode === 'set' ? 'total' : 'balance') + ' of ' + money(recLimit()) + '.';
       box.style.display = 'block';
     } else if (box.textContent.indexOf('Amount is more than') === 0) {
       box.style.display = 'none'; box.textContent = '';
+    }
+  }
+  function checkRecAmount() {
+    var el = $('payRecordAmount');
+    if (!el || !recordTarget) return;
+    if (el.value !== '' && Number(el.value) > recLimit() + 0.004) {
+      el.value = recLastValid;              // reject the extra digit
+      recFlash(true);
+      clearTimeout(recFlashTimer);
+      recFlashTimer = setTimeout(function () { recFlash(false); }, 2500);
+    } else {
+      recLastValid = el.value;
+      clearTimeout(recFlashTimer);
+      recFlash(false);
     }
   }
   function closeRecord() { $('payRecordModal').classList.add('hidden'); recordTarget = null; }
