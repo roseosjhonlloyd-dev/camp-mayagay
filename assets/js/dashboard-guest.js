@@ -1433,7 +1433,9 @@
     document.querySelectorAll('.pay-panel').forEach(p => p.classList.toggle('has-receipt', !!uploadedReceiptName));
   }
   /* Pag nagpalit ng payment method, i-clear ang na-upload na resibo at lahat ng nabasa/nilagay. */
+  let scannedReceipt = { ref: '', amount: null };
   function clearReceiptState(){
+    scannedReceipt = { ref: '', amount: null };
     uploadedReceiptName = null; uploadedReceiptDataUrl = null; receiptSource = ''; updateReceiptBtnLabels();
     const rf = document.getElementById('gcashRef'); if (rf){ rf.value = ''; if (typeof markGcashRef === 'function') markGcashRef(); }
     document.querySelectorAll('.pay-amt, .pay-name, .pay-date').forEach(i => { i.value = ''; i.dataset.last = ''; });
@@ -1455,6 +1457,19 @@
     let ready = false;
     if (payChoice === 'GCash') ready = /^\d{13}$/.test(ref) && !!uploadedReceiptName;
     else if (payChoice === 'Bank Transfer') ready = !!uploadedReceiptName;
+    // Typed details must match what the scan read from the receipt (no made-up values).
+    const amtEl = document.querySelector('.pay-amt');
+    const typedAmt = amtEl ? Number(amtEl.value) : 0;
+    let mismatch = '';
+    if (scannedReceipt.ref && ref && ref !== scannedReceipt.ref) mismatch = 'Reference number does not match the receipt.';
+    else if (scannedReceipt.amount != null && Math.abs(typedAmt - scannedReceipt.amount) > 0.009) mismatch = 'Amount does not match the receipt (' + peso(scannedReceipt.amount) + ').';
+    else if (uploadedReceiptName && scannedReceipt.amount == null && !(typedAmt > 0)) mismatch = 'Enter the amount shown on your receipt.';
+    if (mismatch) ready = false;
+    document.querySelectorAll('.pay-panel').forEach(pn => {
+      let m = pn.querySelector('.pay-mismatch');
+      if (!m){ m = document.createElement('div'); m.className = 'pay-mismatch'; m.style.cssText = 'color:#e5484d;font-size:12px;margin:2px 0 8px;'; pn.appendChild(m); }
+      m.textContent = mismatch;
+    });
     document.getElementById('paymentConfirm').disabled = !(ready && tncOk);
     if (pendingBooking) pendingBooking.paymentMethod = payChoice;
   }
@@ -1505,6 +1520,7 @@
     }, 2500);
   }));
   document.querySelectorAll('.pay-amt, .pay-name, .pay-date').forEach(inp => inp.addEventListener('input', () => {
+    updatePaymentConfirmState();
     const cls = inp.classList.contains('pay-amt') ? '.pay-amt' : inp.classList.contains('pay-date') ? '.pay-date' : '.pay-name';
     document.querySelectorAll(cls).forEach(o => { if (o !== inp) o.value = inp.value; });
   }));
@@ -1647,6 +1663,7 @@
       }).catch(() => ({ o: o1 }));
     })).then(res => {
       const out = res.o;
+      scannedReceipt = { ref: out.ref || '', amount: out.amount != null ? Number(out.amount) : null };
       const notes = [];
       if (out.ref){
         const inp = document.getElementById('gcashRef');
@@ -1672,6 +1689,7 @@
       if (!out.ref && retake) retake.style.display = 'block';
       if (!out.ref && out.amount == null && !out.date){
         // Walang reference, amount o date = hindi resibo ang larawan. I-reject ito.
+        scannedReceipt = { ref: '', amount: null };
         uploadedReceiptName = null; uploadedReceiptDataUrl = null; updateReceiptBtnLabels();
         const rf0 = document.getElementById('gcashRef'); if (rf0){ rf0.value = ''; markGcashRef(); }
         document.querySelectorAll('.pay-amt, .pay-name, .pay-date').forEach(i => { i.value = ''; i.dataset.last = ''; });
