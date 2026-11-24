@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Guest Dashboard | Camp Mayagay</title>
 
-<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=62">
+<link rel="stylesheet" href="assets/css/dashboard-guest.css?v=63">
 <link rel="stylesheet" href="assets/css/dashboard-guest-v2.css?v=18">
 <script>
 // If nobody is logged in (for example after Log out, then pressing Back), leave the dashboard
@@ -125,6 +125,11 @@
     <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu" type="button">
       <svg viewBox="0 0 24 24" fill="none"><path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
+    <a class="topbar-weather" id="topbarWeather" href="https://www.google.com/search?q=weather+in+Barangay+Sampaloc%2C+Tanay%2C+Rizal%2C+Philippines" target="_blank" rel="noopener" aria-label="Check the weather in Barangay Sampaloc, Tanay on Google">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="10" r="4.5" fill="#d3a94a"/><path d="M8 17a4.5 4.5 0 010-9c.4 0 .8.05 1.2.14A5.5 5.5 0 0119 13.5 3.5 3.5 0 0115.5 17H8z" fill="#f4f1e6" stroke="#9aa59a" stroke-width="0.6"/></svg>
+      <span class="tw-temp" id="weatherTempMini">28°C</span>
+      <span class="tw-desc" id="weatherDescMini">Partly cloudy</span>
+    </a>
     <button class="icon-btn" id="notifBtn" aria-label="Notifications">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 10a6 6 0 1112 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 19a2 2 0 004 0" stroke="currentColor" stroke-width="1.5"/></svg>
       <span class="dot" id="notifDot"></span>
@@ -885,7 +890,7 @@
   <span id="toastText">Done</span>
 </div>
 
-<script src="assets/js/dashboard-guest.js?v=81"></script>
+<script src="assets/js/dashboard-guest.js?v=82"></script>
 <script>
   (function () {
     var okBtn = document.getElementById('passwordOkBtn');

@@ -2898,6 +2898,10 @@ dayPill.addEventListener('click', () => openNativePicker(dayInput));
         const descEl = document.getElementById('weatherDesc');
         if (tempEl) tempEl.textContent = Math.round(data.current.temperature_2m) + '\u00b0C';
         if (descEl) descEl.textContent = weatherCodeToText(data.current.weather_code);
+        const tempMini = document.getElementById('weatherTempMini');
+        const descMini = document.getElementById('weatherDescMini');
+        if (tempMini) tempMini.textContent = Math.round(data.current.temperature_2m) + '\u00b0C';
+        if (descMini) descMini.textContent = weatherCodeToText(data.current.weather_code);
       })
       .catch(() => {
         // Tahimik na mananatili ang default na "28°C / Partly cloudy" na
