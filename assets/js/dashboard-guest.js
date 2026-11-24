@@ -1482,6 +1482,14 @@
     let v = inp.value.replace(/[^\d.]/g, '');
     const dot = v.indexOf('.');
     if (dot !== -1) v = v.slice(0, dot + 1) + v.slice(dot + 1).replace(/\./g, '').slice(0, 2);
+    // No leading zeros ("0005" -> "5", "00.5" -> "0.5") and no more integer digits than the total due has.
+    v = v.replace(/^0+(?=\d)/, '');
+    if (v.startsWith('.')) v = '0' + v;
+    if (paymentGrandTotal > 0){
+      const maxInt = String(Math.floor(paymentGrandTotal)).length;
+      const parts = v.split('.');
+      if (parts[0].length > maxInt){ parts[0] = parts[0].slice(0, maxInt); v = parts.join('.'); }
+    }
     const tooBig = paymentGrandTotal > 0 && v !== '' && Number(v) > paymentGrandTotal + 0.004;
     if (tooBig) v = inp.dataset.last || '';
     inp.value = v; inp.dataset.last = v;
