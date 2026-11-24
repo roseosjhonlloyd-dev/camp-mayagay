@@ -1436,7 +1436,7 @@
   function clearReceiptState(){
     uploadedReceiptName = null; uploadedReceiptDataUrl = null; receiptSource = ''; updateReceiptBtnLabels();
     const rf = document.getElementById('gcashRef'); if (rf){ rf.value = ''; if (typeof markGcashRef === 'function') markGcashRef(); }
-    document.querySelectorAll('.pay-amt, .pay-name, .pay-date').forEach(i => { i.value = ''; });
+    document.querySelectorAll('.pay-amt, .pay-name, .pay-date').forEach(i => { i.value = ''; i.dataset.last = ''; });
     const fn = document.getElementById('uploadFileName'); if (fn) fn.textContent = '';
     syncReceiptFields();
     const pv = document.getElementById('receiptPreview'); if (pv){ pv.removeAttribute('src'); pv.style.display = 'none'; }
@@ -1453,7 +1453,7 @@
     const ref = document.getElementById('gcashRef').value.trim();
     const tncOk = document.getElementById('tncCheck').checked;
     let ready = false;
-    if (payChoice === 'GCash') ready = /^\d{13}$/.test(ref);
+    if (payChoice === 'GCash') ready = /^\d{13}$/.test(ref) && !!uploadedReceiptName;
     else if (payChoice === 'Bank Transfer') ready = !!uploadedReceiptName;
     document.getElementById('paymentConfirm').disabled = !(ready && tncOk);
     if (pendingBooking) pendingBooking.paymentMethod = payChoice;
@@ -1673,6 +1673,10 @@
       if (!out.ref && out.amount == null && !out.date){
         // Walang reference, amount o date = hindi resibo ang larawan. I-reject ito.
         uploadedReceiptName = null; uploadedReceiptDataUrl = null; updateReceiptBtnLabels();
+        const rf0 = document.getElementById('gcashRef'); if (rf0){ rf0.value = ''; markGcashRef(); }
+        document.querySelectorAll('.pay-amt, .pay-name, .pay-date').forEach(i => { i.value = ''; i.dataset.last = ''; });
+        if (pendingBooking) pendingBooking.gcashRef = '';
+        syncReceiptFields();
         const fn = document.getElementById('uploadFileName'); if (fn) fn.textContent = '';
         const pv = document.getElementById('receiptPreview'); if (pv){ pv.removeAttribute('src'); pv.style.display = 'none'; }
         updatePaymentConfirmState();
